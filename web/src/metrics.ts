@@ -71,18 +71,28 @@ export function buildMetrics(regions: Region[], clusterLabels: Record<string, st
     최근접_응급의료기관_km: {
       key: '최근접_응급의료기관_km', label: '최근접 응급의료기관 거리',
       format: (r) => fmt.km(r.최근접_응급의료기관_km), color: (r) => near.color(r.최근접_응급의료기관_km), legend: near.legend,
-      note: '시군구청 기준 직선거리, 5분위',
+      note: '행정동 인구가중 직선거리, 5분위',
     },
     최근접_권역지역센터_km: {
       key: '최근접_권역지역센터_km', label: '최근접 권역·지역응급의료센터 거리',
       format: (r) => fmt.km(r.최근접_권역지역센터_km), color: (r) => ctr.color(r.최근접_권역지역센터_km), legend: ctr.legend,
-      note: '시군구청 기준 직선거리, 5분위',
+      note: '행정동 인구가중 직선거리, 5분위',
     },
   }
 }
 
-export const CLUSTER_DESC: Record<number, string> = {
-  0: '수도권·광역시와 지방 도시. 가까운 응급의료기관과 센터가 모두 2km 안팎이고, 반경 30km 안 기관이 많다.',
-  1: '읍내 응급실은 있으나 중증을 볼 권역·지역응급의료센터가 멀다(중앙값 24km). 고령·독거·장애 비율이 높다.',
-  2: '가까운 응급실 자체가 없다(최근접 응급의료기관 중앙값 15km). 센터도 멀고 반경 30km 안 기관이 4곳뿐이다.',
+const CLUSTER_LEAD: Record<number, string> = {
+  0: '수도권·광역시 등 도시.',
+  1: '지방 중소도시와 도시 외곽.',
+  2: '고령 농촌. 응급의료기관과 중증 센터가 모두 멀다.',
+}
+
+/** 클러스터 설명: 수치는 데이터(클러스터별 중앙값)에서 계산 */
+export function clusterDesc(regions: Region[], k: number): string {
+  const rs = regions.filter((r) => r.클러스터 === k)
+  if (!rs.length) return CLUSTER_LEAD[k] ?? ''
+  const med = (f: (r: Region) => number) => quantile(rs.map(f), 0.5)
+  return `${CLUSTER_LEAD[k] ?? ''} 중앙값: 최근접 응급의료기관 ${fmt.km(med((r) => r.최근접_응급의료기관_km))}, ` +
+    `권역·지역센터 ${fmt.km(med((r) => r.최근접_권역지역센터_km))}, 반경 30km 기관 ${Math.round(med((r) => r.반경30km_기관수))}곳, ` +
+    `고령인구 ${fmt.pct(med((r) => r.고령인구비율))} (${rs.length}곳)`
 }

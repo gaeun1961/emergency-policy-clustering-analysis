@@ -49,7 +49,7 @@ export default function SimPanel(p: Props) {
           <button onClick={copy}>{copied ? '복사됨' : '링크 복사'}</button>
         </div>
       </div>
-      <p className="notice">가상 시나리오이며 시군구청(섬 지역은 읍면사무소) 기준 직선거리로 계산합니다. 판정 기준선은 현재 분포로 고정합니다.</p>
+      <p className="notice">가상 시나리오이며, 전국 행정동(섬은 리) 기준점에서 잰 직선거리를 인구로 가중평균합니다. 판정 기준선은 현재 분포로 고정합니다.</p>
       <p className="hint">지도를 누르면 그 위치에 기관을 추가하고, 기존 기관 점을 누르면 제거합니다.
         추가 {p.scenario.added.length}곳 · 제거 {p.scenario.removed.length}곳</p>
 
@@ -87,7 +87,7 @@ export default function SimPanel(p: Props) {
           </button>
         ))}
       </div>
-      <p className="hint">후보: 시군구 기준점 위치{p.recKind === 'G006' ? ' + 기존 지역기관의 지역센터 승격' : ''}.
+      <p className="hint">후보: 행정동 기준점 위치{p.recKind === 'G006' ? ' + 기존 지역기관의 지역센터 승격' : ''}.
         순위: ① 이중 취약에서 벗어나는 시군구 수 ② 65세 이상 인구 가중 거리 감소. 시군구당 1곳.</p>
       {!p.recs ? <p className="muted small">계산 중…</p> : p.recs.length === 0 ? <p className="muted small">개선되는 후보가 없습니다.</p> : (
         <ol className="recs">
@@ -108,7 +108,7 @@ export default function SimPanel(p: Props) {
         </ol>
       )}
       </details>
-      <p className="hint">후보지는 시군구청 위치이며, 거리는 시군구청 기준으로 측정됩니다. 그래서 시군구청에 놓는 후보가 유리하게 나오고, 시군구청에서 떨어진 곳의 효과는 과소평가될 수 있습니다.</p>
+      <p className="hint">후보지는 행정동 행정복지센터(섬은 리) 위치입니다. 거리는 시군구 안 모든 행정동 주민 기준이라, 후보 위치와 측정 지점이 한 점으로 겹치지 않습니다.</p>
     </div>
   )
 }

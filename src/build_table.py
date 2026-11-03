@@ -4,7 +4,7 @@
 입력: data/processed/ 의 시군구 표 (모두 같은 행정기관코드 5자리, 각 스크립트가 매칭·검증을 마친 결과)
       population_sigungu_202512.csv (기준 코드표), single_household_sigungu_202512.csv  <- python -m src.population
       disability_sigungu_2025.csv  <- python -m src.disability
-      accessibility_sigungu.csv    <- python -m src.fetch_emergency, src.geocode, src.accessibility
+      accessibility_sigungu.csv    <- python -m src.fetch_emergency, src.emd_centers, src.accessibility
 출력: data/processed/sigungu_table.csv
 """
 from pathlib import Path

@@ -3,7 +3,7 @@
 실행: 레포 루트에서 python scripts/export_web_data.py
 입력: outputs/sigungu_scores.csv, outputs/double_vulnerable.csv (notebooks/sigungu_clustering.ipynb)
       data/processed/sigungu_table.csv (총인구), data/processed/emergency_facilities.csv (수집일자)
-      시뮬레이터용: data/processed/sigungu_centers.csv, data/raw/eupmyeondong/*.xlsx (섬 지역 가중치)
+      시뮬레이터용: data/processed/emd_centers.csv (행정동 기준점·인구), emd_li_points.csv (섬 읍·면 리 단위)
 출력: web/public/data/sigungu_metrics.json, meta.json
       시뮬레이터용 facilities.json, centers.json, baseline.json
 """
@@ -86,9 +86,10 @@ def export_simulation(scores):
     facilities = [{'hpid': r.hpid, '기관명': r.dutyName, '등급': r.dutyEmcls, '위도': r.wgs84Lat, '경도': r.wgs84Lon,
                    '시군구코드': r.행정기관코드} for r in fac.itertuples()]
 
-    c = accessibility.point_weights(pd.read_csv(accessibility.CENTERS, dtype={'행정기관코드': str}))
+    # 행정동 기준점(섬 읍·면은 리)과 인구 가중치. Python 접근성 계산(src.accessibility.load_centers)과 같은 점·같은 순서
+    c = accessibility.load_centers()
     centers = {code: [{'lat': r.lat, 'lon': r.lon, 'weight': float(r.가중치), '지점': r.지점} for r in g.itertuples()]
-               for code, g in c.groupby('행정기관코드')}
+               for code, g in c.groupby('행정기관코드', sort=False)}
 
     # 점수 재현: sigungu_table(접근성 지표는 소수 3자리 반올림 값)의 백분위 순위 평균
     t = pd.read_csv(ROOT / 'data' / 'processed' / 'sigungu_table.csv', dtype={'code': str}).set_index('code')

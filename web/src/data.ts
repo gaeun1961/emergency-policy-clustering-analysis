@@ -71,7 +71,8 @@ export async function loadSimData(): Promise<SimData> {
 }
 
 export const regionName =(r: Region) => (r.시군구 ? `${r.시도} ${r.시군구}` : r.시도)
-export const isIsland = (r: Region) => r.기준점방식.startsWith('weighted')
+/** 섬 읍·면을 리(섬) 단위로 나눠 계산한 시군구 */
+export const isIsland = (r: Region) => r.기준점방식.includes('리 단위')
 
 /** pandas Series.quantile 과 같은 선형 보간 분위수 */
 export function quantile(values: number[], q: number): number {
