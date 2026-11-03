@@ -1,9 +1,10 @@
 import { quantile, type Grade, type Region } from './data'
+import { T } from './theme'
 
-// 색: 색각 이상에서도 구분되도록 검증된 기본 팔레트(dataviz skill reference palette)에서 가져온다
-export const GRADE_COLOR: Record<Grade, string> = { '이중 취약': '#eb6834', '준 이중 취약': '#2a78d6', '': '#d3d2cb' }
-export const CLUSTER_COLOR = ['#2a78d6', '#eda100', '#e34948'] // 0 도시 / 1 센터 원거리 / 2 응급의료 취약 (고정 순서)
-const RAMP = ['#e6f0fd', '#9ec5f4', '#5598e7', '#1c5cab', '#0d366b'] // 한 색상 명도 단계: 진할수록 취약
+// 색: 테마(theme.ts)의 한 색상 계열. 진할수록 취약
+export const GRADE_COLOR: Record<Grade, string> = { '이중 취약': T.grade.double, '준 이중 취약': T.grade.near, '': T.grade.none }
+export const CLUSTER_COLOR = T.cluster // 0 도시 / 1 센터 원거리 / 2 응급의료 취약 (취약할수록 진하게)
+const RAMP = T.ramp
 
 export type MetricKey = '등급' | '접근성점수' | '복지점수' | '클러스터' | '최근접_응급의료기관_km' | '최근접_권역지역센터_km'
 
