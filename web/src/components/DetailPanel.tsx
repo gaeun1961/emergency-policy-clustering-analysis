@@ -1,8 +1,10 @@
 import { isIsland, quantile, regionName, type Region } from '../data'
 import { CLUSTER_COLOR, GRADE_COLOR, clusterDesc, fmt } from '../metrics'
+import { nearestFacilities, type CenterPoint, type Facility } from '../sim/model'
 import { textOn } from '../theme'
+import { FacilityLines } from './FacilityInfo'
 
-interface Props { region: Region | null; total: number; regions: Region[] }
+interface Props { region: Region | null; total: number; regions: Region[]; facilities?: Facility[]; points?: CenterPoint[] }
 
 /** 전국 중앙값 대비 미니 막대: 선택 지역(막대)과 전국 중앙값(세로선) */
 const COMPARE: { key: keyof Region; label: string; format: (v: number) => string }[] = [
@@ -38,6 +40,25 @@ function MedianBars({ r, regions }: { r: Region; regions: Region[] }) {
   )
 }
 
+/** 가까운 응급의료기관 3곳: 시군구 기준점에서 잰 직선거리를 주민 수로 가중평균한 거리 순 */
+function NearestFacilities({ facilities, points }: { facilities: Facility[]; points: CenterPoint[] }) {
+  const near = nearestFacilities(points, facilities, 3)
+  return (
+    <div className="nearest">
+      <h3>가까운 응급의료기관 {near.length}곳</h3>
+      <ol>
+        {near.map(({ f, km }) => (
+          <li key={f.hpid}>
+            <div className="nearest-km">{fmt.km(km)}</div>
+            <div><FacilityLines f={f} /></div>
+          </li>
+        ))}
+      </ol>
+      <p className="hint">거리는 이 시군구의 행정동 기준점(섬 읍·면은 리)에서 잰 <strong>직선거리</strong>를 주민 수로 가중평균한 값이라, 실제 도로 거리·이동 시간과 다릅니다.</p>
+    </div>
+  )
+}
+
 export function IslandBadge() {
   return (
     <span className="badge island" title="면사무소와 다른 섬에 사람이 사는 읍·면은 리(섬)별 좌표·인구로 거리를 가중평균했다">
@@ -46,7 +67,7 @@ export function IslandBadge() {
   )
 }
 
-export default function DetailPanel({ region: r, total, regions }: Props) {
+export default function DetailPanel({ region: r, total, regions, facilities, points }: Props) {
   if (!r) return <div className="detail"><p className="muted">지도, 산점도, 표에서 시군구를 선택하세요.</p></div>
 
   const cards: [string, string][] = [
@@ -91,6 +112,8 @@ export default function DetailPanel({ region: r, total, regions }: Props) {
           <p>{clusterDesc(regions, r.클러스터)}</p>
         </div>
       </div>
+
+      {facilities && points && <NearestFacilities facilities={facilities} points={points} />}
 
       <MedianBars r={r} regions={regions} />
     </div>

@@ -50,7 +50,7 @@ export default function SimPanel(p: Props) {
         </div>
       </div>
       <p className="notice">가상 시나리오이며, 전국 행정동(섬은 리) 기준점에서 잰 직선거리를 인구로 가중평균합니다. 판정 기준선은 현재 분포로 고정합니다.</p>
-      <p className="hint">지도를 누르면 그 위치에 기관을 추가하고, 기존 기관 점을 누르면 제거합니다.
+      <p className="hint">지도를 누르면 그 위치에 기관을 추가하고, 기관 점을 누르면 정보와 제거 버튼이 뜹니다.
         추가 {p.scenario.added.length}곳 · 제거 {p.scenario.removed.length}곳</p>
 
       <div className="sim-counts">
