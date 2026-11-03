@@ -1,7 +1,8 @@
 """시군구 통합 테이블 생성
 
 실행: 레포 루트에서 python -m src.build_table
-입력: data/processed/population_sigungu_202512.csv (기준 코드표, python -m src.population),
+입력: data/processed/population_sigungu_202512.csv (기준 코드표), single_household_sigungu_202512.csv
+      (둘 다 python -m src.population),
       data/raw/ (data/README.md 참고), data/region_mapping.csv
 출력: data/processed/sigungu_table.csv, data/processed/unmatched.csv
 """
@@ -21,11 +22,12 @@ SOURCES = {
     '응급의료시설수': dict(file='emergency/facilities', header=[3, 4, 0], sido='지역', sgg='시군구', value=None, how='sum'),
     # ponytail: 일반구만 있는 시는 단순 평균, 정확히 하려면 인구 가중 평균
     '응급의료시설_평균접근거리_km': dict(file='accessibility/ngii_emergency_access', sido='시도', sgg='시군구', value='평균거리', how='mean'),
-    '독거노인수': dict(file='welfare/elderly_alone', sido='시도', sgg='시군구', value='독거노인수', how='sum'),
     '등록장애인수': dict(file='welfare/disabled', sido='시도', sgg='시군구', value='등록장애인수', how='sum'),
     '기초수급자수': dict(file='welfare/basic_livelihood', sido='시도', sgg='시군구', value='수급자수', how='sum'),
 }
-POP_FILE = ROOT / 'data' / 'processed' / 'population_sigungu_202512.csv'  # python -m src.population 으로 생성
+# python -m src.population 으로 생성. 코드가 같아서 매핑 없이 바로 붙인다
+POP_FILE = ROOT / 'data' / 'processed' / 'population_sigungu_202512.csv'
+SINGLE_FILE = ROOT / 'data' / 'processed' / 'single_household_sigungu_202512.csv'
 
 
 def find(raw, stem):
@@ -39,13 +41,19 @@ def to_num(s):
     return pd.to_numeric(s.astype(str).str.replace(',', '').str.strip(), errors='coerce')
 
 
-def load_population(pop_file):
-    """시군구 인구 기준 코드표 -> (master, 통합 테이블 뼈대)"""
-    if not Path(pop_file).exists():
-        raise FileNotFoundError(f'{pop_file} 가 없음. 먼저 python -m src.population 실행')
-    units = pd.read_csv(pop_file, dtype={'행정기관코드': str}).fillna({'시군구': ''})
-    units = units.rename(columns={'행정기관코드': 'code'}).set_index('code')
+def read_processed(path):
+    if not Path(path).exists():
+        raise FileNotFoundError(f'{path} 가 없음. 먼저 python -m src.population 실행')
+    df = pd.read_csv(path, dtype={'행정기관코드': str}).fillna({'시군구': ''})
+    return df.rename(columns={'행정기관코드': 'code'}).set_index('code')
+
+
+def load_population(pop_file, single_file):
+    """시군구 인구 기준 코드표 + 1인세대 -> (master, 통합 테이블 뼈대)"""
+    units = read_processed(pop_file)
     master = units[['시도', '시군구']].reset_index().assign(unit=lambda m: m['code'])
+    units = units.join(read_processed(single_file).drop(columns=['시도', '시군구']))
+    units['독거노인비율'] = units['65세이상1인세대수'] / units['65세이상인구']
     return master, units
 
 
@@ -61,10 +69,10 @@ def load_source(raw, name, cfg, master, mapping):
 
 
 def main(raw=ROOT / 'data' / 'raw', out=ROOT / 'data' / 'processed',
-         mapping_file=ROOT / 'data' / 'region_mapping.csv', pop_file=POP_FILE):
+         mapping_file=ROOT / 'data' / 'region_mapping.csv', pop_file=POP_FILE, single_file=SINGLE_FILE):
     raw, out = Path(raw), Path(out)
     mapping = load_mapping(mapping_file)
-    master, table = load_population(pop_file)
+    master, table = load_population(pop_file, single_file)
 
     misses = []
     for name, cfg in SOURCES.items():
