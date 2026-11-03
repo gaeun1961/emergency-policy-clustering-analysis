@@ -1,4 +1,5 @@
 import type { FeatureCollection, Geometry } from 'geojson'
+import type { Baseline, Centers, Facility } from './sim/model'
 
 export type Grade = '이중 취약' | '준 이중 취약' | ''
 
@@ -7,6 +8,7 @@ export interface Region {
   시도: string
   시군구: string
   총인구: number
+  '65세이상인구': number
   고령인구비율: number
   독거노인비율: number
   장애인비율: number
@@ -56,7 +58,19 @@ export async function loadData(): Promise<Data> {
   return { regions, byCode: new Map((regions as Region[]).map((r) => [r.코드, r])), sigungu, sido, meta }
 }
 
-export const regionName = (r: Region) => (r.시군구 ? `${r.시도} ${r.시군구}` : r.시도)
+export interface SimData { facilities: Facility[]; centers: Centers; baseline: Baseline }
+
+/** 시뮬레이션 모드를 켤 때만 불러온다 */
+export async function loadSimData(): Promise<SimData> {
+  const get = (name: string) => fetch(`${import.meta.env.BASE_URL}data/${name}`).then((r) => {
+    if (!r.ok) throw new Error(`${name}: ${r.status}`)
+    return r.json()
+  })
+  const [facilities, centers, baseline] = await Promise.all([get('facilities.json'), get('centers.json'), get('baseline.json')])
+  return { facilities, centers, baseline }
+}
+
+export const regionName =(r: Region) => (r.시군구 ? `${r.시도} ${r.시군구}` : r.시도)
 export const isIsland = (r: Region) => r.기준점방식.startsWith('weighted')
 
 /** pandas Series.quantile 과 같은 선형 보간 분위수 */

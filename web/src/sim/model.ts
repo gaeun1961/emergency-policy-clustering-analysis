@@ -84,6 +84,22 @@ export function scoreAgainstBaseline(m: AccessMetrics, baseline: Baseline): numb
   return ACCESS_KEYS.reduce((s, k) => s + percentile(baseline.지표[k], m[k], baseline.방향[k]), 0) / ACCESS_KEYS.length
 }
 
+/** scoreAgainstBaseline 과 같은 값을 이진 탐색으로 계산 (추천 위치처럼 수십만 번 부를 때) */
+export function makeScorer(baseline: Baseline): (m: AccessMetrics) => number {
+  const eps = 1e-9
+  const sorted = ACCESS_KEYS.map((k) => baseline.지표[k].map((v) => v * baseline.방향[k]).sort((a, b) => a - b))
+  const lowerBound = (arr: number[], x: number) => { // arr[i] >= x 인 첫 위치
+    let lo = 0, hi = arr.length
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (arr[mid] < x) lo = mid + 1; else hi = mid }
+    return lo
+  }
+  return (m) => ACCESS_KEYS.reduce((s, k, i) => {
+    const v = m[k] * baseline.방향[k], arr = sorted[i]
+    const less = lowerBound(arr, v - eps), equal = lowerBound(arr, v + eps + 1e-12) - less
+    return s + ((less + (equal + 1) / 2) / arr.length) * 100
+  }, 0) / ACCESS_KEYS.length
+}
+
 /** 등급: 두 점수 모두 상위 25% = 이중 취약, 한쪽 25% + 다른 쪽 40% = 준 이중 취약 (기준선 고정) */
 export function classify(access: number, welfare: number, cuts: Baseline['기준선']): SimGrade {
   const aTop = access >= cuts.상위25.접근성, wTop = welfare >= cuts.상위25.복지

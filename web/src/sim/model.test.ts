@@ -1,7 +1,9 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import type { Region } from '../data'
-import { ACCESS_KEYS, haversine, simulate, type Baseline, type Centers, type Facility } from './model'
+import { ACCESS_KEYS, haversine, makeScorer, scoreAgainstBaseline, simulate, type Baseline, type Centers, type Facility } from './model'
+import { recommend } from './recommend'
+import { applyScenario, fromQuery, toQuery, type Scenario } from './scenario'
 
 const load = <T>(name: string): T => JSON.parse(readFileSync(new URL(`../../public/data/${name}`, import.meta.url), 'utf-8'))
 const facilities = load<Facility[]>('facilities.json')
@@ -63,4 +65,51 @@ describe('시뮬레이션 동작', () => {
     const after = simulate(facilities.slice(1), centers, baseline)
     for (const c of Object.keys(sim)) expect(after[c].metrics.최근접_응급의료기관_km).toBeGreaterThanOrEqual(sim[c].metrics.최근접_응급의료기관_km)
   })
+
+  it('makeScorer(이진 탐색) = scoreAgainstBaseline(선형)', () => {
+    const score = makeScorer(baseline)
+    const samples = Object.values(sim).flatMap((s) => [s.metrics, {
+      최근접_응급의료기관_km: s.metrics.최근접_응급의료기관_km * 0.7, 최근접_권역지역센터_km: s.metrics.최근접_권역지역센터_km + 3.3,
+      반경30km_응급의료기관수: s.metrics.반경30km_응급의료기관수 + 1,
+    }])
+    for (const m of samples) expect(score(m)).toBeCloseTo(scoreAgainstBaseline(m, baseline), 9)
+  })
+})
+
+describe('시나리오 URL', () => {
+  it('추가·제거가 쿼리로 왕복된다', () => {
+    const s = { added: [{ grade: 'G006' as const, lat: 36.41234, lon: 129.36543 }, { grade: 'G007' as const, lat: 37.1, lon: 128.2 }], removed: ['A1', 'B2'] }
+    const q = toQuery(true, s)
+    expect(q).toBe('?sim=1&add=G006:36.41234,129.36543;G007:37.10000,128.20000&rm=A1,B2')
+    expect(fromQuery(q)).toEqual({ on: true, scenario: s })
+    expect(toQuery(false, s)).toBe('')
+    expect(fromQuery('?sim=1&add=X:1,2;G007:abc').scenario.added).toEqual([])
+  })
+
+  it('applyScenario: 제거한 기관은 빠지고 추가한 기관이 붙는다', () => {
+    const out = applyScenario(facilities, { added: [{ grade: 'G007', lat: 36, lon: 128 }], removed: [facilities[0].hpid] })
+    expect(out).toHaveLength(facilities.length)
+    expect(out.some((f) => f.hpid === facilities[0].hpid)).toBe(false)
+    expect(out.at(-1)).toMatchObject({ hpid: 'SIM-1', 등급: 'G007', 위도: 36, 경도: 128 })
+  })
+})
+
+describe('추천 위치', () => {
+  const elderly = Object.fromEntries(regions.map((r) => [r.코드, r['65세이상인구']]))
+  for (const kind of ['G007', 'G006'] as const) {
+    it(`${kind}: 증분 계산 결과 = 그 시나리오를 전체 재계산한 결과`, () => {
+      const top = recommend(facilities, centers, baseline, sim, elderly, kind)
+      expect(top.length).toBe(5)
+      for (const e of top) {
+        const c = e.candidate
+        const scenario: Scenario = c.kind === 'upgrade'
+          ? { added: [{ grade: 'G006', lat: c.lat, lon: c.lon }], removed: [c.hpid!] }
+          : { added: [{ grade: c.kind, lat: c.lat, lon: c.lon }], removed: [] }
+        const full = simulate(applyScenario(facilities, scenario), centers, baseline)
+        const escaped = Object.keys(sim).filter((k) => sim[k].등급 === '이중 취약' && full[k].등급 !== '이중 취약')
+        expect(escaped.sort()).toEqual([...e.escaped].sort())
+        for (const k of Object.keys(sim)) expect(full[k].등급).toBe(e.newGrades[k] ?? sim[k].등급)
+      }
+    })
+  }
 })
