@@ -3,7 +3,9 @@ import { describe, expect, it } from 'vitest'
 import type { Region } from '../data'
 import { ACCESS_KEYS, haversine, makeScorer, scoreAgainstBaseline, simulate, type Baseline, type Centers, type Facility } from './model'
 import { recommend } from './recommend'
-import { applyScenario, fromQuery, toQuery, type Scenario } from './scenario'
+import type { SigunguGeo } from '../data'
+import { locateSigungu } from './geo'
+import { applyScenario, fromQuery, keepOnLand, toQuery, type Scenario } from './scenario'
 
 const load = <T>(name: string): T => JSON.parse(readFileSync(new URL(`../../public/data/${name}`, import.meta.url), 'utf-8'))
 const facilities = load<Facility[]>('facilities.json')
@@ -112,4 +114,32 @@ describe('추천 위치', () => {
       }
     })
   }
+})
+
+describe('시군구 경계 판정 (바다 클릭 방지)', () => {
+  const sigungu = load<SigunguGeo>('sigungu.geojson')
+  const at = (code: string, name: string) => centers[code].find((p) => p.지점 === name) ?? centers[code][0]
+  it('바다 좌표는 null', () => {
+    expect(locateSigungu(sigungu, 36.5, 130.3)).toBeNull()  // 동해
+    expect(locateSigungu(sigungu, 35.5, 125.0)).toBeNull()  // 서해
+    expect(locateSigungu(sigungu, 33.0, 127.5)).toBeNull()  // 제주 남쪽 바다
+    expect(locateSigungu(sigungu, 34.9, 128.95)).toBeNull() // 남해 (부산·거제 사이 바다)
+  })
+  it('섬 좌표는 그 섬의 시군구: 울릉도·백령도·흑산도', () => {
+    const 울릉 = at('47940', '울릉군청'), 백령 = at('28720', '백령면사무소'), 흑산 = at('46910', '흑산면사무소')
+    expect(locateSigungu(sigungu, 울릉.lat, 울릉.lon)).toBe('47940')
+    expect(locateSigungu(sigungu, 백령.lat, 백령.lon)).toBe('28720')
+    expect(locateSigungu(sigungu, 흑산.lat, 흑산.lon)).toBe('46910')
+  })
+  it('육지 좌표는 해당 시군구 (영덕군청, 종로구청)', () => {
+    expect(locateSigungu(sigungu, centers['47770'][0].lat, centers['47770'][0].lon)).toBe('47770')
+    expect(locateSigungu(sigungu, centers['11110'][0].lat, centers['11110'][0].lon)).toBe('11110')
+  })
+  it('keepOnLand: 공유 링크의 바다 좌표는 빼고, 남은 기관에 시군구 코드를 붙인다', () => {
+    const s = fromQuery('?sim=1&add=G006:34.57391,126.59964;G007:36.50000,130.30000').scenario
+    const { scenario, dropped } = keepOnLand(s, (lat, lon) => locateSigungu(sigungu, lat, lon))
+    expect(dropped).toBe(1)
+    expect(scenario.added).toEqual([{ grade: 'G006', lat: 34.57391, lon: 126.59964, code: '46820' }])
+    expect(applyScenario(facilities, scenario).at(-1)?.시군구코드).toBe('46820')
+  })
 })

@@ -87,6 +87,11 @@ button { font: inherit; color: inherit; }
 }
 .label.sel { font-weight: 700; font-size: 12px; }
 .zoom-hint.mobile { display: none; }
+.legend-toggle { display: none; }
+.toast {
+  position: fixed; z-index: 30; left: 50%; bottom: 24px; transform: translateX(-50%); max-width: calc(100% - 32px);
+  background: var(--ink); color: #fff; padding: 9px 16px; border-radius: 999px; font-size: 0.86rem; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+}
 .map-zoom { position: absolute; right: 12px; bottom: 12px; display: flex; align-items: center; gap: 8px; }
 .map-zoom button {
   font-size: 0.82rem; padding: 5px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface);
@@ -225,6 +230,15 @@ tbody tr:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px;
   .map-overlay .markers-key, .map-overlay .hint:not(.sim-hint) { display: none; }
   .zoom-hint.desktop { display: none; }
   .zoom-hint.mobile { display: inline; }
+}
+/* 휴대폰: 범례는 기본 접힘, 버튼으로 펼치기 */
+@media (max-width: 390px) {
+  .legend-toggle {
+    display: block; border: 0; background: none; padding: 0; font-size: 0.82rem; font-weight: 600; color: var(--ink); cursor: pointer;
+  }
+  .map-overlay.collapsed { padding: 6px 10px; }
+  .map-overlay.collapsed .overlay-body { display: none; }
+  .map-overlay:not(.collapsed) .legend-toggle { margin-bottom: 6px; }
 }
 @media (max-width: 420px) {
   .scores, .sim-counts { grid-template-columns: 1fr; }
