@@ -6,7 +6,7 @@ from pathlib import Path
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from src import population  # noqa: E402
+from src import disability, population  # noqa: E402
 from src.build_table import main  # noqa: E402
 from src.regions import age_start, region_key  # noqa: E402
 
@@ -93,23 +93,37 @@ def test_end_to_end():
                              '시군구': ['종로구 ', '수원시', '수원시 권선구', '한누리대로', '군위군', '없는구']})
         write(raw / 'emergency/institutions.csv', inst)
         # 표 형태 통계: 시도 소계 행, 수원시 합계 + 일반구 행, 병합 셀(시도 빈칸)
-        write(raw / 'welfare/disabled.csv', pd.DataFrame({
+        write(raw / 'welfare/basic_livelihood.csv', pd.DataFrame({
             '시도': ['서울특별시', None, None, '경기도', None, None, '세종특별자치시', '경상북도'],
             '시군구': ['소계', '종로구', '중구', '수원시', '수원시 장안구', '수원시 권선구', '세종시', '군위군'],
-            '등록장애인수': ['30', '10', '20', '50', '20', '30', '7', '3']}))
+            '수급자수': ['30', '10', '20', '50', '20', '30', '7', '3']}))
+
+        # KOSIS 등록장애인: 머리글 3행, 시도 첫 행만, 일반구만 있고 시 합계 없음(띄어쓰기 없음), 세종은 소계만
+        dis_raw, dis_file = d / 'dis', d / 'dis.csv'
+        dis_raw.mkdir()
+        pd.DataFrame([['시군구별(1)', '시군구별(2)', '2025']] * 3 + [
+            ['전국', '소계', '90'], ['서울특별시', '소계', '30'], [None, '종로구', '10'], [None, '중구', '20'],
+            ['대구광역시', '소계', '3'], [None, '군위군', '3'], ['세종특별자치시', '소계', '7'],
+            ['경기도', '소계', '50'], [None, '수원시장안구', '20'], [None, '수원시권선구', '30']],
+        ).to_excel(dis_raw / 'dis.xlsx', sheet_name='데이터', header=False, index=False)
+        mapping = d / 'map.csv'
+        mapping.write_text('시도,시군구,to_시도,to_시군구\n경상북도,군위군,대구광역시,군위군\n', encoding='utf-8')
+        disability.NATIONAL_TOTAL = 90
+        dis_units, ok = disability.build(dis_raw, dis_file, pop_file, mapping)
+        assert ok
+        assert dis_units['등록장애인수'].tolist() == [10, 20, 3, 7, 50]
         write(raw / 'accessibility/ngii_emergency_access.csv', pd.DataFrame({
             '시도': ['서울특별시', '서울특별시', '경기도', '경기도', '세종특별자치시', '대구광역시'],
             '시군구': ['종로구', '중구', '수원시 장안구', '수원시 권선구', '세종특별자치시', '군위군'],
             '평균거리': [1.0, 2.0, 3.0, 5.0, 4.0, 9.0]}))
-        mapping = d / 'map.csv'
-        mapping.write_text('시도,시군구,to_시도,to_시군구\n경상북도,군위군,대구광역시,군위군\n', encoding='utf-8')
 
-        t, unmatched = main(raw, d / 'out', mapping, pop_file, sh_file)
+        t, unmatched = main(raw, d / 'out', mapping, pop_file, sh_file, dis_file)
 
         assert t.loc['11110', '독거노인비율'] == 5 / 30
+        assert t.loc['11110', '장애인비율'] == 10 / 100
 
         assert t['응급의료기관수'].tolist() == [1, 0, 1, 1, 2]  # 일반구 기관은 시로 합산, 군위군은 매핑
-        assert t['등록장애인수'].tolist() == [10, 20, 3, 7, 50]  # 소계 제외, 수원시는 합계 행만
+        assert t['기초수급자수'].tolist() == [10, 20, 3, 7, 50]  # 소계 제외, 수원시는 합계 행만
         assert t.loc['41110', '응급의료시설_평균접근거리_km'] == 4.0  # 일반구 평균
         assert t.loc['36110', '응급의료시설_평균접근거리_km'] == 4.0
         assert unmatched[['출처', '시군구']].values.tolist() == [['응급의료기관수', '없는구']]

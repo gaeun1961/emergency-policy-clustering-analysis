@@ -7,7 +7,8 @@
 1. `python -m src.population`: 행안부 파일로 아래 두 CSV를 만든다.
    - 기준 코드표 `data/processed/population_sigungu_202512.csv`
    - 1인세대 `data/processed/single_household_sigungu_202512.csv`
-2. `python -m src.build_table`: 나머지 출처를 붙여 `data/processed/sigungu_table.csv` 를 만든다.
+2. `python -m src.disability`: KOSIS 등록장애인 파일로 `data/processed/disability_sigungu_2025.csv` 를 만든다.
+3. `python -m src.build_table`: 나머지 출처를 붙여 `data/processed/sigungu_table.csv` 를 만든다.
 
 행안부 파일(인구, 1인세대)을 뺀 나머지 파일은 `.csv` 또는 `.xlsx` 아무거나 된다(확장자만 다르게 같은 이름으로 두면 됨).
 
@@ -16,14 +17,14 @@ data/
 ├── raw/
 │   ├── population/202512_202512_연령별인구현황_{지역}.xlsx  # 시도별 16개 + 검증용 전국 1개
 │   ├── single_household/202512_202512_행정동별 성연령별 주민등록 1인세대수_{지역}.xlsx  # 시도별 16개 + 전국 1개
+│   ├── disability/시군구별_장애정도별_성별_등록장애인수.xlsx  # KOSIS DT_11761_N009
 │   ├── emergency/institutions.xlsx             # 응급의료기관 목록
 │   ├── emergency/facilities.xlsx               # 응급의료시설 목록 (응급의료기관 외)
 │   ├── accessibility/ngii_emergency_access.csv # 응급의료시설 접근성(평균 거리)
 │   └── welfare/
-│       ├── disabled.csv                        # 등록장애인 수
 │       └── basic_livelihood.csv                # 기초생활수급자 수
 ├── region_mapping.csv                          # 지역명 차이·행정구역 개편 매핑 (직접 관리)
-└── processed/                                  # 생성물 (population_/single_household_sigungu_202512.csv, sigungu_table.csv, unmatched.csv)
+└── processed/                                  # 생성물 (population_/single_household_sigungu_202512.csv, disability_sigungu_2025.csv, sigungu_table.csv, unmatched.csv)
 ```
 
 ## 기준 시점: 2025년 12월 말로 통일 (인천 개편 전 기준)
@@ -36,6 +37,7 @@ data/
 |---|---|---|
 | population | 2025.12 | |
 | single_household | 2025.12 | |
+| disability | 2025 연말 | 2026.11.03 |
 | emergency | | |
 | accessibility | | |
 | welfare/* | | |
@@ -130,11 +132,32 @@ data/
 
 | 파일 | 검색어 / 통계표 | 필요한 컬럼 |
 |---|---|---|
-| `welfare/disabled.csv` | 보건복지부 "시군구별, 장애유형별, 성별 등록장애인수" (장애유형·성별은 **계**만 선택) | `시도`, `시군구`, `등록장애인수` |
 | `welfare/basic_livelihood.csv` | 보건복지부 "시군구별 국민기초생활보장 수급자 현황" (**수급자 수** 총계) | `시도`, `시군구`, `수급자수` |
 
 - KOSIS는 값 컬럼 이름이 `2025 년` 같은 시점명으로 나온다. 위 이름으로 바꾸거나 `SOURCES` 의 `value` 를 고친다.
 - 독거노인은 KOSIS 대신 행안부 1인세대 파일(1-2)을 쓴다. 인구와 같은 시점·코드라 매칭이 필요 없다.
+- 등록장애인은 아래 4-1의 별도 형식으로 받는다.
+
+### 4-1. 등록장애인: `disability/시군구별_장애정도별_성별_등록장애인수.xlsx`
+
+- **출처**: 보건복지부 「장애인현황」, KOSIS 통계표 **DT_11761_N009** "시군구별, 장애정도별, 성별 등록장애인수"
+  - URL: https://kosis.kr/statHtml/statHtml.do?orgId=117&tblId=DT_11761_N009&conn_path=I3 (KOSIS 개편 시 바뀔 수 있음)
+- **받는 방법**:
+  1. 위 URL로 통계표를 연다.
+  2. 조회 설정에서 시점은 **2025년**(연말 기준), 시군구는 **전체**로 고른다.
+  3. 장애정도는 **합계**, 성별은 **계**만 고른다.
+  4. 엑셀로 내려받는다. 시트는 `데이터`, `메타정보` 두 개다.
+- **파일 구조**(`src/disability.py` 가 이 구조를 전제로 읽는다):
+  - `데이터` 시트의 0~2행은 머리글이고, 3행부터 데이터다.
+  - 열은 시도명 / 시군구명 / 등록장애인 수 순서다. 시도명은 첫 행에만 있다.
+  - `소계` 는 시도 합계라 뺀다. 다만 세종은 `소계` 행 하나뿐이라 그 값을 세종 값으로 쓴다.
+  - 일반구는 `수원시장안구` 처럼 붙여 쓰고 상위 시 합계 행이 없다. 그래서 구 행을 합쳐 상위 시로 만든다.
+  - `메타정보` 시트는 출처 기록용이라 읽지 않는다.
+- **결과**: `data/processed/disability_sigungu_2025.csv` (행정기관코드 5자리, 시도, 시군구, 등록장애인수)
+  - 검증 1: 시군구 합 = 파일의 전국 소계 = 2,627,761명
+  - 검증 2: 인구 기준 코드표와 1:1 매칭. 매칭 실패 행과 값이 빠진 시군구를 출력한다.
+- **파생 지표**: `sigungu_table.csv` 의 `장애인비율` = 등록장애인수 ÷ 총인구 (0~1 비율)
+- **주의**: 기준 시점이 2025년 연말이라 인구(2025.12)와 같다.
 
 ---
 

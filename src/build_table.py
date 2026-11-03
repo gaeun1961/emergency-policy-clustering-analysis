@@ -2,7 +2,7 @@
 
 실행: 레포 루트에서 python -m src.build_table
 입력: data/processed/population_sigungu_202512.csv (기준 코드표), single_household_sigungu_202512.csv
-      (둘 다 python -m src.population),
+      (둘 다 python -m src.population), disability_sigungu_2025.csv (python -m src.disability),
       data/raw/ (data/README.md 참고), data/region_mapping.csv
 출력: data/processed/sigungu_table.csv, data/processed/unmatched.csv
 """
@@ -22,12 +22,12 @@ SOURCES = {
     '응급의료시설수': dict(file='emergency/facilities', header=[3, 4, 0], sido='지역', sgg='시군구', value=None, how='sum'),
     # ponytail: 일반구만 있는 시는 단순 평균, 정확히 하려면 인구 가중 평균
     '응급의료시설_평균접근거리_km': dict(file='accessibility/ngii_emergency_access', sido='시도', sgg='시군구', value='평균거리', how='mean'),
-    '등록장애인수': dict(file='welfare/disabled', sido='시도', sgg='시군구', value='등록장애인수', how='sum'),
     '기초수급자수': dict(file='welfare/basic_livelihood', sido='시도', sgg='시군구', value='수급자수', how='sum'),
 }
-# python -m src.population 으로 생성. 코드가 같아서 매핑 없이 바로 붙인다
+# 기준 코드표로 미리 정리된 표(python -m src.population, python -m src.disability). 코드가 같아서 바로 붙인다
 POP_FILE = ROOT / 'data' / 'processed' / 'population_sigungu_202512.csv'
 SINGLE_FILE = ROOT / 'data' / 'processed' / 'single_household_sigungu_202512.csv'
+DISABILITY_FILE = ROOT / 'data' / 'processed' / 'disability_sigungu_2025.csv'
 
 
 def find(raw, stem):
@@ -48,12 +48,14 @@ def read_processed(path):
     return df.rename(columns={'행정기관코드': 'code'}).set_index('code')
 
 
-def load_population(pop_file, single_file):
-    """시군구 인구 기준 코드표 + 1인세대 -> (master, 통합 테이블 뼈대)"""
+def load_population(pop_file, single_file, disability_file):
+    """시군구 인구 기준 코드표 + 1인세대 + 등록장애인 -> (master, 통합 테이블 뼈대)"""
     units = read_processed(pop_file)
     master = units[['시도', '시군구']].reset_index().assign(unit=lambda m: m['code'])
-    units = units.join(read_processed(single_file).drop(columns=['시도', '시군구']))
+    for f in (single_file, disability_file):
+        units = units.join(read_processed(f).drop(columns=['시도', '시군구']))
     units['독거노인비율'] = units['65세이상1인세대수'] / units['65세이상인구']
+    units['장애인비율'] = units['등록장애인수'] / units['총인구']
     return master, units
 
 
@@ -69,10 +71,10 @@ def load_source(raw, name, cfg, master, mapping):
 
 
 def main(raw=ROOT / 'data' / 'raw', out=ROOT / 'data' / 'processed',
-         mapping_file=ROOT / 'data' / 'region_mapping.csv', pop_file=POP_FILE, single_file=SINGLE_FILE):
+         mapping_file=ROOT / 'data' / 'region_mapping.csv', pop_file=POP_FILE, single_file=SINGLE_FILE, disability_file=DISABILITY_FILE):
     raw, out = Path(raw), Path(out)
     mapping = load_mapping(mapping_file)
-    master, table = load_population(pop_file, single_file)
+    master, table = load_population(pop_file, single_file, disability_file)
 
     misses = []
     for name, cfg in SOURCES.items():
