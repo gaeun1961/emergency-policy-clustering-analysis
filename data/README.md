@@ -238,6 +238,25 @@ data/
 
 ---
 
+## 5. 대시보드 데이터: `web/public/data/`
+
+### 5-1. 시군구 경계: `sigungu.geojson`, `sido.geojson` (`python scripts/build_boundaries.py`)
+
+- **출처**: [vuski/admdongkor](https://github.com/vuski/admdongkor) 행정동 경계 `ver20251231` (CC BY 4.0). 원자료는 통계청 SGIS(https://sgis.kostat.go.kr) 행정구역 경계다.
+  - 버전 선택: 기준 시점(2025년 12월)과 같고, 2026.7 인천·광주전남 개편 이전인 가장 최신 버전이다.
+  - 원본(약 35MB)은 `data/raw/boundary/` 에 받는다(gitignore, 없으면 스크립트가 내려받음).
+- **처리** (mapshaper 0.7.101을 npx로 실행, node 필요):
+  1. 행정동 `adm_cd2` 앞 5자리를 기준 코드표에 붙인다. 일반구(수원시 장안구 41111 등)는 상위 시로 합친다.
+  2. 시군구로 dissolve한다. 행정동 3,557개가 시군구 229개가 되고, 기준 코드표와 1:1로 일치한다.
+  3. 섬 조각마다 피처로 쪼갠 뒤(explode) 꼭짓점 10%로 단순화(keep-shapes)하고 다시 합친다. 섬 조각이 사라지지 않게 하려는 것이다. 1,322조각 중 1,319조각이 남고, 옹진 77/77, 울릉 5/5(독도 포함)이다.
+  4. 시도 경계선(`sido.geojson`)은 단순화된 시군구 경계를 시도로 합친 뒤 내부 경계선만 뽑는다.
+- **용량**: sigungu 0.75MB, sido 0.06MB (좌표 소수점 5자리 반올림, 약 5m)
+
+### 5-2. 지표: `sigungu_metrics.json`, `meta.json` (`python scripts/export_web_data.py`)
+
+- `outputs/sigungu_scores.csv` 에 `double_vulnerable.csv` 의 합산점수와 `sigungu_table.csv` 의 총인구를 붙여 229개 레코드로 만든다.
+- `meta.json`: 기준 시점(인구·복지 2025-12, 응급의료기관 수집일, 경계 2025-12-31), 이중·준 이중 취약 수, 클러스터 라벨, 출처 목록, 생성일시
+
 ## 매핑 테이블: `region_mapping.csv`
 
 `src.disability`, `src.accessibility` 를 실행하면 매칭되지 않은 행이 출력된다.
