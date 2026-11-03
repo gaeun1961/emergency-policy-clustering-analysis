@@ -43,20 +43,22 @@ describe('수정 없는 상태 = Python 결과 (sigungu_metrics.json)', () => {
     expect(bad.map((r) => r.시군구)).toEqual([])
   })
 
-  it('등급: 229곳 모두 일치 (이중 30 / 준 29)', () => {
+  it('등급: 229곳 모두 일치 (이중·준 이중 개수도 Python과 같음)', () => {
     const bad = regions.filter((r) => sim[r.코드].등급 !== r.등급)
     expect(bad.map((r) => [r.시군구, sim[r.코드].등급, r.등급])).toEqual([])
     const count = (g: string) => Object.values(sim).filter((s) => s.등급 === g).length
-    expect([count('이중 취약'), count('준 이중 취약')]).toEqual([30, 29])
+    const py = (g: string) => regions.filter((r) => r.등급 === g).length
+    expect([count('이중 취약'), count('준 이중 취약')]).toEqual([py('이중 취약'), py('준 이중 취약')])
   })
 })
 
 describe('시뮬레이션 동작', () => {
   it('기관을 하나 추가하면 그 주변만 좋아지고, 기준선이 고정이라 다른 지역 등급은 나빠지지 않는다', () => {
-    const 영덕 = centers['47770'][0]
+    // 영덕에서 인구가 가장 많은 행정동 기준점에 지역센터 추가
+    const 영덕 = [...centers['47770']].sort((a, b) => b.weight - a.weight)[0]
     const added: Facility = { hpid: 'SIM-1', 기관명: '가상', 등급: 'G006', 위도: 영덕.lat, 경도: 영덕.lon, 시군구코드: '47770' }
     const after = simulate([...facilities, added], centers, baseline)
-    expect(after['47770'].metrics.최근접_응급의료기관_km).toBe(0)
+    expect(after['47770'].metrics.최근접_응급의료기관_km).toBeLessThan(sim['47770'].metrics.최근접_응급의료기관_km)
     expect(after['47770'].접근성점수).toBeLessThan(sim['47770'].접근성점수)
     const rank = { '이중 취약': 2, '준 이중 취약': 1, '': 0 }
     const worse = Object.keys(sim).filter((c) => rank[after[c].등급] > rank[sim[c].등급])

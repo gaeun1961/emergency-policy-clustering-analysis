@@ -5,9 +5,9 @@ import MapView, { type MapSim } from './components/MapView'
 import ScatterPlot from './components/ScatterPlot'
 import SimPanel, { AddChooser, type RecKind } from './components/SimPanel'
 import { isIsland, loadData, loadSimData, quantile, regionName, type Data, type Region, type SimData } from './data'
-import { CLUSTER_COLOR, CLUSTER_DESC, GRADE_COLOR, buildMetrics, type MetricKey } from './metrics'
+import { CLUSTER_COLOR, GRADE_COLOR, buildMetrics, clusterDesc, type MetricKey } from './metrics'
 import { simulate, type Facility, type FacilityGrade } from './sim/model'
-import { recommend, type Effect } from './sim/recommend'
+import type { Effect } from './sim/recommend'
 import { locateSigungu } from './sim/geo'
 import { EMPTY, applyScenario, fromQuery, keepOnLand, toQuery, type Scenario } from './sim/scenario'
 
@@ -95,11 +95,24 @@ export default function App() {
     return { regions, byCode: new Map(regions.map((r) => [r.코드, r])) }
   }, [data, simResult])
 
-  const recs = useMemo(() => {
-    if (!simOn || !simData || !applied || !simResult || !data) return null
-    const elderly = Object.fromEntries(data.regions.map((r) => [r.코드, r['65세이상인구']]))
-    return recommend(applied, simData.centers, simData.baseline, simResult, elderly, recKind)
-  }, [simOn, simData, applied, simResult, data, recKind])
+  // 추천 위치는 Web Worker에서 계산 (1초 가까이 걸려 화면이 멈추지 않게). 늦게 온 이전 결과는 id로 버린다
+  const [recs, setRecs] = useState<Effect[] | null>(null)
+  const worker = useRef<Worker | null>(null)
+  const runId = useRef(0)
+  useEffect(() => {
+    if (!simData || !data) return
+    const w = new Worker(new URL('./sim/recommend.worker.ts', import.meta.url), { type: 'module' })
+    w.postMessage({ type: 'init', centers: simData.centers, baseline: simData.baseline,
+      elderly: Object.fromEntries(data.regions.map((r) => [r.코드, r['65세이상인구']])) })
+    w.onmessage = (e: MessageEvent<{ id: number; recs: Effect[] }>) => { if (e.data.id === runId.current) setRecs(e.data.recs) }
+    worker.current = w
+    return () => w.terminate()
+  }, [simData, data])
+  useEffect(() => {
+    if (!simOn || !applied || !simResult || !worker.current) return
+    setRecs(null)
+    worker.current.postMessage({ type: 'run', id: ++runId.current, facilities: applied, current: simResult, kind: recKind })
+  }, [simOn, applied, simResult, recKind])
 
   const onHover = useCallback((code: string | null, e?: React.MouseEvent) => {
     setHover(code && e ? { code, x: e.clientX, y: e.clientY } : null)
@@ -240,15 +253,16 @@ export default function App() {
                   {Object.entries(meta.클러스터).map(([k, label]) => (
                     <li key={k}>
                       <span className="swatch" style={{ background: CLUSTER_COLOR[Number(k)] }} />
-                      <div><strong>{k}. {label}</strong><p>{CLUSTER_DESC[Number(k)]}</p></div>
+                      <div><strong>{k}. {label}</strong><p>{clusterDesc(data.regions, Number(k))}</p></div>
                     </li>
                   ))}
                 </ul>
-                <p className="small">1번과 2번은 모두 고령 농촌이지만, 1번은 <strong>읍내 응급실은 있으나 중증 센터가 멀고</strong>, 2번은 <strong>가까운 응급실 자체가 없다</strong>는 점이 다릅니다.</p>
+                <h3>거리 계산 기준점</h3>
+                <p className="small">시군구마다 전국 행정동의 행정복지센터(섬 읍·면은 리)에서 가장 가까운 응급의료기관·센터까지 직선거리를 재고, 행정동 주민 수로 가중평균합니다. 군청 한 곳만 보던 예전 방식보다 시군구 전체 주민의 거리를 반영합니다.</p>
                 <h3>데이터 한계</h3>
                 <ul className="small">
-                  <li>거리는 시군구청(섬 지역은 읍면사무소) 기준 직선거리로, 실제 도로·해상 이동보다 짧습니다.</li>
-                  <li>시군구청 바로 옆에 병원이 있는 곳은 최근접 거리가 과소 추정됩니다.</li>
+                  <li>거리는 직선거리라 실제 도로 이동보다 짧고, 섬 지역의 배·헬기 이동(운항 시간, 기상)은 반영하지 못합니다.</li>
+                  <li>기준점은 행정동 행정복지센터 한 점이라, 넓은 읍·면 안의 마을별 거리 차이는 남아 있습니다(섬 읍·면은 리 단위).</li>
                   <li>독거노인은 주민등록상 65세 이상 1인세대로, 실제 단독 거주와 다를 수 있습니다.</li>
                   <li>일반구는 상위 시로 합쳤고, 기초생활수급자는 시군구 단위 공개 통계가 없어 제외했습니다.</li>
                   <li>기준선 근처 지역은 기준이 조금만 바뀌어도 등급이 달라질 수 있습니다.</li>

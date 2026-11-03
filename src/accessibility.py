@@ -2,26 +2,28 @@
 
 실행: 레포 루트에서 python -m src.accessibility
 입력: data/processed/emergency_facilities.csv (python -m src.fetch_emergency)
-      data/processed/sigungu_centers.csv (python -m src.geocode)
+      data/processed/emd_centers.csv: 행정동 기준점(행정복지센터·읍면사무소)과 인구 (python -m src.emd_centers, --population)
       data/processed/population_sigungu_202512.csv, data/region_mapping.csv
-      (선택) data/raw/eupmyeondong/*.xlsx: 행안부 연령별 인구현황 읍면동 단위. 여러 지점 기준점(옹진군)의 인구 가중치
 출력: data/processed/accessibility_sigungu.csv
+
+기준점: 전국 행정동 약 3,557곳. 시군구 지표 = 행정동별 지표의 인구가중 평균
+(예전의 시군구청 1곳 기준점과 섬 지역 예외는 이 방식으로 대체됨)
 """
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-from . import population
 from .loaders import clean_sido_name
 from .regions import attach_code, load_mapping
 
 ROOT = Path(__file__).resolve().parents[1]
 PROC = ROOT / 'data' / 'processed'
 FACILITIES = PROC / 'emergency_facilities.csv'
-CENTERS = PROC / 'sigungu_centers.csv'
+EMD_CENTERS = PROC / 'emd_centers.csv'
+LI_POINTS = PROC / 'emd_li_points.csv'
+LI_WEIGHTED = ROOT / 'data' / 'emd_li_weighted.csv'
 POP_CSV = PROC / 'population_sigungu_202512.csv'
-EMD_RAW = ROOT / 'data' / 'raw' / 'eupmyeondong'
 MAPPING = ROOT / 'data' / 'region_mapping.csv'
 OUT = PROC / 'accessibility_sigungu.csv'
 MOHW_CSV = ROOT / 'data' / 'raw' / 'emergency' / '보건복지부_응급의료기관 수_시도별_20241231.csv'
@@ -52,31 +54,23 @@ def facilities_with_code(master, mapping):
     return hit.rename(columns={'unit': '행정기관코드'}), miss
 
 
-def point_weights(centers):
-    """여러 지점 기준점(weighted)의 가중치. 읍면동 인구 파일이 있으면 인구, 없으면 1(단순평균)"""
-    centers = centers.assign(가중치=1.0, 가중방식=centers['방식'])
-    multi = centers['방식'] == 'weighted'
-    if not multi.any():
-        return centers
-    files = sorted(EMD_RAW.glob('*.xlsx'))
-    if not files:
-        print(f'[임시] {EMD_RAW} 에 읍면동 인구 파일 없음 -> {centers.loc[multi, "시군구"].unique().tolist()} 단순평균')
-        centers.loc[multi, '가중방식'] = 'weighted(단순평균_임시)'
-        return centers
-    emd = pd.concat([population.read_file(p) for p in files])
-    names = emd['행정기관'].str.split()  # '인천광역시 옹진군 북도면' -> (옹진군, 북도면). 다른 군의 같은 이름 읍면과 섞이지 않게
-    # '북도면장봉출장소' 같은 출장소는 별도 행이고 면 인구에 안 들어 있음 -> 소속 읍면에 더한다
-    emd_name = names.str[-1].str.extract(r'^(.+?[읍면])(?:\S*출장소)?$')[0]
-    emd_pop = population.to_num(emd['총인구수']).groupby([names.str[-2], emd_name]).sum().to_dict()
-    m = centers[multi]
-    w = pd.Series([emd_pop.get((g, p.removesuffix('사무소'))) for g, p in zip(m['시군구'], m['지점'])], index=m.index, dtype=float)
-    if w.isna().any():
-        print(f'[경고] 읍면동 인구 없는 지점 -> 단순평균: {centers.loc[multi][w.isna()]["지점"].tolist()}')
-        centers.loc[multi, '가중방식'] = 'weighted(단순평균_임시)'
-        return centers
-    centers.loc[multi, '가중치'] = w
-    centers.loc[multi, '가중방식'] = 'weighted(인구가중)'
-    return centers
+def load_centers(path=None):
+    """행정동 기준점 -> 계산용 표 (행정기관코드=시군구, lat, lon, 가중치=인구)"""
+    c = pd.read_csv(path or EMD_CENTERS, dtype={'코드': str, '시군구코드': str})
+    if '인구' not in c:
+        raise ValueError('emd_centers.csv 에 인구가 없음. 먼저 python -m src.emd_centers --population 실행')
+    pts = pd.DataFrame({'행정기관코드': c['시군구코드'], '행정동코드': c['코드'], '지점': c['이름'], 'lat': c['위도'], 'lon': c['경도'],
+                        '가중치': c['인구'].astype(float), '가중방식': '행정동 인구가중'})
+    # 섬으로 나뉜 읍·면(data/emd_li_weighted.csv)은 행정동 1점 대신 리(섬)별 좌표·인구로 나눈다 (src.emd_islands)
+    if LI_WEIGHTED.exists() and LI_POINTS.exists():
+        codes = set(pd.read_csv(LI_WEIGHTED, dtype={'행정동코드': str})['행정동코드'])
+        li = pd.read_csv(LI_POINTS, dtype={'행정동코드': str})
+        li = li[li['행정동코드'].isin(codes)]
+        sgg = dict(zip(c['코드'], c['시군구코드']))
+        pts = pd.concat([pts[~pts['행정동코드'].isin(set(li['행정동코드']))], pd.DataFrame({
+            '행정기관코드': li['행정동코드'].map(sgg), '행정동코드': li['행정동코드'], '지점': li['리'], 'lat': li['위도'], 'lon': li['경도'],
+            '가중치': li['인구'].astype(float), '가중방식': '행정동 인구가중(섬 읍·면은 리 단위)'})], ignore_index=True)
+    return pts.drop(columns='행정동코드')
 
 
 def build(out=OUT):
@@ -85,7 +79,7 @@ def build(out=OUT):
     fac, miss = facilities_with_code(master, load_mapping(MAPPING))
     em, ctr = fac[fac['dutyEmcls'].isin(EMERGENCY)], fac[fac['dutyEmcls'].isin(CENTER)]
 
-    centers = point_weights(pd.read_csv(CENTERS, dtype={'행정기관코드': str}))
+    centers = load_centers()
     d_em = haversine(centers['lat'], centers['lon'], em['wgs84Lat'], em['wgs84Lon'])
     d_ctr = haversine(centers['lat'], centers['lon'], ctr['wgs84Lat'], ctr['wgs84Lon'])
     centers['최근접_응급의료기관_km'] = d_em.min(axis=1)
@@ -95,7 +89,8 @@ def build(out=OUT):
     metrics = ['최근접_응급의료기관_km', '최근접_권역지역센터_km', f'반경{RADIUS_KM}km_응급의료기관수']
     wsum = centers.groupby('행정기관코드')['가중치'].sum()
     acc = centers[metrics].mul(centers['가중치'], axis=0).groupby(centers['행정기관코드']).sum().div(wsum, axis=0)
-    acc.insert(0, '기준점방식', centers.groupby('행정기관코드')['가중방식'].first())
+    # 섬 읍·면을 리 단위로 나눈 시군구는 그렇게 표시
+    acc.insert(0, '기준점방식', centers.groupby('행정기관코드')['가중방식'].agg(lambda v: max(v, key=len)))
 
     table = pop.set_index('행정기관코드')[['시도', '시군구', '총인구']].join(acc)
     table['응급의료기관수'] = em['행정기관코드'].value_counts().reindex(table.index, fill_value=0)

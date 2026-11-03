@@ -27,7 +27,11 @@ export interface Effect {
   ctrImproved: { elderly: number; kmAvg: number }   // 최근접 센터 거리
 }
 
-interface PointState { code: string; idx: number; lat: number; lon: number; m: AccessMetrics }
+/** reachE/reachC: 이 거리 밖의 후보는 이 기준점에 영향이 없음 (최근접 거리·반경 중 큰 값) */
+interface PointState { code: string; idx: number; lat: number; lon: number; m: AccessMetrics; reachE: number; reachC: number }
+// 거르기용 하한: 실제 거리는 항상 이 값으로 잰 위도·경도 차이 거리보다 길다 (경도는 최북단 38.7° 기준으로 가장 짧게)
+const KM_PER_LAT = 111.19
+const KM_PER_LON = 111.19 * Math.cos((38.7 * Math.PI) / 180)
 
 export function recommend(
   facilities: Facility[], centers: Centers, baseline: Baseline, current: Record<string, SimRegion>,
@@ -36,12 +40,15 @@ export function recommend(
   const score = makeScorer(baseline)
   const welfare = Object.fromEntries(baseline.코드.map((c, i) => [c, baseline.복지점수[i]]))
   const points: PointState[] = Object.entries(centers).flatMap(([code, ps]) =>
-    ps.map((p, idx) => ({ code, idx, lat: p.lat, lon: p.lon, m: pointMetrics(p.lat, p.lon, facilities, baseline.반경km) })))
+    ps.map((p, idx) => {
+      const m = pointMetrics(p.lat, p.lon, facilities, baseline.반경km)
+      return { code, idx, lat: p.lat, lon: p.lon, m, reachE: Math.max(m.최근접_응급의료기관_km, baseline.반경km), reachC: m.최근접_권역지역센터_km }
+    }))
   const byCode = new Map<string, PointState[]>()
   for (const p of points) byCode.set(p.code, [...(byCode.get(p.code) ?? []), p])
 
   const candidates: Candidate[] = points.map((p) => ({
-    kind, lat: p.lat, lon: p.lon, code: p.code, label: centers[p.code][p.idx].지점,
+    kind, lat: p.lat, lon: p.lon, code: p.code, label: centers[p.code][p.idx].지점.split(' ').at(-1)!, // '경상남도 함안군 대산면' -> '대산면'
   }))
   if (kind === 'G006') {
     for (const f of facilities) {
@@ -66,6 +73,9 @@ function evaluate(
   const addsCenter = c.kind !== 'G007'
   const changed = new Map<string, Map<number, AccessMetrics>>()
   for (const p of points) {
+    // 빠른 거르기: 위경도 차이로 잰 거리(실제 거리의 하한)가 영향 범위보다 멀면 하버사인 계산 생략 (여유 5%)
+    const reach = Math.max(addsEmergency ? p.reachE : 0, addsCenter ? p.reachC : 0) * 1.05
+    if (Math.abs(p.lat - c.lat) * KM_PER_LAT > reach || Math.abs(p.lon - c.lon) * KM_PER_LON > reach) continue
     const d = haversine(p.lat, p.lon, c.lat, c.lon)
     const near = addsEmergency && d < p.m.최근접_응급의료기관_km
     const ctr = addsCenter && d < p.m.최근접_권역지역센터_km

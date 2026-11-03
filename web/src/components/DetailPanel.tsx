@@ -1,5 +1,5 @@
 import { isIsland, quantile, regionName, type Region } from '../data'
-import { CLUSTER_COLOR, CLUSTER_DESC, GRADE_COLOR, fmt } from '../metrics'
+import { CLUSTER_COLOR, GRADE_COLOR, clusterDesc, fmt } from '../metrics'
 import { textOn } from '../theme'
 
 interface Props { region: Region | null; total: number; regions: Region[] }
@@ -40,8 +40,8 @@ function MedianBars({ r, regions }: { r: Region; regions: Region[] }) {
 
 export function IslandBadge() {
   return (
-    <span className="badge island" title="섬 지역은 군청 한 곳 대신 읍면사무소별 거리를 읍면 인구로 가중평균했다">
-      읍면 인구가중 기준점
+    <span className="badge island" title="면사무소와 다른 섬에 사람이 사는 읍·면은 리(섬)별 좌표·인구로 거리를 가중평균했다">
+      섬 읍·면 리 단위 반영
     </span>
   )
 }
@@ -88,7 +88,7 @@ export default function DetailPanel({ region: r, total, regions }: Props) {
         <span className="swatch" style={{ background: CLUSTER_COLOR[r.클러스터] }} />
         <div>
           <strong>유형 {r.클러스터}. {r.클러스터라벨}</strong>
-          <p>{CLUSTER_DESC[r.클러스터]}</p>
+          <p>{clusterDesc(regions, r.클러스터)}</p>
         </div>
       </div>
 

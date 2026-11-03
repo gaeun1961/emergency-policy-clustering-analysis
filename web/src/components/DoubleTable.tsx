@@ -57,7 +57,7 @@ export default function DoubleTable({ regions, selected, onSelect }: Props) {
               <tr key={r.코드} className={r.코드 === selected ? 'selected' : ''} tabIndex={0}
                 onClick={() => onSelect(r.코드)} onKeyDown={(e) => e.key === 'Enter' && onSelect(r.코드)}>
                 <td><span className="grade-pill" style={{ background: GRADE_COLOR[r.등급], color: textOn(GRADE_COLOR[r.등급]) }}>{r.등급 === '이중 취약' ? '이중' : '준'}</span></td>
-                <td>{regionName(r)}{isIsland(r) && <span className="island-mark" title="읍면 인구가중 기준점"> ◆</span>}</td>
+                <td>{regionName(r)}{isIsland(r) && <span className="island-mark" title="섬 읍·면을 리(섬) 단위로 계산"> ◆</span>}</td>
                 <td className="num">{fmt.score(r.접근성점수)}</td>
                 <td className="num">{fmt.score(r.복지점수)}</td>
                 <td className="num">{(r.접근성점수 + r.복지점수).toFixed(1)}</td>
@@ -70,7 +70,7 @@ export default function DoubleTable({ regions, selected, onSelect }: Props) {
       {!q && rows.length > PAGE && (
         <button className="more" onClick={() => setAll(!all)}>{all ? '상위 10개만 보기' : `더보기 (${rows.length - PAGE}곳 더)`}</button>
       )}
-      <p className="hint">◆ 읍면 인구가중 기준점(섬 지역) · 행을 누르면 지도에서 선택됩니다</p>
+      <p className="hint">◆ 섬 읍·면을 리(섬) 단위로 계산 · 행을 누르면 지도에서 선택됩니다</p>
     </div>
   )
 }
