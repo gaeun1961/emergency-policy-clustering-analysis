@@ -20,6 +20,7 @@ FIELDS = {  # 내보낼 이름: 원래 컬럼
     '반경30km_기관수': '반경30km_응급의료기관수',
     '접근성점수': '접근성취약점수', '복지점수': '복지취약점수', '등급': '등급',
     '클러스터': '클러스터', '클러스터라벨': '유형', '접근성순위': '접근성순위', '복지순위': '복지순위', '합산점수': '합산점수',
+    '기준점방식': '기준점방식',  # keyword / address / weighted(인구가중): 섬 지역은 읍면 인구가중 기준점
 }
 SOURCES = [
     {'이름': '행정안전부 주민등록 인구통계 (연령별 인구현황, 성/연령별 1인세대수)', 'url': 'https://jumin.mois.go.kr', '기준': '2025-12'},
@@ -34,7 +35,7 @@ SOURCES = [
 def main():
     s = pd.read_csv(ROOT / 'outputs' / 'sigungu_scores.csv', dtype={'code': str}).fillna({'시군구': '', '등급': ''})
     dv = pd.read_csv(ROOT / 'outputs' / 'double_vulnerable.csv', dtype={'code': str})[['code', '합산점수']]
-    pop = pd.read_csv(ROOT / 'data' / 'processed' / 'sigungu_table.csv', dtype={'code': str})[['code', '총인구']]
+    pop = pd.read_csv(ROOT / 'data' / 'processed' / 'sigungu_table.csv', dtype={'code': str})[['code', '총인구', '기준점방식']]
     df = s.merge(dv, on='code', how='left').merge(pop, on='code', how='left')
     assert len(df) == 229 and df['총인구'].notna().all(), '시군구 229개와 총인구가 모두 있어야 함'
 

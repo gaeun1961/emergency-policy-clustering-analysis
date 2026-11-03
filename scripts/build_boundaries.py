@@ -51,6 +51,20 @@ def rings(geom):
     return len(geom['coordinates']) if geom['type'] == 'MultiPolygon' else 1
 
 
+def rewind_for_d3(fc):
+    """d3-geo는 구면 기준이라 바깥 고리가 시계 방향이어야 한다 (RFC 7946과 반대).
+    반시계로 두면 '지구 전체 - 그 지역'으로 그려져 화면이 한 색으로 덮인다."""
+    def area(ring):  # 평면 신발끈 공식: 양수면 반시계
+        return sum(x1 * y2 - x2 * y1 for (x1, y1), (x2, y2) in zip(ring, ring[1:]))
+
+    def fix(poly):
+        return [r if (area(r) < 0) == (i == 0) else r[::-1] for i, r in enumerate(poly)]
+    for f in fc['features']:
+        g = f['geometry']
+        g['coordinates'] = [fix(p) for p in g['coordinates']] if g['type'] == 'MultiPolygon' else fix(g['coordinates'])
+    return fc
+
+
 def mapshaper(*args):
     subprocess.run(['npx', '-y', MAPSHAPER, *args], check=True, shell=sys.platform == 'win32')
 
@@ -94,7 +108,8 @@ def main():
         parts_before = {f['properties']['code']: rings(f['geometry'])
                         for f in json.loads(full.read_text(encoding='utf-8'))['features']}
 
-    out = json.loads(sgg_out.read_text(encoding='utf-8'))
+    out = rewind_for_d3(json.loads(sgg_out.read_text(encoding='utf-8')))
+    sgg_out.write_text(json.dumps(out, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
     codes = [f['properties']['code'] for f in out['features']]
     parts_after = {f['properties']['code']: rings(f['geometry']) for f in out['features']}
     print(f'\n[결과] 시군구 {len(codes)}개 (중복 {len(codes) - len(set(codes))}개), 기준 코드표와 일치: {set(codes) == set(units)}')
