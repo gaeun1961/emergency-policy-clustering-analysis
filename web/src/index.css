@@ -63,11 +63,10 @@ button { font: inherit; color: inherit; }
 .sido-line { fill: none; stroke: var(--ink); stroke-opacity: 0.55; stroke-width: 1; vector-effect: non-scaling-stroke; pointer-events: none; }
 .region-selected { fill: none; stroke: var(--ink); stroke-width: 2; stroke-linejoin: round; vector-effect: non-scaling-stroke; pointer-events: none; }
 .region-changed { fill: none; stroke: var(--ink); stroke-width: 2.4; stroke-dasharray: 5 3; stroke-linejoin: round; vector-effect: non-scaling-stroke; pointer-events: none; }
-.marker { fill: var(--marker); fill-opacity: 0.28; stroke: var(--marker); stroke-opacity: 0.75; stroke-width: 0.8; pointer-events: none; }
+.marker { fill: var(--marker); fill-opacity: 0.28; stroke: var(--marker); stroke-opacity: 0.75; stroke-width: 0.8; cursor: pointer; }
 .marker.g-G001 { fill-opacity: 0.45; }
 .marker.g-G007 { fill-opacity: 0.18; stroke-opacity: 0.5; stroke-width: 0.6; }
-.marker.removable { pointer-events: auto; cursor: pointer; }
-.marker.removable:hover { fill: var(--accent); fill-opacity: 0.9; stroke: var(--accent); }
+.marker:hover { fill: var(--accent); fill-opacity: 0.9; stroke: var(--accent); }
 .marker.added { fill: var(--accent); fill-opacity: 1; stroke: #fff; stroke-width: 1.4; stroke-opacity: 1; }
 
 .map-overlay {
@@ -208,6 +207,12 @@ tbody tr:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px;
 }
 .chooser button { text-align: left; }
 .chooser .link { border: 0; color: var(--ink-2); }
+.fac-popup { width: 260px; }
+.fac-name { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.badge.virtual { background: var(--accent); color: #fff; }
+.nearest ol { list-style: none; padding: 0; margin: 0; }
+.nearest li { display: grid; grid-template-columns: 64px 1fr; gap: 8px; padding: 6px 0; border-top: 1px solid var(--line); }
+.nearest-km { font-weight: 700; font-variant-numeric: tabular-nums; }
 
 .tooltip {
   position: fixed; z-index: 10; pointer-events: none; max-width: 260px;

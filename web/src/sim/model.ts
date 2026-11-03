@@ -6,7 +6,10 @@
  */
 export type FacilityGrade = 'G001' | 'G006' | 'G007' // 권역센터 / 지역센터 / 지역기관
 
-export interface Facility { hpid: string; 기관명: string; 등급: FacilityGrade; 위도: number; 경도: number; 시군구코드: string | null }
+export interface Facility {
+  hpid: string; 기관명: string; 등급: FacilityGrade; 위도: number; 경도: number; 시군구코드: string | null
+  주소?: string; 응급실전화?: string; 대표전화?: string  // 시뮬레이터로 추가한 가상 기관에는 없음
+}
 export interface CenterPoint { lat: number; lon: number; weight: number; 지점: string }
 export type Centers = Record<string, CenterPoint[]>
 
@@ -48,6 +51,15 @@ export function pointMetrics(lat: number, lon: number, facilities: Facility[], r
     if (d <= radiusKm) n++
   }
   return { 최근접_응급의료기관_km: near, 최근접_권역지역센터_km: ctr, 반경30km_응급의료기관수: n }
+}
+
+/** 시군구 기준점(인구 가중치)에서 기관까지 직선거리의 가중평균이 짧은 순 n곳 */
+export function nearestFacilities(points: CenterPoint[], facilities: Facility[], n = 3): { f: Facility; km: number }[] {
+  const wsum = points.reduce((s, p) => s + p.weight, 0)
+  return facilities
+    .map((f) => ({ f, km: points.reduce((s, p) => s + haversine(p.lat, p.lon, f.위도, f.경도) * p.weight, 0) / wsum }))
+    .sort((a, b) => a.km - b.km)
+    .slice(0, n)
 }
 
 /** 기준점 지표를 가중평균하고 소수 3자리로 반올림 (Python table.round(3)와 같게) */

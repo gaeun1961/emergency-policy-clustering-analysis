@@ -10,7 +10,6 @@ import type { Facility } from '../sim/model'
 export interface MapSim {
   changed: Set<string>
   onMapClick: (lat: number, lon: number, clientX: number, clientY: number) => void
-  onFacilityClick: (f: Facility) => void
 }
 
 interface Props {
@@ -21,6 +20,7 @@ interface Props {
   onSelect: (code: string) => void
   onHover: (code: string | null, e?: React.MouseEvent) => void
   facilities: Facility[]      // 표시할 응급의료기관 (마커)
+  onFacilityClick: (f: Facility, clientX: number, clientY: number) => void
   sim?: MapSim
   children?: ReactNode        // 지도 위에 겹쳐 놓을 범례·지표 선택
 }
@@ -54,7 +54,7 @@ function useSize<T extends HTMLElement>() {
 }
 
 /** 시군구 단계구분도. 배경 지도 없이 SVG, d3-zoom으로 확대·이동 */
-function MapView({ data, byCode, metric, selected, onSelect, onHover, facilities, sim, children }: Props) {
+function MapView({ data, byCode, metric, selected, onSelect, onHover, facilities, onFacilityClick, sim, children }: Props) {
   const [boxRef, { w, h }] = useSize<HTMLDivElement>()
   const svgRef = useRef<SVGSVGElement>(null)
   const zoomRef = useRef<ZoomBehavior<SVGSVGElement, unknown> | null>(null)
@@ -141,10 +141,10 @@ function MapView({ data, byCode, metric, selected, onSelect, onHover, facilities
             const added = f.hpid.startsWith('SIM-')
             const r = MARKER[f.등급] + (added ? 1.4 : 0)
             const common = {
-              className: `marker g-${f.등급}${added ? ' added' : ''}${sim ? ' removable' : ''}`,
-              onClick: sim ? (e: React.MouseEvent) => { e.stopPropagation(); sim.onFacilityClick(f) } : undefined,
+              className: `marker g-${f.등급}${added ? ' added' : ''}`,
+              onClick: (e: React.MouseEvent) => { e.stopPropagation(); onFacilityClick(f, e.clientX, e.clientY) },
             }
-            const title = <title>{`${f.기관명}${sim ? ' (클릭하면 제거)' : ''}`}</title>
+            const title = <title>{added ? `가상 기관 (${f.기관명})` : f.기관명}</title>
             return f.등급 === 'G001' && !added
               ? <rect key={f.hpid} x={x - r} y={y - r} width={r * 2} height={r * 2} transform={`rotate(45 ${x} ${y})`} {...common}>{title}</rect>
               : <circle key={f.hpid} cx={x} cy={y} r={r} {...common}>{title}</circle>

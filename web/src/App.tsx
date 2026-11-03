@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import DetailPanel, { IslandBadge } from './components/DetailPanel'
+import { FacilityPopup, isVirtual } from './components/FacilityInfo'
 import DoubleTable from './components/DoubleTable'
 import MapView, { type MapSim } from './components/MapView'
 import ScatterPlot from './components/ScatterPlot'
@@ -34,6 +35,7 @@ export default function App() {
   const [simOn, setSimOn] = useState(initial.on)
   const [history, setHistory] = useState<Scenario[]>([initial.scenario])
   const [pending, setPending] = useState<{ lat: number; lon: number; x: number; y: number; code: string } | null>(null)
+  const [facPopup, setFacPopup] = useState<{ f: Facility; x: number; y: number } | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const toastTimer = useRef<number | undefined>(undefined)
   const flash = useCallback((msg: string, ms = 2600) => {
@@ -130,21 +132,25 @@ export default function App() {
       changed: new Set(data.regions.filter((r) => view.byCode.get(r.코드)?.등급 !== r.등급).map((r) => r.코드)),
       onMapClick: (lat, lon, x, y) => {
         const code = locateSigungu(data.sigungu, lat, lon)
+        setFacPopup(null)
         if (code) setPending({ lat, lon, x, y, code })
         else { setPending(null); flash('육지(시군구 경계 안)에만 추가할 수 있어요') }
       },
-      onFacilityClick: (f: Facility) => {
-        if (f.hpid.startsWith('SIM-')) {
-          const i = Number(f.hpid.slice(4)) - 1
-          push({ ...scenario, added: scenario.added.filter((_, j) => j !== i) })
-        } else push({ ...scenario, removed: [...scenario.removed, f.hpid] })
-      },
     }
-  }, [simOn, data, view, scenario, push, flash])
+  }, [simOn, data, view, flash])
+  const onFacilityClick = useCallback((f: Facility, x: number, y: number) => { setPending(null); setFacPopup({ f, x, y }) }, [])
+  const removeFacility = (f: Facility) => {
+    if (isVirtual(f)) {
+      const i = Number(f.hpid.slice(4)) - 1
+      push({ ...scenario, added: scenario.added.filter((_, j) => j !== i) })
+    } else push({ ...scenario, removed: [...scenario.removed, f.hpid] })
+    setFacPopup(null)
+  }
 
   const toggleSim = () => {
     setSimOn(!simOn)
     setPending(null)
+    setFacPopup(null)
     setTab(simOn ? 'detail' : 'sim')
   }
   const addAt = (grade: FacilityGrade) => {
@@ -196,7 +202,7 @@ export default function App() {
       <main className="body">
         <section className="map-area" aria-label="지도">
           <MapView data={data} byCode={view.byCode} metric={metric} selected={selected} onSelect={select} onHover={onHover}
-            facilities={markers} sim={mapSim}>
+            facilities={markers} onFacilityClick={onFacilityClick} sim={mapSim}>
             <label className="select">
               <select value={metricKey} onChange={(e) => setMetricKey(e.target.value as MetricKey)} aria-label="지도 지표">
                 {METRIC_KEYS.map((k) => <option key={k} value={k}>{metrics[k].label}</option>)}
@@ -213,7 +219,7 @@ export default function App() {
               {simOn && <li><span className="mk added" />가상 추가</li>}
               {simOn && <li><span className="mk changed" />등급 변경</li>}
             </ul>
-            {simOn && <p className="hint sim-hint">지도를 누르면 기관 추가, 기관 점을 누르면 제거</p>}
+            {simOn && <p className="hint sim-hint">지도를 누르면 기관 추가, 기관 점을 누르면 정보·제거</p>}
           </MapView>
         </section>
 
@@ -226,7 +232,8 @@ export default function App() {
             ))}
           </nav>
           <div className="tab-body" role="tabpanel">
-            {tab === 'detail' && <DetailPanel region={selected ? view.byCode.get(selected) ?? null : null} total={meta.시군구수} regions={view.regions} />}
+            {tab === 'detail' && <DetailPanel region={selected ? view.byCode.get(selected) ?? null : null} total={meta.시군구수} regions={view.regions}
+              facilities={applied ?? undefined} points={selected ? simData?.centers[selected] : undefined} />}
             {tab === 'dist' && (
               <>
                 <ul className="legend">
@@ -290,6 +297,8 @@ export default function App() {
         </div>
       )}
       {toast && <div className="toast" role="status">{toast}</div>}
+      {facPopup && <FacilityPopup f={facPopup.f} x={facPopup.x} y={facPopup.y} onClose={() => setFacPopup(null)}
+        onRemove={simOn ? () => removeFacility(facPopup.f) : undefined} />}
       {simOn && pending && <AddChooser x={pending.x} y={pending.y} onPick={addAt} onCancel={() => setPending(null)} />}
     </div>
   )

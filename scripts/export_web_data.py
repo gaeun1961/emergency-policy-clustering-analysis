@@ -84,7 +84,8 @@ def export_simulation(scores):
     fac, _ = accessibility.facilities_with_code(master, load_mapping(accessibility.MAPPING))
     fac = fac[fac['dutyEmcls'].isin(accessibility.EMERGENCY)]
     facilities = [{'hpid': r.hpid, '기관명': r.dutyName, '등급': r.dutyEmcls, '위도': r.wgs84Lat, '경도': r.wgs84Lon,
-                   '시군구코드': r.행정기관코드} for r in fac.itertuples()]
+                   '시군구코드': r.행정기관코드, '주소': r.dutyAddr, '응급실전화': r.dutyTel3, '대표전화': r.dutyTel1}
+                  for r in fac.itertuples()]
 
     # 행정동 기준점(섬 읍·면은 리)과 인구 가중치. Python 접근성 계산(src.accessibility.load_centers)과 같은 점·같은 순서
     c = accessibility.load_centers()

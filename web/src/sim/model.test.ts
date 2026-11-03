@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import type { Region } from '../data'
-import { ACCESS_KEYS, haversine, makeScorer, scoreAgainstBaseline, simulate, type Baseline, type Centers, type Facility } from './model'
+import { ACCESS_KEYS, haversine, makeScorer, nearestFacilities, scoreAgainstBaseline, simulate, type Baseline, type Centers, type Facility } from './model'
 import { recommend } from './recommend'
 import type { SigunguGeo } from '../data'
 import { locateSigungu } from './geo'
@@ -143,5 +143,26 @@ describe('시군구 경계 판정 (바다 클릭 방지)', () => {
     expect(dropped).toBe(1)
     expect(scenario.added).toEqual([{ grade: 'G006', lat: 34.57391, lon: 126.59964, code: '46820' }])
     expect(applyScenario(facilities, scenario).at(-1)?.시군구코드).toBe('46820')
+  })
+})
+
+describe('가까운 응급의료기관 (지역 상세)', () => {
+  it('기관마다 이름·주소·전화가 있다', () => {
+    expect(facilities.filter((f) => !f.기관명 || !f.주소 || !f.응급실전화)).toEqual([])
+  })
+
+  it('거리 오름차순 3곳, 1위 거리 ≥ 최근접 응급의료기관 지표(점별 최소의 평균)', () => {
+    for (const r of regions) {
+      const near = nearestFacilities(centers[r.코드], facilities, 3)
+      expect(near).toHaveLength(3)
+      expect(near[0].km <= near[1].km && near[1].km <= near[2].km).toBe(true)
+      expect(near[0].km).toBeGreaterThanOrEqual(r.최근접_응급의료기관_km - 0.001)
+    }
+  })
+
+  it('기준점이 1곳뿐이면 1위 거리 = 최근접 거리', () => {
+    const c = centers[regions[0].코드][0]
+    const [top] = nearestFacilities([c], facilities, 1)
+    expect(top.km).toBeCloseTo(Math.min(...facilities.map((f) => haversine(c.lat, c.lon, f.위도, f.경도))), 9)
   })
 })
