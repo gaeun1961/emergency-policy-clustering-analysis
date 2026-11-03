@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import DetailPanel, { IslandBadge } from './components/DetailPanel'
 import DoubleTable from './components/DoubleTable'
 import MapView, { type MapSim } from './components/MapView'
@@ -8,7 +8,8 @@ import { isIsland, loadData, loadSimData, quantile, regionName, type Data, type 
 import { CLUSTER_COLOR, CLUSTER_DESC, GRADE_COLOR, buildMetrics, type MetricKey } from './metrics'
 import { simulate, type Facility, type FacilityGrade } from './sim/model'
 import { recommend, type Effect } from './sim/recommend'
-import { EMPTY, applyScenario, fromQuery, toQuery, type Scenario } from './sim/scenario'
+import { locateSigungu } from './sim/geo'
+import { EMPTY, applyScenario, fromQuery, keepOnLand, toQuery, type Scenario } from './sim/scenario'
 
 const REPO = 'https://github.com/gaeun1961/emergency-policy-clustering-analysis'
 const METRIC_KEYS: MetricKey[] = ['등급', '접근성점수', '복지점수', '클러스터', '최근접_응급의료기관_km', '최근접_권역지역센터_km']
@@ -32,7 +33,14 @@ export default function App() {
   // 시뮬레이션: 시나리오는 URL 쿼리와 동기화
   const [simOn, setSimOn] = useState(initial.on)
   const [history, setHistory] = useState<Scenario[]>([initial.scenario])
-  const [pending, setPending] = useState<{ lat: number; lon: number; x: number; y: number } | null>(null)
+  const [pending, setPending] = useState<{ lat: number; lon: number; x: number; y: number; code: string } | null>(null)
+  const [toast, setToast] = useState<string | null>(null)
+  const toastTimer = useRef<number | undefined>(undefined)
+  const flash = useCallback((msg: string, ms = 2600) => {
+    setToast(msg)
+    window.clearTimeout(toastTimer.current)
+    toastTimer.current = window.setTimeout(() => setToast(null), ms)
+  }, [])
   const [recKind, setRecKind] = useState<RecKind>('G006')
   const scenario = history[history.length - 1]
   const push = useCallback((s: Scenario) => setHistory((h) => [...h, s]), [])
@@ -45,6 +53,15 @@ export default function App() {
     }).catch((e) => setError(String(e)))
     loadSimData().then(setSimData).catch((e) => setError(String(e))) // 마커에도 쓰므로 항상 불러온다
   }, [])
+  // 공유 링크로 들어온 추가 기관도 시군구 경계로 판정: 바다·경계 밖 좌표는 빼고 안내
+  const checkedLink = useRef(false)
+  useEffect(() => {
+    if (!data || checkedLink.current) return
+    checkedLink.current = true
+    const { scenario: s, dropped } = keepOnLand(initial.scenario, (lat, lon) => locateSigungu(data.sigungu, lat, lon))
+    setHistory((h) => (h.length === 1 ? [s] : h))
+    if (dropped) flash(`공유 링크의 ${dropped}곳은 바다·경계 밖이라 제외했어요`, 6000)
+  }, [data, flash])
   useEffect(() => {
     window.history.replaceState(null, '', `${location.pathname}${toQuery(simOn, scenario)}${location.hash}`)
   }, [simOn, scenario])
@@ -98,7 +115,11 @@ export default function App() {
     if (!simOn || !data || !view) return undefined
     return {
       changed: new Set(data.regions.filter((r) => view.byCode.get(r.코드)?.등급 !== r.등급).map((r) => r.코드)),
-      onMapClick: (lat, lon, x, y) => setPending({ lat, lon, x, y }),
+      onMapClick: (lat, lon, x, y) => {
+        const code = locateSigungu(data.sigungu, lat, lon)
+        if (code) setPending({ lat, lon, x, y, code })
+        else { setPending(null); flash('육지(시군구 경계 안)에만 추가할 수 있어요') }
+      },
       onFacilityClick: (f: Facility) => {
         if (f.hpid.startsWith('SIM-')) {
           const i = Number(f.hpid.slice(4)) - 1
@@ -106,7 +127,7 @@ export default function App() {
         } else push({ ...scenario, removed: [...scenario.removed, f.hpid] })
       },
     }
-  }, [simOn, data, view, scenario, push])
+  }, [simOn, data, view, scenario, push, flash])
 
   const toggleSim = () => {
     setSimOn(!simOn)
@@ -114,14 +135,14 @@ export default function App() {
     setTab(simOn ? 'detail' : 'sim')
   }
   const addAt = (grade: FacilityGrade) => {
-    if (pending) push({ ...scenario, added: [...scenario.added, { grade, lat: pending.lat, lon: pending.lon }] })
+    if (pending) push({ ...scenario, added: [...scenario.added, { grade, lat: pending.lat, lon: pending.lon, code: pending.code }] })
     setPending(null)
   }
   const applyRec = (e: Effect) => {
     const c = e.candidate
     push(c.kind === 'upgrade'
-      ? { added: [...scenario.added, { grade: 'G006', lat: c.lat, lon: c.lon }], removed: [...scenario.removed, c.hpid!] }
-      : { ...scenario, added: [...scenario.added, { grade: c.kind, lat: c.lat, lon: c.lon }] })
+      ? { added: [...scenario.added, { grade: 'G006', lat: c.lat, lon: c.lon, code: c.code }], removed: [...scenario.removed, c.hpid!] }
+      : { ...scenario, added: [...scenario.added, { grade: c.kind, lat: c.lat, lon: c.lon, code: c.code }] })
     setSelected(c.code)
   }
 
@@ -254,6 +275,7 @@ export default function App() {
           {isIsland(hovered) && <IslandBadge />}
         </div>
       )}
+      {toast && <div className="toast" role="status">{toast}</div>}
       {simOn && pending && <AddChooser x={pending.x} y={pending.y} onPick={addAt} onCancel={() => setPending(null)} />}
     </div>
   )

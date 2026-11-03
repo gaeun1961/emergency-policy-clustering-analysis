@@ -1,6 +1,7 @@
 import type { Facility, FacilityGrade } from './model'
 
-export interface AddedFacility { lat: number; lon: number; grade: FacilityGrade }
+/** code: 추가한 위치가 속한 시군구 (URL에는 넣지 않고 좌표로 다시 판정) */
+export interface AddedFacility { lat: number; lon: number; grade: FacilityGrade; code?: string }
 /** 시나리오 = 가상으로 추가한 기관 + 제거한 기존 기관 hpid */
 export interface Scenario { added: AddedFacility[]; removed: string[] }
 
@@ -15,8 +16,17 @@ export function applyScenario(base: Facility[], s: Scenario): Facility[] {
   const removed = new Set(s.removed)
   return [
     ...base.filter((f) => !removed.has(f.hpid)),
-    ...s.added.map((a, i) => ({ hpid: simId(i), 기관명: `가상 ${GRADE_SHORT[a.grade]} ${i + 1}`, 등급: a.grade, 위도: a.lat, 경도: a.lon, 시군구코드: null })),
+    ...s.added.map((a, i) => ({ hpid: simId(i), 기관명: `가상 ${GRADE_SHORT[a.grade]} ${i + 1}`, 등급: a.grade, 위도: a.lat, 경도: a.lon, 시군구코드: a.code ?? null })),
   ]
+}
+
+/** 추가 기관을 시군구 경계로 판정: 경계 안이면 시군구 코드를 붙이고, 바다·경계 밖이면 뺀다 */
+export function keepOnLand(s: Scenario, locate: (lat: number, lon: number) => string | null): { scenario: Scenario; dropped: number } {
+  const added = s.added.flatMap((a) => {
+    const code = locate(a.lat, a.lon)
+    return code ? [{ ...a, code }] : []
+  })
+  return { scenario: { ...s, added }, dropped: s.added.length - added.length }
 }
 
 // URL 쿼리: ?sim=1&add=G006:36.41234,129.36543;G007:...&rm=A1100001,A1200002

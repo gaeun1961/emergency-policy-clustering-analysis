@@ -59,6 +59,7 @@ function MapView({ data, byCode, metric, selected, onSelect, onHover, facilities
   const svgRef = useRef<SVGSVGElement>(null)
   const zoomRef = useRef<ZoomBehavior<SVGSVGElement, unknown> | null>(null)
   const [t, setT] = useState<ZoomTransform>(zoomIdentity)
+  const [legendOpen, setLegendOpen] = useState(false) // 390px 이하에서만 의미 있음 (CSS)
 
   const { projection, paths, sidoPath } = useMemo(() => {
     const projection = geoMercator().fitExtent([[12, 12], [w - 12, h - 12]], data.sigungu)
@@ -153,7 +154,12 @@ function MapView({ data, byCode, metric, selected, onSelect, onHover, facilities
           {labels.map((l) => <text key={l.code} x={l.x} y={l.y} className={l.code === selected ? 'label sel' : 'label'}>{l.text}</text>)}
         </g>
       </svg>
-      <div className="map-overlay">{children}</div>
+      <div className={`map-overlay${legendOpen ? '' : ' collapsed'}`}>
+        <button className="legend-toggle" aria-expanded={legendOpen} onClick={() => setLegendOpen(!legendOpen)}>
+          {legendOpen ? '범례 접기 ▲' : '☰ 범례·지표'}
+        </button>
+        <div className="overlay-body">{children}</div>
+      </div>
       <div className="map-zoom">
         <button onClick={reset} disabled={t.k === 1 && t.x === 0 && t.y === 0}>전국 보기</button>
         <span className="muted small zoom-hint desktop">휠로 확대·드래그로 이동</span>
