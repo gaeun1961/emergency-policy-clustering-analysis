@@ -1,0 +1,11 @@
+# Python 3.13 기준. 설치: python -m pip install -r requirements.txt
+pandas==2.3.3
+numpy==2.4.6
+scikit-learn==1.8.0
+matplotlib==3.10.9
+openpyxl==3.1.5
+requests==2.34.2
+python-dotenv==1.2.3
+# 노트북 실행·출력 저장: python -m nbconvert --to notebook --execute --inplace notebooks/sigungu_clustering.ipynb
+nbconvert==7.17.2
+ipykernel==7.4.0
