@@ -106,6 +106,7 @@ export default function SimPanel(p: Props) {
           })}
         </ol>
       )}
+      <p className="hint">후보지는 시군구청 위치이며, 거리는 시군구청 기준으로 측정됩니다. 그래서 시군구청에 놓는 후보가 유리하게 나오고, 시군구청에서 떨어진 곳의 효과는 과소평가될 수 있습니다.</p>
     </section>
   )
 }
