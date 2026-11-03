@@ -28,6 +28,12 @@ def region_key(sido, sgg):
     return (sido, sgg)
 
 
+def parent_city(key):
+    """('경기', '수원시장안구') -> ('경기', '수원시'). 일반구가 아니면 None"""
+    hit = re.fullmatch(r'(.+?시)(.+구)', key[1])
+    return (key[0], hit.group(1)) if hit else None
+
+
 def build_master(pop):
     """행안부 인구 파일(행정기관코드, 행정기관) -> master: code, unit, 시도, 시군구"""
     code = pop['행정기관코드'].astype(str).str.replace(r'\.0$', '', regex=True).str.zfill(10).str[:5]
@@ -42,8 +48,7 @@ def build_master(pop):
     # 일반구 -> 상위 시 코드
     city_code = dict(zip(zip(m['시도'], m['시군구']), m['code']))
     def unit(row):
-        hit = re.fullmatch(r'(.+?시)(.+구)', row['시군구'])
-        return city_code.get((row['시도'], hit.group(1)), row['code']) if hit else row['code']
+        return city_code.get(parent_city((row['시도'], row['시군구'])), row['code'])
     m['unit'] = m.apply(unit, axis=1)
     return m
 
@@ -63,7 +68,12 @@ def attach_code(df, master, mapping):
     keys = [region_key(s, g) for s, g in zip(df['시도'], df['시군구'])]
     keys = [mapping.get(k, k) for k in keys]
     df = df[[k is not None for k in keys]]
-    hits = [lookup.get(k) for k in keys if k is not None]
+    def find(k):
+        if k in lookup:
+            return lookup[k]
+        p = lookup.get(parent_city(k))  # master에 일반구 행이 없으면 상위 시로
+        return (''.join(k), p[1]) if p else None  # code 자리에 일반구 이름: rollup에서 시 합계 행과 구분
+    hits = [find(k) for k in keys if k is not None]
     ok = [h is not None for h in hits]
     df['code'] = [h[0] if h else None for h in hits]
     df['unit'] = [h[1] if h else None for h in hits]

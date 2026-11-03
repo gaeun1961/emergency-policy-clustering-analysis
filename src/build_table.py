@@ -1,7 +1,8 @@
 """시군구 통합 테이블 생성
 
 실행: 레포 루트에서 python -m src.build_table
-입력: data/raw/ (data/README.md 참고), data/region_mapping.csv
+입력: data/processed/population_sigungu_202512.csv (기준 코드표, python -m src.population),
+      data/raw/ (data/README.md 참고), data/region_mapping.csv
 출력: data/processed/sigungu_table.csv, data/processed/unmatched.csv
 """
 from pathlib import Path
@@ -9,7 +10,7 @@ from pathlib import Path
 import pandas as pd
 
 from .loaders import load_and_validate_file
-from .regions import age_start, attach_code, build_master, load_mapping, rollup
+from .regions import attach_code, load_mapping, rollup
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -24,7 +25,7 @@ SOURCES = {
     '등록장애인수': dict(file='welfare/disabled', sido='시도', sgg='시군구', value='등록장애인수', how='sum'),
     '기초수급자수': dict(file='welfare/basic_livelihood', sido='시도', sgg='시군구', value='수급자수', how='sum'),
 }
-POP_FILE = 'population/mois_age_sigungu'
+POP_FILE = ROOT / 'data' / 'processed' / 'population_sigungu_202512.csv'  # python -m src.population 으로 생성
 
 
 def find(raw, stem):
@@ -38,22 +39,13 @@ def to_num(s):
     return pd.to_numeric(s.astype(str).str.replace(',', '').str.strip(), errors='coerce')
 
 
-def load_population(raw):
-    pop = load_and_validate_file(find(raw, POP_FILE), [0, 1, 2, 3], ['행정기관코드', '행정기관'])
-    if pop is None:
-        raise ValueError('인구 파일 로드 실패')
-    total = next((c for c in ('총인구수', '총거주자수') if c in pop.columns), None)
-    ages = {c: age_start(c) for c in pop.columns}
-    old = [c for c, a in ages.items() if a is not None and a >= 65]
-    if total is None or 65 not in ages.values():
-        raise ValueError(f'총인구 컬럼이나 65세 시작 5세 단위 컬럼이 없음: {pop.columns.tolist()}')
-
-    master = build_master(pop)
-    pop = master.join(pd.DataFrame({'총인구': to_num(pop[total]),
-                                    '65세이상인구': pop[old].apply(to_num).sum(axis=1)}))
-    units = master[master['code'] == master['unit']].set_index('code')[['시도', '시군구']]
-    for col in ('총인구', '65세이상인구'):
-        units[col] = rollup(pop, col, 'sum', has_subtotals=True)
+def load_population(pop_file):
+    """시군구 인구 기준 코드표 -> (master, 통합 테이블 뼈대)"""
+    if not Path(pop_file).exists():
+        raise FileNotFoundError(f'{pop_file} 가 없음. 먼저 python -m src.population 실행')
+    units = pd.read_csv(pop_file, dtype={'행정기관코드': str}).fillna({'시군구': ''})
+    units = units.rename(columns={'행정기관코드': 'code'}).set_index('code')
+    master = units[['시도', '시군구']].reset_index().assign(unit=lambda m: m['code'])
     return master, units
 
 
@@ -68,10 +60,11 @@ def load_source(raw, name, cfg, master, mapping):
     return rollup(hit, name, cfg['how'], has_subtotals=cfg['value'] is not None), miss.assign(출처=name)
 
 
-def main(raw=ROOT / 'data' / 'raw', out=ROOT / 'data' / 'processed', mapping_file=ROOT / 'data' / 'region_mapping.csv'):
+def main(raw=ROOT / 'data' / 'raw', out=ROOT / 'data' / 'processed',
+         mapping_file=ROOT / 'data' / 'region_mapping.csv', pop_file=POP_FILE):
     raw, out = Path(raw), Path(out)
     mapping = load_mapping(mapping_file)
-    master, table = load_population(raw)
+    master, table = load_population(pop_file)
 
     misses = []
     for name, cfg in SOURCES.items():
