@@ -1,5 +1,30 @@
 # 시도별 응급 의료 접근성 분석 및 클러스터링
 
+**대시보드: https://gaeun1961.github.io/emergency-policy-clustering-analysis/**
+
+## 실행 순서
+
+```bash
+python -m pip install -r requirements.txt
+# 데이터 수집·통합 (data/README.md 의 raw 파일과 .env 키 필요)
+python -m src.population        # 인구·1인세대 -> 기준 코드표
+python -m src.disability        # 등록장애인
+python -m src.fetch_emergency   # 응급의료기관 OpenAPI
+python -m src.geocode           # 시군구청 좌표 (카카오, 캐시)
+python -m src.accessibility     # 접근성 지표
+python -m src.build_table       # 시군구 통합 테이블
+# 분석: 이중 취약지역·클러스터링 -> outputs/
+python -m nbconvert --to notebook --execute --inplace notebooks/sigungu_clustering.ipynb
+# 대시보드 데이터 -> web/public/data/
+python scripts/build_boundaries.py   # node(npx) 필요: mapshaper로 경계 합치기·단순화
+python scripts/export_web_data.py
+# 대시보드 (web/, node 22)
+cd web && npm ci && npm run dev
+```
+
+- `scripts/build_boundaries.py` 는 경계 합치기·단순화에 mapshaper를 `npx` 로 실행하므로 **node(npx)가 필요**하다.
+- 대시보드는 master에 `web/` 변경이 push되면 `.github/workflows/deploy-pages.yml` 이 빌드해서 GitHub Pages에 배포한다.
+
 ## 핵심 결과 (시군구 229개, 2025년 12월 기준)
 
 응급의료 접근성도 낮고 복지 취약계층도 많은 **이중 취약지역**을 찾아, 복지 서비스(예: 응급안전안심서비스) 우선 배치의 근거로 쓴다.
