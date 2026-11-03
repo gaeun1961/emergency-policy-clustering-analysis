@@ -64,8 +64,12 @@ def point_weights(centers):
         centers.loc[multi, '가중방식'] = 'weighted(단순평균_임시)'
         return centers
     emd = pd.concat([population.read_file(p) for p in files])
-    emd_pop = dict(zip(emd['행정기관'].str.split().str[-1], population.to_num(emd['총인구수'])))
-    w = centers.loc[multi, '지점'].str.removesuffix('사무소').map(emd_pop)
+    names = emd['행정기관'].str.split()  # '인천광역시 옹진군 북도면' -> (옹진군, 북도면). 다른 군의 같은 이름 읍면과 섞이지 않게
+    # '북도면장봉출장소' 같은 출장소는 별도 행이고 면 인구에 안 들어 있음 -> 소속 읍면에 더한다
+    emd_name = names.str[-1].str.extract(r'^(.+?[읍면])(?:\S*출장소)?$')[0]
+    emd_pop = population.to_num(emd['총인구수']).groupby([names.str[-2], emd_name]).sum().to_dict()
+    m = centers[multi]
+    w = pd.Series([emd_pop.get((g, p.removesuffix('사무소'))) for g, p in zip(m['시군구'], m['지점'])], index=m.index, dtype=float)
     if w.isna().any():
         print(f'[경고] 읍면동 인구 없는 지점 -> 단순평균: {centers.loc[multi][w.isna()]["지점"].tolist()}')
         centers.loc[multi, '가중방식'] = 'weighted(단순평균_임시)'
