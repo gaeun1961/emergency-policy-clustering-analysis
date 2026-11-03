@@ -10,6 +10,8 @@
 2. `python -m src.disability`: KOSIS 등록장애인 파일로 `data/processed/disability_sigungu_2025.csv` 를 만든다.
 3. `python -m src.build_table`: 나머지 출처를 붙여 `data/processed/sigungu_table.csv` 를 만든다.
 
+**버전관리**: `data/raw/` 는 git에 올리지 않는다(.gitignore). raw 파일은 아래 각 항목의 "받는 방법"을 참고해 직접 받는다. `data/processed/*.csv` 는 커밋한다.
+
 행안부 파일(인구, 1인세대)을 뺀 나머지 파일은 `.csv` 또는 `.xlsx` 아무거나 된다(확장자만 다르게 같은 이름으로 두면 됨).
 
 ```
@@ -26,6 +28,12 @@ data/
 ├── region_mapping.csv                          # 지역명 차이·행정구역 개편 매핑 (직접 관리)
 └── processed/                                  # 생성물 (population_/single_household_sigungu_202512.csv, disability_sigungu_2025.csv, sigungu_table.csv, unmatched.csv)
 ```
+
+## 데이터 한계
+
+- **1인세대 ≠ 실제 단독 거주**: 독거노인 수는 주민등록상 65세 이상 1인세대 수다. 같은 집에 살아도 세대를 나눠 등록하면 1인세대로 잡혀서, 실제로 혼자 사는 노인 수와 다를 수 있다.
+- **일반구는 상위 시로 합산**: 수원시 장안구 같은 일반구는 상위 시(수원시)로 합쳤다. 그래서 같은 시 안의 구별 차이는 보이지 않는다. 분석 단위는 기초자치단체 229개다.
+- **기준 시점 2025년 12월 (인천 개편 전)**: 2026.7.1 인천 행정구역 개편(제물포구, 영종구, 검단구 신설) 이전 경계다. 개편 후 경계 기준의 결과와는 다르다.
 
 ## 기준 시점: 2025년 12월 말로 통일 (인천 개편 전 기준)
 
