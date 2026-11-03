@@ -22,7 +22,6 @@ SOURCES = {
     '응급의료시설수': dict(file='emergency/facilities', header=[3, 4, 0], sido='지역', sgg='시군구', value=None, how='sum'),
     # ponytail: 일반구만 있는 시는 단순 평균, 정확히 하려면 인구 가중 평균
     '응급의료시설_평균접근거리_km': dict(file='accessibility/ngii_emergency_access', sido='시도', sgg='시군구', value='평균거리', how='mean'),
-    '기초수급자수': dict(file='welfare/basic_livelihood', sido='시도', sgg='시군구', value='수급자수', how='sum'),
 }
 # 기준 코드표로 미리 정리된 표(python -m src.population, python -m src.disability). 코드가 같아서 바로 붙인다
 POP_FILE = ROOT / 'data' / 'processed' / 'population_sigungu_202512.csv'
