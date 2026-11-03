@@ -40,7 +40,7 @@ export default function SimPanel(p: Props) {
   const copy = () => navigator.clipboard?.writeText(location.href).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500) })
 
   return (
-    <section className="panel sim-panel" aria-live="polite">
+    <div className="sim-panel" aria-live="polite">
       <div className="panel-head">
         <h2>배치 시뮬레이션</h2>
         <div className="sim-actions">
@@ -68,7 +68,7 @@ export default function SimPanel(p: Props) {
 
       {changed.length > 0 && (
         <>
-          <h3>등급이 바뀐 시군구 {changed.length}곳 <span className="muted small">(65세 이상 {fmt.int(elderly)}명, 지도에 보라색 테두리)</span></h3>
+          <h3>등급이 바뀐 시군구 {changed.length}곳 <span className="muted small">(65세 이상 {fmt.int(elderly)}명, 지도에 점선 테두리)</span></h3>
           <ul className="changed">
             {changed.map((r) => (
               <li key={r.코드}><button onClick={() => p.onSelect(r.코드)}>{regionName(r)}</button>
@@ -78,7 +78,8 @@ export default function SimPanel(p: Props) {
         </>
       )}
 
-      <h3>추천 위치: 1곳을 더한다면</h3>
+      <details className="recs-box" open>
+      <summary><h3>추천 위치: 1곳을 더한다면</h3></summary>
       <div className="tabs" role="tablist">
         {(['G007', 'G006'] as const).map((k) => (
           <button key={k} role="tab" aria-selected={p.recKind === k} className={p.recKind === k ? 'on' : ''} onClick={() => p.onRecKind(k)}>
@@ -106,8 +107,9 @@ export default function SimPanel(p: Props) {
           })}
         </ol>
       )}
+      </details>
       <p className="hint">후보지는 시군구청 위치이며, 거리는 시군구청 기준으로 측정됩니다. 그래서 시군구청에 놓는 후보가 유리하게 나오고, 시군구청에서 떨어진 곳의 효과는 과소평가될 수 있습니다.</p>
-    </section>
+    </div>
   )
 }
 

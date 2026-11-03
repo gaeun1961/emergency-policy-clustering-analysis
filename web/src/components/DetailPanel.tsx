@@ -1,7 +1,42 @@
-import { isIsland, regionName, type Region } from '../data'
+import { isIsland, quantile, regionName, type Region } from '../data'
 import { CLUSTER_COLOR, CLUSTER_DESC, GRADE_COLOR, fmt } from '../metrics'
+import { textOn } from '../theme'
 
-interface Props { region: Region | null; total: number }
+interface Props { region: Region | null; total: number; regions: Region[] }
+
+/** 전국 중앙값 대비 미니 막대: 선택 지역(막대)과 전국 중앙값(세로선) */
+const COMPARE: { key: keyof Region; label: string; format: (v: number) => string }[] = [
+  { key: '최근접_응급의료기관_km', label: '최근접 응급의료기관', format: fmt.km },
+  { key: '최근접_권역지역센터_km', label: '최근접 권역·지역센터', format: fmt.km },
+  { key: '고령인구비율', label: '고령인구비율', format: fmt.pct },
+  { key: '독거노인비율', label: '독거노인비율', format: fmt.pct },
+]
+
+function MedianBars({ r, regions }: { r: Region; regions: Region[] }) {
+  return (
+    <div className="compare">
+      <h3>전국 중앙값 대비 <span className="muted small">(막대: {r.시군구 || r.시도}, 세로선: 전국 {regions.length}곳 중앙값)</span></h3>
+      {COMPARE.map(({ key, label, format }) => {
+        const v = r[key] as number
+        const med = quantile(regions.map((x) => x[key] as number), 0.5)
+        const max = Math.max(v, med) * 1.15 || 1
+        const ratio = med ? v / med : 0
+        return (
+          <div key={key} className="cmp-row">
+            <div className="cmp-label"><span>{label}</span>
+              <span className="cmp-val"><strong>{format(v)}</strong> <span className="muted">· 중앙값 {format(med)}</span>
+                {ratio >= 1.05 || ratio <= 0.95 ? <span className="cmp-ratio"> ×{ratio.toFixed(ratio >= 10 ? 0 : 1)}</span> : null}</span>
+            </div>
+            <div className="cmp-track" role="img" aria-label={`${label} ${format(v)}, 전국 중앙값 ${format(med)}`}>
+              <div className="cmp-bar" style={{ width: `${(v / max) * 100}%` }} />
+              <div className="cmp-med" style={{ left: `${(med / max) * 100}%` }} />
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
 
 export function IslandBadge() {
   return (
@@ -11,8 +46,8 @@ export function IslandBadge() {
   )
 }
 
-export default function DetailPanel({ region: r, total }: Props) {
-  if (!r) return <section className="panel detail"><p className="muted">지도, 산점도, 표에서 시군구를 선택하세요.</p></section>
+export default function DetailPanel({ region: r, total, regions }: Props) {
+  if (!r) return <div className="detail"><p className="muted">지도, 산점도, 표에서 시군구를 선택하세요.</p></div>
 
   const cards: [string, string][] = [
     ['총인구', `${fmt.int(r.총인구)}명`],
@@ -24,11 +59,11 @@ export default function DetailPanel({ region: r, total }: Props) {
     ['반경 30km 응급의료기관', `${r.반경30km_기관수.toFixed(r.반경30km_기관수 % 1 ? 1 : 0)}곳`],
   ]
   return (
-    <section className="panel detail" aria-live="polite">
+    <div className="detail" aria-live="polite">
       <div className="detail-head">
         <h2>{regionName(r)}</h2>
         <div className="badges">
-          {r.등급 && <span className="badge" style={{ background: GRADE_COLOR[r.등급], color: '#fff' }}>{r.등급}</span>}
+          {r.등급 && <span className="badge" style={{ background: GRADE_COLOR[r.등급], color: textOn(GRADE_COLOR[r.등급]) }}>{r.등급}</span>}
           {isIsland(r) && <IslandBadge />}
         </div>
       </div>
@@ -56,6 +91,8 @@ export default function DetailPanel({ region: r, total }: Props) {
           <p>{CLUSTER_DESC[r.클러스터]}</p>
         </div>
       </div>
-    </section>
+
+      <MedianBars r={r} regions={regions} />
+    </div>
   )
 }

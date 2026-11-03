@@ -5,25 +5,32 @@ import MapView, { type MapSim } from './components/MapView'
 import ScatterPlot from './components/ScatterPlot'
 import SimPanel, { AddChooser, type RecKind } from './components/SimPanel'
 import { isIsland, loadData, loadSimData, quantile, regionName, type Data, type Region, type SimData } from './data'
-import { CLUSTER_COLOR, CLUSTER_DESC, buildMetrics, type MetricKey } from './metrics'
+import { CLUSTER_COLOR, CLUSTER_DESC, GRADE_COLOR, buildMetrics, type MetricKey } from './metrics'
 import { simulate, type Facility, type FacilityGrade } from './sim/model'
 import { recommend, type Effect } from './sim/recommend'
 import { EMPTY, applyScenario, fromQuery, toQuery, type Scenario } from './sim/scenario'
 
 const REPO = 'https://github.com/gaeun1961/emergency-policy-clustering-analysis'
 const METRIC_KEYS: MetricKey[] = ['등급', '접근성점수', '복지점수', '클러스터', '최근접_응급의료기관_km', '최근접_권역지역센터_km']
+type Tab = 'detail' | 'dist' | 'list' | 'sim' | 'about'
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'detail', label: '지역 상세' }, { id: 'dist', label: '분포' }, { id: 'list', label: '목록' },
+  { id: 'sim', label: '시뮬레이터' }, { id: 'about', label: '소개' },
+]
 const initial = fromQuery(location.search)
 
 export default function App() {
   const [data, setData] = useState<Data | null>(null)
+  const [simData, setSimData] = useState<SimData | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [metricKey, setMetricKey] = useState<MetricKey>('등급')
   const [selected, setSelected] = useState<string | null>(null)
   const [hover, setHover] = useState<{ code: string; x: number; y: number } | null>(null)
+  const [tab, setTab] = useState<Tab>(initial.on ? 'sim' : 'detail')
+  const [showLocal, setShowLocal] = useState(false) // 지역응급의료기관(G007) 마커
 
-  // 시뮬레이션: 켜져 있을 때만 데이터를 불러오고, 시나리오는 URL 쿼리와 동기화
+  // 시뮬레이션: 시나리오는 URL 쿼리와 동기화
   const [simOn, setSimOn] = useState(initial.on)
-  const [simData, setSimData] = useState<SimData | null>(null)
   const [history, setHistory] = useState<Scenario[]>([initial.scenario])
   const [pending, setPending] = useState<{ lat: number; lon: number; x: number; y: number } | null>(null)
   const [recKind, setRecKind] = useState<RecKind>('G006')
@@ -36,10 +43,8 @@ export default function App() {
       // 처음에는 합산점수가 가장 높은 이중 취약지역을 선택해 둔다
       setSelected([...d.regions].sort((a, b) => (b.합산점수 ?? -1) - (a.합산점수 ?? -1))[0].코드)
     }).catch((e) => setError(String(e)))
+    loadSimData().then(setSimData).catch((e) => setError(String(e))) // 마커에도 쓰므로 항상 불러온다
   }, [])
-  useEffect(() => {
-    if (simOn && !simData) loadSimData().then(setSimData).catch((e) => setError(String(e)))
-  }, [simOn, simData])
   useEffect(() => {
     window.history.replaceState(null, '', `${location.pathname}${toQuery(simOn, scenario)}${location.hash}`)
   }, [simOn, scenario])
@@ -52,9 +57,8 @@ export default function App() {
     return { top: [quantile(a, 0.75), quantile(w, 0.75)] as [number, number], near: [quantile(a, 0.6), quantile(w, 0.6)] as [number, number] }
   }, [data])
 
-  const active = simOn && simData && data ? { data, sim: simData } : null
-  const applied = useMemo(() => active && applyScenario(active.sim.facilities, scenario), [active?.sim, scenario])
-  const simResult = useMemo(() => active && applied && simulate(applied, active.sim.centers, active.sim.baseline), [applied])
+  const applied = useMemo(() => simData && (simOn ? applyScenario(simData.facilities, scenario) : simData.facilities), [simData, simOn, scenario])
+  const simResult = useMemo(() => (simOn && simData && applied ? simulate(applied, simData.centers, simData.baseline) : null), [simOn, simData, applied])
 
   /** 지금 화면에 보여줄 지역 데이터: 시뮬레이션이 꺼져 있으면 원래 데이터 그대로 */
   const view = useMemo(() => {
@@ -75,20 +79,25 @@ export default function App() {
   }, [data, simResult])
 
   const recs = useMemo(() => {
-    if (!active || !applied || !simResult || !data) return null
+    if (!simOn || !simData || !applied || !simResult || !data) return null
     const elderly = Object.fromEntries(data.regions.map((r) => [r.코드, r['65세이상인구']]))
-    return recommend(applied, active.sim.centers, active.sim.baseline, simResult, elderly, recKind)
-  }, [applied, simResult, recKind])
+    return recommend(applied, simData.centers, simData.baseline, simResult, elderly, recKind)
+  }, [simOn, simData, applied, simResult, data, recKind])
 
   const onHover = useCallback((code: string | null, e?: React.MouseEvent) => {
     setHover(code && e ? { code, x: e.clientX, y: e.clientY } : null)
   }, [])
+  /** 지도·산점도·목록에서 선택: 시뮬레이터 탭이 아니면 [지역 상세]로 이동 */
+  const select = useCallback((code: string) => {
+    setSelected(code)
+    setTab((t) => (t === 'sim' ? t : 'detail'))
+  }, [])
 
+  const markers = useMemo(() => (applied ?? []).filter((f) => showLocal || f.등급 !== 'G007' || f.hpid.startsWith('SIM-')), [applied, showLocal])
   const mapSim: MapSim | undefined = useMemo(() => {
-    if (!applied || !data) return undefined
+    if (!simOn || !data || !view) return undefined
     return {
-      facilities: applied,
-      changed: new Set(data.regions.filter((r) => view?.byCode.get(r.코드)?.등급 !== r.등급).map((r) => r.코드)),
+      changed: new Set(data.regions.filter((r) => view.byCode.get(r.코드)?.등급 !== r.등급).map((r) => r.코드)),
       onMapClick: (lat, lon, x, y) => setPending({ lat, lon, x, y }),
       onFacilityClick: (f: Facility) => {
         if (f.hpid.startsWith('SIM-')) {
@@ -97,8 +106,13 @@ export default function App() {
         } else push({ ...scenario, removed: [...scenario.removed, f.hpid] })
       },
     }
-  }, [applied, data, view, scenario, push])
+  }, [simOn, data, view, scenario, push])
 
+  const toggleSim = () => {
+    setSimOn(!simOn)
+    setPending(null)
+    setTab(simOn ? 'detail' : 'sim')
+  }
   const addAt = (grade: FacilityGrade) => {
     if (pending) push({ ...scenario, added: [...scenario.added, { grade, lat: pending.lat, lon: pending.lon }] })
     setPending(null)
@@ -117,116 +131,120 @@ export default function App() {
   const metric = metrics[metricKey]
   const hovered = hover && view.byCode.get(hover.code)
   const { meta } = data
-  const cuts = active ? {
-    top: [active.sim.baseline.기준선.상위25.접근성, active.sim.baseline.기준선.상위25.복지] as [number, number],
-    near: [active.sim.baseline.기준선.상위40.접근성, active.sim.baseline.기준선.상위40.복지] as [number, number],
+  const cuts = simOn && simData ? {
+    top: [simData.baseline.기준선.상위25.접근성, simData.baseline.기준선.상위25.복지] as [number, number],
+    near: [simData.baseline.기준선.상위40.접근성, simData.baseline.기준선.상위40.복지] as [number, number],
   } : baseCuts
-  const doubleCount = view.regions.filter((r) => r.등급 === '이중 취약').length
+  const count = (g: string) => view.regions.filter((r) => r.등급 === g).length
+  const chip = (g: '이중 취약' | '준 이중 취약', base: number) => {
+    const now = count(g)
+    return (
+      <span className="chip"><span className="swatch" style={{ background: GRADE_COLOR[g] }} />
+        {g} <strong>{base}곳</strong>{simOn && now !== base && <> → <strong>{now}곳</strong></>}
+      </span>
+    )
+  }
 
   return (
-    <main className="page">
-      <header className="header">
-        <div className="title-row">
-          <h1>응급의료 접근성 × 복지 취약: 이중 취약지역</h1>
-          <button className={`sim-toggle${simOn ? ' on' : ''}`} aria-pressed={simOn} onClick={() => { setSimOn(!simOn); setPending(null) }}>
-            시뮬레이션 모드 {simOn ? '끄기' : '켜기'}
-          </button>
+    <div className="app">
+      <header className="topbar">
+        <h1>응급의료 × 복지 이중 취약지역</h1>
+        <div className="chips">
+          {chip('이중 취약', meta.이중취약수)}
+          {chip('준 이중 취약', meta.준이중취약수)}
+          <span className="chip muted">시군구 {meta.시군구수}곳 · 인구 {meta.기준시점['인구·복지']} · 기관 {meta.기준시점['응급의료기관']}</span>
         </div>
-        <p className="summary">
-          시군구 {meta.시군구수}곳 중 <strong className="t-double">이중 취약 {meta.이중취약수}곳</strong>,{' '}
-          <strong className="t-near">준 이중 취약 {meta.준이중취약수}곳</strong>.
-          응급의료 접근성이 낮고 고령·독거·장애 인구 비율이 높아 복지 서비스(예: 응급안전안심서비스)를 먼저 배치할 지역입니다.
-        </p>
-        <p className="muted small">
-          기준 시점: 인구·복지 {meta.기준시점['인구·복지']} · 응급의료기관 {meta.기준시점['응급의료기관']} 수집 · 경계 {meta.기준시점['경계']}
-        </p>
+        <button className={`sim-toggle${simOn ? ' on' : ''}`} aria-pressed={simOn} onClick={toggleSim}>
+          {simOn ? '시뮬레이션 끄기' : '시뮬레이션 모드'}
+        </button>
       </header>
 
-      <div className="grid">
-        <section className="panel map-panel">
-          <div className="panel-head">
-            <h2>{simOn ? '시군구 지도 (시뮬레이션)' : '시군구 지도'}</h2>
+      <main className="body">
+        <section className="map-area" aria-label="지도">
+          <MapView data={data} byCode={view.byCode} metric={metric} selected={selected} onSelect={select} onHover={onHover}
+            facilities={markers} sim={mapSim}>
             <label className="select">
-              <span>지표</span>
-              <select value={metricKey} onChange={(e) => setMetricKey(e.target.value as MetricKey)}>
+              <select value={metricKey} onChange={(e) => setMetricKey(e.target.value as MetricKey)} aria-label="지도 지표">
                 {METRIC_KEYS.map((k) => <option key={k} value={k}>{metrics[k].label}</option>)}
               </select>
             </label>
+            <ul className="legend" aria-label={`${metric.label} 범례`}>
+              {metric.legend.map((l) => <li key={l.label}><span className="swatch" style={{ background: l.color }} />{l.label}</li>)}
+            </ul>
+            {metric.note && <p className="hint">{metric.note}</p>}
+            <ul className="legend markers-key">
+              <li><span className="mk diamond" />권역센터</li>
+              <li><span className="mk circle" />지역센터</li>
+              <li><label><input type="checkbox" checked={showLocal} onChange={(e) => setShowLocal(e.target.checked)} /> 지역응급의료기관 표시</label></li>
+              {simOn && <li><span className="mk added" />가상 추가</li>}
+              {simOn && <li><span className="mk changed" />등급 변경</li>}
+            </ul>
+            {simOn && <p className="hint sim-hint">지도를 누르면 기관 추가, 기관 점을 누르면 제거</p>}
+          </MapView>
+        </section>
+
+        <aside className="side">
+          <nav className="tabs" role="tablist" aria-label="패널">
+            {TABS.filter((t) => t.id !== 'sim' || simOn).map((t) => (
+              <button key={t.id} role="tab" aria-selected={tab === t.id} className={tab === t.id ? 'on' : ''} onClick={() => setTab(t.id)}>
+                {t.label}
+              </button>
+            ))}
+          </nav>
+          <div className="tab-body" role="tabpanel">
+            {tab === 'detail' && <DetailPanel region={selected ? view.byCode.get(selected) ?? null : null} total={meta.시군구수} regions={view.regions} />}
+            {tab === 'dist' && (
+              <>
+                <ul className="legend">
+                  {(['이중 취약', '준 이중 취약', ''] as const).map((g) => (
+                    <li key={g}><span className="swatch" style={{ background: GRADE_COLOR[g] }} />{g || '해당 없음'}</li>
+                  ))}
+                  <li className="muted">파선 상위 25% · 점선 상위 40%</li>
+                </ul>
+                <ScatterPlot regions={view.regions} cuts={cuts} selected={selected} onSelect={select} onHover={onHover} />
+              </>
+            )}
+            {tab === 'list' && <DoubleTable regions={view.regions} selected={selected} onSelect={select} />}
+            {tab === 'sim' && simOn && (simData ? (
+              <SimPanel base={data.regions} now={view.byCode} scenario={scenario} canUndo={history.length > 1}
+                onUndo={() => setHistory((h) => (h.length > 1 ? h.slice(0, -1) : h))} onReset={() => push(EMPTY)}
+                recKind={recKind} onRecKind={setRecKind} recs={recs} onApply={applyRec} onSelect={(c) => setSelected(c)} />
+            ) : <p className="muted">시뮬레이션 데이터를 불러오는 중…</p>)}
+            {tab === 'about' && (
+              <div className="about">
+                <p className="small">응급의료 접근성이 낮고 고령·독거·장애 인구 비율이 높은 <strong>이중 취약지역</strong>을 찾아, 복지 서비스(예: 응급안전안심서비스)를 먼저 배치할 곳을 보여줍니다.
+                  두 점수가 모두 상위 25%면 이중 취약, 한쪽 25% + 다른 쪽 40%면 준 이중 취약입니다.</p>
+                <h3>시군구 유형 3개</h3>
+                <ul className="clusters">
+                  {Object.entries(meta.클러스터).map(([k, label]) => (
+                    <li key={k}>
+                      <span className="swatch" style={{ background: CLUSTER_COLOR[Number(k)] }} />
+                      <div><strong>{k}. {label}</strong><p>{CLUSTER_DESC[Number(k)]}</p></div>
+                    </li>
+                  ))}
+                </ul>
+                <p className="small">1번과 2번은 모두 고령 농촌이지만, 1번은 <strong>읍내 응급실은 있으나 중증 센터가 멀고</strong>, 2번은 <strong>가까운 응급실 자체가 없다</strong>는 점이 다릅니다.</p>
+                <h3>데이터 한계</h3>
+                <ul className="small">
+                  <li>거리는 시군구청(섬 지역은 읍면사무소) 기준 직선거리로, 실제 도로·해상 이동보다 짧습니다.</li>
+                  <li>시군구청 바로 옆에 병원이 있는 곳은 최근접 거리가 과소 추정됩니다.</li>
+                  <li>독거노인은 주민등록상 65세 이상 1인세대로, 실제 단독 거주와 다를 수 있습니다.</li>
+                  <li>일반구는 상위 시로 합쳤고, 기초생활수급자는 시군구 단위 공개 통계가 없어 제외했습니다.</li>
+                  <li>기준선 근처 지역은 기준이 조금만 바뀌어도 등급이 달라질 수 있습니다.</li>
+                </ul>
+                <h3>출처</h3>
+                <ul className="small">
+                  {meta.출처.map((s) => (
+                    <li key={s.이름}><a href={s.url} target="_blank" rel="noreferrer">{s.이름}</a>{s.기준 ? ` (${s.기준})` : ''}</li>
+                  ))}
+                </ul>
+                <p className="small">기준 시점: 인구·복지 {meta.기준시점['인구·복지']} · 응급의료기관 {meta.기준시점['응급의료기관']} 수집 · 경계 {meta.기준시점['경계']}</p>
+                <p className="small"><a href={REPO} target="_blank" rel="noreferrer">GitHub 저장소</a> · 생성 {meta.생성일시.slice(0, 10)}</p>
+              </div>
+            )}
           </div>
-          <ul className="legend" aria-label={`${metric.label} 범례`}>
-            {metric.legend.map((l) => <li key={l.label}><span className="swatch" style={{ background: l.color }} />{l.label}</li>)}
-          </ul>
-          {metric.note && <p className="hint">{metric.note}</p>}
-          {simOn && (
-            <ul className="legend">
-              <li><span className="dot-key" /> 응급의료기관 (크기: 권역 &gt; 지역센터 &gt; 지역기관)</li>
-              <li><span className="dot-key added" /> 가상 추가</li>
-              <li><span className="swatch changed-key" /> 등급 변경</li>
-            </ul>
-          )}
-          <MapView data={data} byCode={view.byCode} metric={metric} selected={selected} onSelect={setSelected} onHover={onHover}
-            sim={simOn ? mapSim : undefined} />
-        </section>
-
-        <div className="side">
-          {simOn && (active && view ? (
-            <SimPanel base={data.regions} now={view.byCode} scenario={scenario} canUndo={history.length > 1}
-              onUndo={() => setHistory((h) => (h.length > 1 ? h.slice(0, -1) : h))} onReset={() => push(EMPTY)}
-              recKind={recKind} onRecKind={setRecKind} recs={recs} onApply={applyRec} onSelect={setSelected} />
-          ) : <section className="panel"><p className="muted">시뮬레이션 데이터를 불러오는 중…</p></section>)}
-          <DetailPanel region={selected ? view.byCode.get(selected) ?? null : null} total={meta.시군구수} />
-          <section className="panel">
-            <h2>접근성 × 복지 취약 점수</h2>
-            <ul className="legend">
-              {(['이중 취약', '준 이중 취약', '해당 없음'] as const).map((g) => (
-                <li key={g}><span className={`swatch g-${g === '해당 없음' ? 'none' : g === '이중 취약' ? 'double' : 'near'}`} />{g}</li>
-              ))}
-              <li className="muted">파선 상위 25% · 점선 상위 40%</li>
-            </ul>
-            <ScatterPlot regions={view.regions} cuts={cuts} selected={selected} onSelect={setSelected} onHover={onHover} />
-          </section>
-        </div>
-      </div>
-
-      <section className="panel">
-        <h2>이중 취약지역 {doubleCount}곳</h2>
-        <p className="hint">두 점수가 모두 상위 25%. 행을 누르면 지도에서 선택됩니다.</p>
-        <DoubleTable regions={view.regions} selected={selected} onSelect={setSelected} />
-      </section>
-
-      <footer className="footer">
-        <section>
-          <h2>시군구 유형 3개</h2>
-          <ul className="clusters">
-            {Object.entries(meta.클러스터).map(([k, label]) => (
-              <li key={k}>
-                <span className="swatch" style={{ background: CLUSTER_COLOR[Number(k)] }} />
-                <div><strong>{k}. {label}</strong><p>{CLUSTER_DESC[Number(k)]}</p></div>
-              </li>
-            ))}
-          </ul>
-          <p className="small">1번과 2번은 모두 고령 농촌이지만, 1번은 <strong>읍내 응급실은 있으나 중증 센터가 멀고</strong>, 2번은 <strong>가까운 응급실 자체가 없다</strong>는 점이 다릅니다.</p>
-        </section>
-        <section>
-          <h2>데이터 한계</h2>
-          <ul className="small">
-            <li>거리는 시군구청(섬 지역은 읍면사무소) 기준 직선거리로, 실제 도로·해상 이동보다 짧습니다.</li>
-            <li>시군구청 바로 옆에 병원이 있는 곳은 최근접 거리가 과소 추정됩니다.</li>
-            <li>독거노인은 주민등록상 65세 이상 1인세대로, 실제 단독 거주와 다를 수 있습니다.</li>
-            <li>일반구는 상위 시로 합쳤고, 기초생활수급자는 시군구 단위 공개 통계가 없어 제외했습니다.</li>
-            <li>기준선 근처 지역은 기준이 조금만 바뀌어도 등급이 달라질 수 있습니다.</li>
-          </ul>
-        </section>
-        <section>
-          <h2>출처</h2>
-          <ul className="small">
-            {meta.출처.map((s) => (
-              <li key={s.이름}><a href={s.url} target="_blank" rel="noreferrer">{s.이름}</a>{s.기준 ? ` (${s.기준})` : ''}</li>
-            ))}
-          </ul>
-          <p className="small"><a href={REPO} target="_blank" rel="noreferrer">GitHub 저장소</a> · 생성 {meta.생성일시.slice(0, 10)}</p>
-        </section>
-      </footer>
+        </aside>
+      </main>
 
       {hovered && hover && (
         <div className="tooltip" style={{ left: hover.x + 14, top: hover.y + 14 }} role="status">
@@ -237,6 +255,6 @@ export default function App() {
         </div>
       )}
       {simOn && pending && <AddChooser x={pending.x} y={pending.y} onPick={addAt} onCancel={() => setPending(null)} />}
-    </main>
+    </div>
   )
 }
