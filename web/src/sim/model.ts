@@ -107,7 +107,8 @@ export function nearestFacilities(points: CenterPoint[], facilities: Facility[],
     .map(({ raw: _raw, ...x }) => x)
 }
 
-export interface RankedFacility extends NearFacility { share: number; alt: boolean; plus: number }
+/** min·capped 은 전체 주민 평균(순서용), useMin·useCapped 는 이 기관이 가장 가까운 주민(이용 주민)만의 평균. 대안이면 null */
+export interface RankedFacility extends NearFacility { share: number; alt: boolean; plus: number; useMin: number | null; useCapped: boolean }
 /** 기관 목록 규칙 (Python src.accessibility.pick_list 와 같음) */
 export const LIST_TOP = { em: 3, ctr: 2 }
 export const USAGE_FLOOR = 0.1
@@ -118,7 +119,8 @@ export const LIST_MAX = 5
  */
 export function rankFacilities(points: CenterPoint[], facilities: Facility[], factor: number, cap: number, n: number, centersOnly = false): RankedFacility[] {
   const pool = centersOnly ? facilities.filter(isCenter) : facilities
-  const share = new Map(aggregateUsage(points, points.map((p) => nearestOf(p, pool, factor, cap))).map((u) => [u.f, u.share]))
+  const usage = new Map(aggregateUsage(points, points.map((p) => nearestOf(p, pool, factor, cap))).map((u) => [u.f, u]))
+  const share = new Map([...usage].map(([f, u]) => [f, u.share]))
   const order = nearestFacilities(points, pool, factor, Infinity, cap)
   const base = order.slice(0, n)
   const keep = new Set([...base, ...order.filter((x) => (share.get(x.f) ?? 0) >= USAGE_FLOOR)])
@@ -127,7 +129,10 @@ export function rankFacilities(points: CenterPoint[], facilities: Facility[], fa
     if (!share.has(x.f)) keep.delete(x)
   }
   return order.filter((x) => keep.has(x)).slice(0, LIST_MAX)
-    .map((x) => ({ ...x, share: share.get(x.f) ?? 0, alt: !share.has(x.f), plus: x.min - order[0].min }))
+    .map((x) => {
+      const u = usage.get(x.f)
+      return { ...x, share: u?.share ?? 0, alt: !u, plus: x.min - order[0].min, useMin: u?.min ?? null, useCapped: u?.capped ?? false }
+    })
 }
 
 export interface Usage { f: Facility; share: number; min: number; km: number; approx: boolean; capped: boolean }

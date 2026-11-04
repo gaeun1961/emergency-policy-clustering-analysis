@@ -25,7 +25,7 @@ const RankText = ({ items }: { items: EmdRow['em'] }) => (
     {items.map((x, i) => (
       <span key={x.f.hpid} className={x.alt ? 'alt' : ''}>
         {i > 0 && ' · '}{x.f.기관명} {x.capped ? `≥ ${fmt.min(x.min)}` : fmt.min(x.min)}
-        {x.alt ? ` (대안 +${fmt.min(x.plus)})` : ` (주민 ${fmt.pct(x.share)})`}
+        {x.alt ? ` (대안 +${fmt.min(x.plus)})` : ` (주민 ${fmt.pct(x.share)}${x.useMin !== null && Math.abs(x.useMin - x.min) > 0.05 ? `, 이용 주민 ${x.useCapped ? '≥ ' : ''}${fmt.min(x.useMin)}` : ''})`}
       </span>
     ))}
   </>
