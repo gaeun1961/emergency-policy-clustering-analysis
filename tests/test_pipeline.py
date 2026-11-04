@@ -1,4 +1,5 @@
 """작은 가짜 데이터로 통합 파이프라인 검증. 실행: python tests/test_pipeline.py"""
+import os
 import sys
 import tempfile
 from pathlib import Path
@@ -7,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from src import accessibility, disability, population  # noqa: E402
+from src import accessibility, disability, fetch_emergency, population  # noqa: E402
 from src.build_table import main  # noqa: E402
 from src.regions import age_start, region_key  # noqa: E402
 
@@ -161,7 +162,34 @@ def test_end_to_end():
         assert not t.isna().any().any()
 
 
+def test_service_key():
+    """공공데이터포털 키: DATA_GO_KR_SERVICE_KEY 우선, 없으면 KR_SERVICE_KEY, URL 인코딩은 풀어서"""
+    saved = {n: os.environ.pop(n, None) for n in fetch_emergency.KEY_NAMES}
+    root = fetch_emergency.ROOT
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            fetch_emergency.ROOT = Path(tmp)  # 실제 .env 를 읽지 않게
+            os.environ['KR_SERVICE_KEY'] = 'a%2Bb'
+            assert fetch_emergency.service_key() == 'a+b'
+            os.environ['DATA_GO_KR_SERVICE_KEY'] = 'first'
+            assert fetch_emergency.service_key() == 'first'
+            for n in fetch_emergency.KEY_NAMES:
+                del os.environ[n]
+            try:
+                fetch_emergency.service_key()
+                raise AssertionError('키가 없으면 종료해야 함')
+            except SystemExit as e:
+                assert 'KR_SERVICE_KEY' in str(e)
+    finally:
+        fetch_emergency.ROOT = root
+        for n, v in saved.items():
+            os.environ.pop(n, None)
+            if v is not None:
+                os.environ[n] = v
+
+
 if __name__ == '__main__':
     test_units()
     test_end_to_end()
+    test_service_key()
     print('OK')

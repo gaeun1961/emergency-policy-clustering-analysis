@@ -19,12 +19,14 @@
 11. `python -m src.accessibility`: 접근성 지표 `data/processed/accessibility_sigungu.csv` 를 만든다.
 12. `python -m src.build_table`: 위 표들을 행정기관코드로 합쳐 `data/processed/sigungu_table.csv` 를 만든다.
 
-3·5·6번은 레포 루트의 `.env` 에 키가 있어야 한다(`.env` 는 .gitignore, 절대 커밋하지 않음).
+3·5·6번은 레포 루트의 `.env` 에 키가 있어야 한다(`.env` 는 .gitignore, 절대 커밋하지 않음). `.env.example` 을 복사해 채운다.
 
 ```
 DATA_GO_KR_SERVICE_KEY=공공데이터포털 일반 인증키 (Encoding/Decoding 어느 쪽이든 됨)
 KAKAO_REST_API_KEY=카카오 디벨로퍼스 REST API 키 (카카오맵 사용 설정 필요)
 ```
+
+공공데이터포털 키는 `DATA_GO_KR_SERVICE_KEY` 를 먼저 읽고, 없으면 `KR_SERVICE_KEY` 를 읽는다(`src.fetch_emergency.service_key`, 환경변수도 됨).
 
 **버전관리**: `data/raw/` 는 git에 올리지 않는다(.gitignore). raw 파일은 아래 각 항목의 "받는 방법"을 참고해 직접 받는다. `data/processed/*.csv` 는 커밋한다.
 
@@ -146,7 +148,7 @@ data/
   - 오퍼레이션: 응급의료기관 목록정보 조회 `http://apis.data.go.kr/B552657/ErmctInfoInqireService/getEgytListInfoInqire`
   - 활용가이드: `docs/NIA-IFT-OpenAPI활용가이드-01.국립중앙의료원-응급의료정보조회서비스_V13.hwp`
 - **사용법**:
-  1. 공공데이터포털에서 위 서비스를 활용신청하고 일반 인증키를 받아 `.env` 의 `DATA_GO_KR_SERVICE_KEY` 에 넣는다. 승인 직후에는 `SERVICE_KEY_IS_NOT_REGISTERED` 가 날 수 있으니 1~2시간 뒤 다시 시도한다.
+  1. 공공데이터포털에서 위 서비스를 활용신청하고 일반 인증키를 받아 `.env` 의 `DATA_GO_KR_SERVICE_KEY`(또는 `KR_SERVICE_KEY`)에 넣는다. 승인 직후에는 `SERVICE_KEY_IS_NOT_REGISTERED` 가 날 수 있으니 1~2시간 뒤 다시 시도한다.
   2. `python -m src.fetch_emergency` 를 실행한다.
      - `pageNo`, `numOfRows=1000` 으로 `totalCount` 까지 페이지를 돌며 전국을 받는다.
      - 전국이 한 번에 안 나오면 `Q0`(시도명)로 시도별 반복한다.

@@ -1,7 +1,7 @@
 """행정동 인구 수집: 행정안전부_법정동별(행정동 통반단위) 성/연령별 주민등록 인구수 OpenAPI (공공데이터포털 15108074)
 
 실행: 레포 루트에서 python -m src.fetch_emd_population [기준연월, 기본 202512]
-필요: .env 의 DATA_GO_KR_SERVICE_KEY (이 API 활용신청 필요)
+필요: .env 의 DATA_GO_KR_SERVICE_KEY 또는 KR_SERVICE_KEY (이 API 활용신청 필요, src.fetch_emergency.service_key)
 출력: data/processed/emd_population_{기준연월}.csv  (행정동코드, 행정동명, 시도명, 시군구명, 총인구)
 캐시: data/raw/emd_population/{기준연월}/*.json  (법정 읍면동별 응답. 중간에 끊겨도 이어 받음, gitignore)
 
@@ -19,11 +19,10 @@ import time
 from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from urllib.parse import unquote
 
 import pandas as pd
 import requests
-from dotenv import load_dotenv
+from . import fetch_emergency
 
 ROOT = Path(__file__).resolve().parents[1]
 URL = 'https://apis.data.go.kr/1741000/stdgSexdAgePpltn/selectStdgSexdAgePpltn'
@@ -33,12 +32,7 @@ _lock = threading.Lock()
 WORKERS = int(os.getenv('EMD_WORKERS', '4'))  # 동시 요청 수. 응답이 느리면 EMD_WORKERS=10 정도로 (과하게 늘리지 않음)
 
 
-def service_key():
-    load_dotenv(ROOT / '.env')
-    key = os.getenv('DATA_GO_KR_SERVICE_KEY')
-    if not key:
-        sys.exit('.env 에 DATA_GO_KR_SERVICE_KEY 가 없음')
-    return unquote(key)  # Encoding 키도 한 번 풀어서 requests가 한 번만 인코딩하게
+service_key = fetch_emergency.service_key  # DATA_GO_KR_SERVICE_KEY 우선, 없으면 KR_SERVICE_KEY. URL 인코딩은 풀어 둠
 
 
 def call(key, ym, stdg, lv):

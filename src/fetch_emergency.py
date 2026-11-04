@@ -1,7 +1,7 @@
 """국립중앙의료원 응급의료정보조회 OpenAPI -> 전국 응급의료기관 목록
 
 실행: 레포 루트에서 python -m src.fetch_emergency
-필요: .env 의 DATA_GO_KR_SERVICE_KEY (공공데이터포털 일반 인증키, Encoding/Decoding 어느 쪽이든 됨)
+필요: .env 또는 환경변수의 DATA_GO_KR_SERVICE_KEY (없으면 KR_SERVICE_KEY). 공공데이터포털 일반 인증키, Encoding/Decoding 어느 쪽이든 됨
 출력: data/processed/emergency_facilities.csv
 """
 import os
@@ -24,11 +24,15 @@ SIDO = ['서울특별시', '부산광역시', '대구광역시', '인천광역�
 PAGE = 1000
 
 
+KEY_NAMES = ('DATA_GO_KR_SERVICE_KEY', 'KR_SERVICE_KEY')  # 앞 이름 우선
+
+
 def service_key():
+    """공공데이터포털 키 (응급의료기관·행정동 인구 API 공용). 값은 출력하지 않는다"""
     load_dotenv(ROOT / '.env')
-    key = os.getenv('DATA_GO_KR_SERVICE_KEY')
+    key = next((v for n in KEY_NAMES if (v := os.getenv(n))), None)
     if not key:
-        sys.exit('.env 에 DATA_GO_KR_SERVICE_KEY 가 없음')
+        sys.exit(f'.env 또는 환경변수에 {" / ".join(KEY_NAMES)} 가 없음')
     return unquote(key)  # Encoding 키를 넣어도 한 번 풀어서, requests가 한 번만 인코딩하게 (이중 인코딩 방지)
 
 
