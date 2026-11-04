@@ -1,16 +1,19 @@
 """행정동 기준점 × 응급의료기관 자동차 주행시간 (로컬 OSRM table API)
 
 실행: WSL에서 bash scripts/osrm_setup.sh serve 로 OSRM(localhost:5000)을 띄운 뒤, 레포 루트에서 python -m src.drivetime
+      2SFCA 용: python -m src.drivetime --radius 40  (직선 40km 이내 모든 기관, 별도 파일이라 기존 접근성 지표는 그대로)
 입력: 기준점 src.accessibility.load_centers(), 응급의료기관(G001·G006·G007) src.accessibility.load_facilities()
 출력: data/processed/drivetime_pairs.csv: 기준점마다 직선거리 가까운 응급의료기관 10곳 + 권역·지역센터 10곳의
         주행시간(초)·주행거리(m). 길이 없으면(연륙 안 된 섬 등) 비어 있음
       data/processed/drivetime_snap.csv: 기준점·기관을 도로에 붙인(스냅) 거리(m)
+      --radius 40: data/processed/drivetime_radius40.csv (같은 형식, 스냅 파일은 쓰지 않음)
 
 페리는 빼고(exclude=ferry) 계산한다. 해상 이동은 반영하지 않으므로 다리가 없는 섬은 육지 기관에 도달 불가가 된다.
 기준점이 도로에서 1km 넘게 떨어지면(OSM 도로가 없는 섬 등) 다른 섬·육지 도로에 붙어 바다를 건너는 경로가 나오므로
 그 기준점의 주행시간은 모두 비우고 미연결사유를 남긴다 -> accessibility 에서 직선거리 × 우회계수로 대체
 """
 import os
+import sys
 from concurrent.futures import ThreadPoolExecutor
 
 import numpy as np
@@ -39,20 +42,23 @@ def table(src, dests):
     return j['durations'][0], j['distances'][0], j['sources'][0]['distance'], [d['distance'] for d in j['destinations']]
 
 
-def main():
+def main(radius=None):
     _, fac, _ = acc.load_facilities()
     em = fac[fac['dutyEmcls'].isin(acc.EMERGENCY)].reset_index(drop=True)
     is_ctr = em['dutyEmcls'].isin(acc.CENTER).to_numpy()
     pts = acc.load_centers()
     d = acc.haversine(pts['lat'], pts['lon'], em['wgs84Lat'], em['wgs84Lon'])
 
-    # 기준점마다 직선거리 가까운 응급의료기관 10곳 + 권역·지역센터 10곳 (겹치면 한 번)
+    # 기준점마다 직선거리 가까운 응급의료기관 10곳 + 권역·지역센터 10곳 (겹치면 한 번). radius 면 직선 radius km 이내 전부
     ctr_idx = np.flatnonzero(is_ctr)
-    picks = [sorted(set(np.argsort(row)[:TOP]) | set(ctr_idx[np.argsort(row[ctr_idx])[:TOP]])) for row in d]
+    picks = ([list(np.flatnonzero(row <= radius)) for row in d] if radius else
+             [sorted(set(np.argsort(row)[:TOP]) | set(ctr_idx[np.argsort(row[ctr_idx])[:TOP]])) for row in d])
 
     def run(i):
         p = pts.iloc[i]
         js = picks[i]
+        if not js:
+            return i, js, [], [], 0.0, []
         dur, dist, snap, fsnap = table((p['lat'], p['lon']), [(em.at[j, 'wgs84Lat'], em.at[j, 'wgs84Lon']) for j in js])
         return i, js, dur, dist, snap, fsnap
 
@@ -70,16 +76,18 @@ def main():
     snaps += [{'구분': '기관', 'ID': h, '이름': em.loc[em['hpid'] == h, 'dutyName'].iloc[0], '스냅m': round(s, 1)} for h, s in fsnaps.items()]
 
     out = pd.DataFrame(rows)
-    out.to_csv(PAIRS, index=False, encoding='utf-8-sig')
+    path = acc.PROC / f'drivetime_radius{radius}.csv' if radius else PAIRS
+    out.to_csv(path, index=False, encoding='utf-8-sig')
     s = pd.DataFrame(snaps)
-    s.to_csv(SNAP, index=False, encoding='utf-8-sig')
+    if not radius:
+        s.to_csv(SNAP, index=False, encoding='utf-8-sig')
 
     pp = out.groupby('기준점ID')['주행시간초'].apply(lambda v: v.notna().any())
-    print(f'기준점 {len(pts)}곳 × 기관 {len(em)}곳 중 {len(out)}쌍 -> {PAIRS}')
+    print(f'기준점 {len(pts)}곳 × 기관 {len(em)}곳 중 {len(out)}쌍 -> {path}')
     print(f'도달 불가 쌍 {out["주행시간초"].isna().sum()}개, 모든 기관에 도달 불가한 기준점 {(~pp).sum()}곳')
     far = s[s['스냅m'] > SNAP_REPORT_M].sort_values('스냅m', ascending=False)
     print(f'도로 스냅 {SNAP_REPORT_M}m 초과 {len(far)}곳 -> {SNAP}\n{far.to_string(index=False)}')
 
 
 if __name__ == '__main__':
-    main()
+    main(int(sys.argv[sys.argv.index('--radius') + 1]) if '--radius' in sys.argv else None)
