@@ -6,6 +6,7 @@
       data/processed/drivetime_pairs.csv: 기준점 × 가까운 기관 주행시간 (python -m src.drivetime, 로컬 OSRM)
       data/processed/population_sigungu_202512.csv, data/region_mapping.csv
 출력: data/processed/accessibility_sigungu.csv
+      data/processed/accessibility_points.csv: 기준점(행정동·섬 리)별 지표·최근접 기관 (읍면동 집계용)
       data/processed/facility_usage.csv: 시군구별 "주민이 가장 가깝게 이용하는 기관" 비율 (대시보드 지역 상세와 같은 집계, vitest 검증용)
 
 기준점: 전국 행정동 약 3,557곳. 시군구 지표 = 행정동별 지표의 인구가중 평균
@@ -111,24 +112,26 @@ def drive_minutes(centers, em, d_em):
     return t, raw, approx, factor, cap
 
 
-def facility_usage(centers, em, t, d_em, approx, ie, ic):
-    """기준점마다 주행시간 최근접 기관(ie)·센터(ic)를 정하고, 시군구 인구 기준 기관별 이용 주민 비율을 집계한다.
-    평균주행분·평균직선km 는 그 기관을 이용하는 주민 기준 가중평균. 근사포함: 근사값(도로 미연결·10곳 밖)인 기준점이 섞임
+USAGE_KINDS = {'응급의료기관': '최근접기관', '권역지역센터': '최근접센터'}  # 구분 -> 기준점 표의 컬럼 접두어
+
+
+def facility_usage(points, group='행정기관코드'):
+    """기준점 표(accessibility_points.csv)의 기준점별 최근접 기관·센터를 group(시군구 또는 행정동) 인구 기준으로 집계한다.
+    주민비율: 그 기관이 최근접인 주민 비율. 평균주행분·평균직선km 는 그 주민 기준 가중평균. 근사포함: 근사값인 기준점이 섞임
     """
-    rows = np.arange(len(centers))
-    w = centers['가중치'].to_numpy()
     out = []
-    for kind, idx in [('응급의료기관', ie), ('권역지역센터', ic)]:
-        u = pd.DataFrame({'행정기관코드': centers['행정기관코드'].to_numpy(), 'hpid': em['hpid'].astype(str).to_numpy()[idx],
-                          'w': w, 'wm': w * t[rows, idx], 'wk': w * d_em[rows, idx], 'approx': approx[rows, idx]})
-        g = u.groupby(['행정기관코드', 'hpid'])
+    for kind, c in USAGE_KINDS.items():
+        u = pd.DataFrame({group: points[group], 'hpid': points[f'{c}_hpid'], 'w': points['가중치'],
+                          'wm': points['가중치'] * points[f'{c}_분'], 'wk': points['가중치'] * points[f'{c}_km'],
+                          'approx': points[f'{c}_근사']})
+        g = u.groupby([group, 'hpid'])
         a = g[['w', 'wm', 'wk']].sum().join(g['approx'].any())
-        total = u.groupby('행정기관코드')['w'].sum()
+        total = u.groupby(group)['w'].sum()
         a = a.assign(주민비율=a['w'] / total.reindex(a.index.get_level_values(0)).to_numpy(),
                      평균주행분=a['wm'] / a['w'], 평균직선km=a['wk'] / a['w'], 구분=kind).rename(columns={'approx': '근사포함'})
         out.append(a.reset_index())
-    u = pd.concat(out).sort_values(['행정기관코드', '구분', '주민비율', '평균주행분'], ascending=[True, True, False, True])
-    return u[['행정기관코드', '구분', 'hpid', '주민비율', '평균주행분', '평균직선km', '근사포함']]
+    u = pd.concat(out).sort_values([group, '구분', '주민비율', '평균주행분'], ascending=[True, True, False, True])
+    return u[[group, '구분', 'hpid', '주민비율', '평균주행분', '평균직선km', '근사포함']]
 
 
 def load_facilities():
@@ -162,6 +165,10 @@ def build(out=OUT):
     centers['최근접_권역지역센터_분_원값'] = raw[:, is_ctr].min(axis=1)
     # 최근접 기관 또는 최근접 센터가 근사값(도로 미연결·10곳 밖)인 기준점의 인구 비율
     centers['근사반영_인구비율'] = (approx[rows, ie] | approx[rows, ic]).astype(float)
+    hp = em['hpid'].astype(str).to_numpy()
+    for c, idx in [('최근접기관', ie), ('최근접센터', ic)]:
+        centers[f'{c}_hpid'], centers[f'{c}_분'] = hp[idx], t[rows, idx]
+        centers[f'{c}_km'], centers[f'{c}_근사'] = d_em[rows, idx], approx[rows, idx]
 
     metrics = ['최근접_응급의료기관_분', '최근접_권역지역센터_분', f'{MINUTES}분내_응급의료기관수',
                '최근접_응급의료기관_분_원값', '최근접_권역지역센터_분_원값', '근사반영_인구비율',
@@ -181,8 +188,13 @@ def build(out=OUT):
     report(fac, miss, centers, table)
     out.parent.mkdir(parents=True, exist_ok=True)
     table.round(3).to_csv(out, encoding='utf-8-sig')
-    usage = facility_usage(centers, em, t, d_em, approx, ie, ic)
-    usage.round(6).to_csv(out.parent / 'facility_usage.csv', index=False, encoding='utf-8-sig')
+    # 기준점별 지표 (읍면동 집계 src.emd_metrics 와 이용 기관 집계에 씀)
+    centers['행정동코드'] = centers['기준점ID'].str.split('-').str[0]
+    point_cols = ['기준점ID', '행정동코드', '행정기관코드', '지점', '가중치', '최근접_응급의료기관_분', '최근접_권역지역센터_분',
+                  f'{MINUTES}분내_응급의료기관수', '최근접_응급의료기관_분_원값', '최근접_권역지역센터_분_원값',
+                  *[f'{c}_{k}' for c in USAGE_KINDS.values() for k in ('hpid', '분', 'km', '근사')]]
+    centers[point_cols].to_csv(out.parent / 'accessibility_points.csv', index=False, encoding='utf-8-sig')
+    facility_usage(centers).round(6).to_csv(out.parent / 'facility_usage.csv', index=False, encoding='utf-8-sig')
     print(f'\n-> {out}')
     return table
 

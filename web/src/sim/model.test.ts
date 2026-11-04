@@ -5,6 +5,7 @@ import { ACCESS_KEYS, RAW_KEYS, driveMinutes, facilityUsage, haversine, makeScor
 import { recommend } from './recommend'
 import type { SigunguGeo } from '../data'
 import { locateSigungu } from './geo'
+import { emdRows, type EmdData } from './emd'
 import { applyScenario, fromQuery, keepOnLand, toQuery, type Scenario } from './scenario'
 
 const load = <T>(name: string): T => JSON.parse(readFileSync(new URL(`../../public/data/${name}`, import.meta.url), 'utf-8'))
@@ -114,7 +115,7 @@ describe('추천 위치', () => {
         expect(escaped.sort()).toEqual([...e.escaped].sort())
         for (const k of Object.keys(sim)) expect(full[k].등급).toBe(e.newGrades[k] ?? sim[k].등급)
       }
-    })
+    }, 30000) // 추천 + 전체 재계산 5회라 기본 5초를 넘을 수 있음
   }
 })
 
@@ -253,5 +254,65 @@ describe('이용 기관 (기준점별 주행시간 최근접 기관의 주민 �
       expect(top.f.hpid).toBe('SIM-1')
       expect(top.approx).toBe(true)
     }
+  })
+})
+
+describe('읍면동 드릴다운 (Python src.emd_metrics 와 일치)', () => {
+  const emd = load<EmdData>('emd.json')
+  const csv = (name: string) => {
+    const [head, ...lines] = readFileSync(new URL(`../../../data/processed/${name}`, import.meta.url), 'utf-8').replace(/^\uFEFF/, '').trim().split(/\r?\n/)
+    const cols = head.split(',')
+    const split = (l: string) => l.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/).map((v) => v.replace(/^"|"$/g, ''))  // "두류1,2동" 같은 따옴표 칸
+    return lines.map((l) => Object.fromEntries(split(l).map((v, i) => [cols[i], v])))
+  }
+  const py = new Map(csv('emd_metrics.csv').map((r) => [r.행정동코드, r]))
+  const pyUsage = csv('emd_usage.csv')
+  const cap = baseline.근사상한분
+  const rows = regions.flatMap((r) => emdRows(centers[r.코드], facilities, r.우회계수, cap, baseline.기준분, emd))
+
+  it('행정동 3,557곳 모두 계산되고 인구 합이 시군구 인구와 같다', () => {
+    expect(rows).toHaveLength(3557)
+    for (const r of regions) {
+      const sum = emdRows(centers[r.코드], facilities, r.우회계수, cap, baseline.기준분, emd).reduce((s, x) => s + x.인구, 0)
+      expect(sum).toBe(r.총인구)
+    }
+  })
+
+  it('지표·점수·구간·근사 반영 비율이 Python과 같다', () => {
+    const bad = rows.filter((x) => {
+      const p = py.get(x.code)!
+      return [...ACCESS_KEYS, ...RAW_KEYS].some((k) => Math.abs(x.metrics[k]! - +p[k]) > 1e-6)
+        || Math.abs(x.점수 - +p.접근성점수) > 1e-5 || emd.구간[x.구간] !== p.접근성구간
+        || Math.abs(x.근사반영비율 - +p.근사반영_인구비율) > 1e-5 || Math.abs(x.고령인구비율 - +p.고령인구비율) > 1e-4
+    }).map((x) => [x.code, x.이름])
+    expect(bad).toEqual([])
+  })
+
+  it('이용 기관(응급의료기관·센터) 비율이 Python과 같다', () => {
+    const bad: unknown[] = []
+    for (const x of rows) {
+      for (const [kind, us] of [['응급의료기관', x.em], ['권역지역센터', x.ctr]] as const) {
+        const p = pyUsage.filter((u) => u.행정동코드 === x.code && u.구분 === kind)
+        const ok = p.length === us.length && p.every((u) => {
+          const j = us.find((v) => v.f.hpid === u.hpid)
+          return j && Math.abs(j.share - +u.주민비율) < 1e-5 && Math.abs(j.min - +u.평균주행분) < 1e-5
+        })
+        if (!ok) bad.push([x.code, kind])
+      }
+    }
+    expect(bad).toEqual([])
+  })
+
+  it('시뮬레이터 기관 추가가 읍면동 값에도 반영된다', () => {
+    const 영덕 = regions.find((r) => r.코드 === '47770')!
+    const before = emdRows(centers['47770'], facilities, 영덕.우회계수, cap, baseline.기준분, emd)
+    const target = before.reduce((a, b) => (a.점수 > b.점수 ? a : b))   // 가장 취약한 행정동 기준점에 지역센터 추가
+    const p = centers['47770'].find((c) => c.emd === target.code)!
+    const added: Facility = { hpid: 'SIM-1', 기관명: '가상', 등급: 'G006', 위도: p.lat, 경도: p.lon, 시군구코드: '47770' }
+    const after = emdRows(centers['47770'], [...facilities, added], 영덕.우회계수, cap, baseline.기준분, emd)
+    const t = after.find((x) => x.code === target.code)!
+    expect(t.metrics.최근접_권역지역센터_분).toBeLessThan(target.metrics.최근접_권역지역센터_분)
+    expect(t.em[0].f.hpid).toBe('SIM-1')
+    expect(t.점수).toBeLessThan(target.점수)
   })
 })
