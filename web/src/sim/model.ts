@@ -108,15 +108,26 @@ export function nearestFacilities(points: CenterPoint[], facilities: Facility[],
 }
 
 export interface RankedFacility extends NearFacility { share: number; alt: boolean; plus: number }
+/** 기관 목록 규칙 (Python src.accessibility.pick_list 와 같음) */
+export const LIST_TOP = { em: 3, ctr: 2 }
+export const USAGE_FLOOR = 0.1
+export const LIST_MAX = 5
 /**
- * 지역 상세 기관 목록: 주민 평균 주행시간 가까운 순 n곳 + 이용 주민 비율(그 기관이 최근접인 주민).
- * 이용 비율 0이면 대안(alt), plus 는 1위 대비 추가 시간(분)
+ * 지역 상세·읍면동 기관 목록: 주민 평균 주행시간 짧은 순 상위 n곳 + 이용 주민 비율(그 기관이 최근접인 주민) USAGE_FLOOR 이상인 기관은 항상,
+ * 합계 LIST_MAX 곳까지(넘치면 상위 목록의 대안부터 느린 순으로 뺌). 목록은 주행시간 순. 이용 0%면 대안(alt), plus 는 1위 대비 추가 시간(분)
  */
 export function rankFacilities(points: CenterPoint[], facilities: Facility[], factor: number, cap: number, n: number, centersOnly = false): RankedFacility[] {
   const pool = centersOnly ? facilities.filter(isCenter) : facilities
   const share = new Map(aggregateUsage(points, points.map((p) => nearestOf(p, pool, factor, cap))).map((u) => [u.f, u.share]))
-  const near = nearestFacilities(points, pool, factor, n, cap)
-  return near.map((x) => ({ ...x, share: share.get(x.f) ?? 0, alt: !share.has(x.f), plus: x.min - near[0].min }))
+  const order = nearestFacilities(points, pool, factor, Infinity, cap)
+  const base = order.slice(0, n)
+  const keep = new Set([...base, ...order.filter((x) => (share.get(x.f) ?? 0) >= USAGE_FLOOR)])
+  for (const x of [...base].reverse()) {
+    if (keep.size <= LIST_MAX) break
+    if (!share.has(x.f)) keep.delete(x)
+  }
+  return order.filter((x) => keep.has(x)).slice(0, LIST_MAX)
+    .map((x) => ({ ...x, share: share.get(x.f) ?? 0, alt: !share.has(x.f), plus: x.min - order[0].min }))
 }
 
 export interface Usage { f: Facility; share: number; min: number; km: number; approx: boolean; capped: boolean }

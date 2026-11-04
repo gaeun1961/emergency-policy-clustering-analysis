@@ -1,11 +1,11 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import type { Region } from '../data'
-import { ACCESS_KEYS, RAW_KEYS, driveMinutes, facilityUsage, haversine, makeScorer, nearestFacilities, rankFacilities, scoreAgainstBaseline, simulate, type Baseline, type Centers, type Facility, type RankedFacility } from './model'
+import { ACCESS_KEYS, RAW_KEYS, driveMinutes, facilityUsage, haversine, makeScorer, nearestFacilities, rankFacilities, scoreAgainstBaseline, simulate, LIST_MAX, LIST_TOP, type Baseline, type Centers, type Facility, type RankedFacility } from './model'
 import { recommend } from './recommend'
 import type { SigunguGeo } from '../data'
 import { locateSigungu } from './geo'
-import { EMD_TOP, emdRows, type EmdData } from './emd'
+import { emdRows, type EmdData } from './emd'
 import { applyScenario, fromQuery, keepOnLand, toQuery, type Scenario } from './scenario'
 
 const load = <T>(name: string): T => JSON.parse(readFileSync(new URL(`../../public/data/${name}`, import.meta.url), 'utf-8'))
@@ -230,14 +230,24 @@ describe('가까운 기관 목록 (주민 평균 주행시간 순 + 이용 비�
   const cols = rank[0].split(',')
   const py = rank.slice(1).map((l) => Object.fromEntries(l.split(',').map((v, i) => [cols[i], v])))
   for (const [kind, centersOnly] of [['응급의료기관', false], ['권역지역센터', true]] as const) {
-    it(`${kind}: 229곳 상위 5곳 순서·값이 Python facility_rank 와 같다`, () => {
+    it(`${kind}: 229곳 목록(순서·값)이 Python facility_rank 와 같다`, () => {
       const bad = regions.filter((r) => !sameRank(
-        rankFacilities(centers[r.코드], facilities, r.우회계수, baseline.근사상한분, 5, centersOnly),
+        rankFacilities(centers[r.코드], facilities, r.우회계수, baseline.근사상한분, centersOnly ? LIST_TOP.ctr : LIST_TOP.em, centersOnly),
         py.filter((u) => u.행정기관코드 === r.코드 && u.구분 === kind),
       )).map((r) => r.시군구)
       expect(bad).toEqual([])
     })
   }
+
+  it('영덕: 주민 30%의 최근접인 울진군의료원이 이용 10% 이상 규칙으로 목록에 들어간다', () => {
+    const r = regions.find((x) => x.코드 === '47770')!
+    const rs = rankFacilities(centers['47770'], facilities, r.우회계수, baseline.근사상한분, LIST_TOP.em)
+    const 울진 = rs.find((x) => x.f.기관명 === '울진군의료원')!
+    expect(울진.share).toBeGreaterThan(0.29)
+    expect(rs.indexOf(울진)).toBe(3)                                   // 주행시간 순 3곳 다음 (4번째)
+    for (let i = 1; i < rs.length; i++) expect(rs[i].min).toBeGreaterThanOrEqual(rs[i - 1].min)
+    expect(rs.length).toBeLessThanOrEqual(LIST_MAX)
+  })
 
   it('대안은 이용 비율 0, plus 는 1위 대비 추가 시간', () => {
     const r = regions.find((x) => x.코드 === '47770')!
@@ -336,7 +346,7 @@ describe('읍면동 드릴다운 (Python src.emd_metrics 와 일치)', () => {
     const bad: unknown[] = []
     for (const x of rows) {
       for (const [kind, rs] of [['응급의료기관', x.em], ['권역지역센터', x.ctr]] as const) {
-        const p = pyRank.filter((u) => u.행정동코드 === x.code && u.구분 === kind).slice(0, EMD_TOP)
+        const p = pyRank.filter((u) => u.행정동코드 === x.code && u.구분 === kind)
         if (!sameRank(rs, p)) bad.push([x.code, x.이름, kind, p.map((u) => u.hpid), rs.map((v) => v.f.hpid)])
       }
     }
