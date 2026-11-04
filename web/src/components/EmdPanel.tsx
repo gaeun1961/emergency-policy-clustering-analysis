@@ -19,8 +19,17 @@ interface Props {
 }
 
 const minText = (v: number, raw: number | undefined) => fmt.minAtLeast(v, raw ?? v)
-const usageText = (us: EmdRow['em']) =>
-  us.length ? `${us[0].f.기관명}${us.length > 1 ? ` ${fmt.pct(us[0].share)} 외 ${us.length - 1}곳` : ''}` : '-'
+/** 가까운 순 기관: "이름 N분 (주민 P%)", 이용 0%는 대안으로 흐리게 "+N분" (시군구 상세와 같은 규칙) */
+const RankText = ({ items }: { items: EmdRow['em'] }) => (
+  <>
+    {items.map((x, i) => (
+      <span key={x.f.hpid} className={x.alt ? 'alt' : ''}>
+        {i > 0 && ' · '}{x.f.기관명} {x.capped ? `≥ ${fmt.min(x.min)}` : fmt.min(x.min)}
+        {x.alt ? ` (대안 +${fmt.min(x.plus)})` : ` (주민 ${fmt.pct(x.share)})`}
+      </span>
+    ))}
+  </>
+)
 
 /** 시군구 상세의 읍면동 보기: 전국 행정동 기준 접근성 구간으로 색칠한 지도와 목록. 판정은 시군구 단위 그대로 */
 export default function EmdPanel({ region, rows, data, selected, onSelect, cap }: Props) {
@@ -61,8 +70,9 @@ export default function EmdPanel({ region, rows, data, selected, onSelect, cap }
               <span>응급의료기관 {minText(r.metrics.최근접_응급의료기관_분, r.metrics.최근접_응급의료기관_분_원값)}</span>
               <span>센터 {minText(r.metrics.최근접_권역지역센터_분, r.metrics.최근접_권역지역센터_분_원값)}</span>
             </div>
-            <div className="small muted">가까운 기관: {usageText(r.em)} · 센터: {usageText(r.ctr)}
-              {r.근사반영비율 > 0 && <> · 근사값 반영 {fmt.pct(r.근사반영비율)}</>}</div>
+            <div className="small emd-near">가까운 기관: <RankText items={r.em} /></div>
+            <div className="small emd-near">센터: <RankText items={r.ctr} />
+              {r.근사반영비율 > 0 && <span className="muted"> · 근사값 반영 {fmt.pct(r.근사반영비율)}</span>}</div>
             {r.li.length > 0 && (
               <details className="emd-li">
                 <summary className="small">리(섬)별 {r.li.length}곳</summary>

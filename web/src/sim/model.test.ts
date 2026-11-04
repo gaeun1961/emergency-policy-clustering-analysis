@@ -1,11 +1,11 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import type { Region } from '../data'
-import { ACCESS_KEYS, RAW_KEYS, driveMinutes, facilityUsage, haversine, makeScorer, nearestFacilities, scoreAgainstBaseline, simulate, type Baseline, type Centers, type Facility } from './model'
+import { ACCESS_KEYS, RAW_KEYS, driveMinutes, facilityUsage, haversine, makeScorer, nearestFacilities, rankFacilities, scoreAgainstBaseline, simulate, type Baseline, type Centers, type Facility, type RankedFacility } from './model'
 import { recommend } from './recommend'
 import type { SigunguGeo } from '../data'
 import { locateSigungu } from './geo'
-import { emdRows, type EmdData } from './emd'
+import { EMD_TOP, emdRows, type EmdData } from './emd'
 import { applyScenario, fromQuery, keepOnLand, toQuery, type Scenario } from './scenario'
 
 const load = <T>(name: string): T => JSON.parse(readFileSync(new URL(`../../public/data/${name}`, import.meta.url), 'utf-8'))
@@ -214,6 +214,50 @@ describe('주행시간 (OSRM)', () => {
   })
 })
 
+/** Python 순위 행(csv)과 rankFacilities 결과 비교: 순서·평균 주행분·직선km·이용 비율·근사·상한 */
+function sameRank(rs: RankedFacility[], p: Record<string, string>[]) {
+  return rs.length === p.length && p.every((u, i) => {
+    const v = rs[i]
+    return v.f.hpid === u.hpid && Math.abs(v.min - +u.평균주행분) < 1e-5 && Math.abs(v.km - +u.평균직선km) < 1e-5
+      && Math.abs(v.share - +u.주민비율) < 1e-5 && v.alt === (+u.주민비율 === 0)
+      && v.approx === (u.근사포함 === 'True') && v.capped === (u.상한포함 === 'True')
+  })
+}
+
+describe('가까운 기관 목록 (주민 평균 주행시간 순 + 이용 비율, 대안)', () => {
+  const rank = readFileSync(new URL('../../../data/processed/facility_rank.csv', import.meta.url), 'utf-8')
+    .replace(/^\uFEFF/, '').trim().split(/\r?\n/)
+  const cols = rank[0].split(',')
+  const py = rank.slice(1).map((l) => Object.fromEntries(l.split(',').map((v, i) => [cols[i], v])))
+  for (const [kind, centersOnly] of [['응급의료기관', false], ['권역지역센터', true]] as const) {
+    it(`${kind}: 229곳 상위 5곳 순서·값이 Python facility_rank 와 같다`, () => {
+      const bad = regions.filter((r) => !sameRank(
+        rankFacilities(centers[r.코드], facilities, r.우회계수, baseline.근사상한분, 5, centersOnly),
+        py.filter((u) => u.행정기관코드 === r.코드 && u.구분 === kind),
+      )).map((r) => r.시군구)
+      expect(bad).toEqual([])
+    })
+  }
+
+  it('대안은 이용 비율 0, plus 는 1위 대비 추가 시간', () => {
+    const r = regions.find((x) => x.코드 === '47770')!
+    const rs = rankFacilities(centers['47770'], facilities, r.우회계수, baseline.근사상한분, 3)
+    for (const x of rs) {
+      expect(x.alt).toBe(x.share === 0)
+      expect(x.plus).toBeCloseTo(x.min - rs[0].min, 9)
+    }
+  })
+
+  it('시뮬레이터 추가 기관이 1위가 되고 이용 비율이 생긴다', () => {
+    const r = regions.find((x) => x.코드 === '47770')!
+    const 영덕 = [...centers['47770']].sort((a, b) => b.weight - a.weight)[0]
+    const added: Facility = { hpid: 'SIM-1', 기관명: '가상', 등급: 'G006', 위도: 영덕.lat, 경도: 영덕.lon, 시군구코드: '47770' }
+    const [top] = rankFacilities(centers['47770'], [...facilities, added], r.우회계수, baseline.근사상한분, 3, true)
+    expect(top.f.hpid).toBe('SIM-1')
+    expect(top.share).toBeGreaterThan(0)
+  })
+})
+
 describe('이용 기관 (기준점별 주행시간 최근접 기관의 주민 비율)', () => {
   // Python src.accessibility.facility_usage 결과: 행정기관코드,구분,hpid,주민비율,평균주행분,평균직선km,근사포함
   const rows = readFileSync(new URL('../../../data/processed/facility_usage.csv', import.meta.url), 'utf-8')
@@ -266,7 +310,6 @@ describe('읍면동 드릴다운 (Python src.emd_metrics 와 일치)', () => {
     return lines.map((l) => Object.fromEntries(split(l).map((v, i) => [cols[i], v])))
   }
   const py = new Map(csv('emd_metrics.csv').map((r) => [r.행정동코드, r]))
-  const pyUsage = csv('emd_usage.csv')
   const cap = baseline.근사상한분
   const rows = regions.flatMap((r) => emdRows(centers[r.코드], facilities, r.우회계수, cap, baseline.기준분, emd))
 
@@ -288,16 +331,13 @@ describe('읍면동 드릴다운 (Python src.emd_metrics 와 일치)', () => {
     expect(bad).toEqual([])
   })
 
-  it('이용 기관(응급의료기관·센터) 비율이 Python과 같다', () => {
+  it('가까운 기관(주민 평균 주행시간 순 + 이용 비율)이 Python emd_facility_rank 와 같다', () => {
+    const pyRank = csv('emd_facility_rank.csv')
     const bad: unknown[] = []
     for (const x of rows) {
-      for (const [kind, us] of [['응급의료기관', x.em], ['권역지역센터', x.ctr]] as const) {
-        const p = pyUsage.filter((u) => u.행정동코드 === x.code && u.구분 === kind)
-        const ok = p.length === us.length && p.every((u) => {
-          const j = us.find((v) => v.f.hpid === u.hpid)
-          return j && Math.abs(j.share - +u.주민비율) < 1e-5 && Math.abs(j.min - +u.평균주행분) < 1e-5
-        })
-        if (!ok) bad.push([x.code, kind])
+      for (const [kind, rs] of [['응급의료기관', x.em], ['권역지역센터', x.ctr]] as const) {
+        const p = pyRank.filter((u) => u.행정동코드 === x.code && u.구분 === kind).slice(0, EMD_TOP)
+        if (!sameRank(rs, p)) bad.push([x.code, x.이름, kind, p.map((u) => u.hpid), rs.map((v) => v.f.hpid)])
       }
     }
     expect(bad).toEqual([])
