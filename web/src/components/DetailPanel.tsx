@@ -49,14 +49,17 @@ function RankList({ title, items }: { title: string; items: RankedFacility[] }) 
     <>
       <h3>{title}</h3>
       <ol>
-        {items.map(({ f, share, alt, plus, min, km, approx, capped }) => (
+        {items.map(({ f, share, alt, plus, min, km, approx, capped, useMin, useCapped }) => (
           <li key={f.hpid} className={alt ? 'alt' : ''}>
             <div className="nearest-km">{capped ? `≥ ${fmt.min(min)}` : fmt.min(min)}
+              <div className="muted small">전체 평균</div>
               <div className="muted small">{alt ? <>대안 +{fmt.min(plus)}</> : <>주민 {fmt.pct(share)}</>}</div></div>
             <div>
               <FacilityLines f={f} />
-              <div className="small">주민 평균 자동차 {capped ? `≥ ${fmt.min(min)} (근사)` : fmt.min(min)}{approx && !capped && <span className="muted"> (일부 근사)</span>} · 직선 {fmt.km(km)}
-                {alt ? <span className="muted"> · 이 기관이 가장 가까운 주민 없음</span> : <> · 이 기관이 가장 가까운 주민 {fmt.pct(share)}</>}</div>
+              {alt
+                ? <div className="small">전체 주민 평균 {capped ? `≥ ${fmt.min(min)} (근사)` : fmt.min(min)} · 직선 {fmt.km(km)}<span className="muted"> · 이 기관이 가장 가까운 주민 없음</span></div>
+                : <div className="small">이용 주민({fmt.pct(share)}) 기준 <strong>{useCapped ? `≥ ${fmt.min(useMin!)} (근사)` : fmt.min(useMin!)}</strong>
+                  <span className="muted"> · 전체 주민 평균 {capped ? `≥ ${fmt.min(min)}` : fmt.min(min)}{approx && !capped && ' (일부 근사)'} · 직선 {fmt.km(km)}</span></div>}
             </div>
           </li>
         ))}
@@ -72,7 +75,8 @@ function Usages({ usage, cap, factor }: { usage: RegionUsage; cap?: number; fact
       <RankList title="가까운 응급의료기관" items={usage.em} />
       <RankList title="가까운 권역·지역응급의료센터" items={usage.ctr} />
       <p className="hint">시군구 행정동 기준점(섬 읍·면은 리)에서 잰 OSRM <strong>자동차 주행시간</strong>을 주민 수로 평균해 가까운 순으로 보여줍니다(시군구 밖 기관 포함, 지도에 테두리로 강조).
-        "주민 %"는 그 기관이 가장 가까운 주민의 비율이고, 0%인 기관은 대안으로 흐리게 표시하고 1위보다 몇 분 더 걸리는지 적었습니다.
+        큰 숫자(전체 평균)는 순서를 정하는 값입니다. "주민 %"는 그 기관이 가장 가까운 주민의 비율이고, "이용 주민 기준"은 그 주민들만의 평균 시간입니다.
+        0%인 기관은 대안으로 흐리게 표시하고 1위보다 몇 분 더 걸리는지 적었습니다.
         실시간 교통·구급차 우선통행은 반영하지 않습니다. 도로로 닿지 않거나 가까운 10곳 밖이면 직선거리 × 우회계수({factor.toFixed(2)}분/km) 근사값이고,
         {cap !== undefined && <> 근사값은 {fmt.min(cap)}에서 잘라 "≥"로 표시합니다.</>}</p>
     </div>

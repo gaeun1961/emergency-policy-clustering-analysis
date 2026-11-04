@@ -221,6 +221,8 @@ function sameRank(rs: RankedFacility[], p: Record<string, string>[]) {
     return v.f.hpid === u.hpid && Math.abs(v.min - +u.평균주행분) < 1e-5 && Math.abs(v.km - +u.평균직선km) < 1e-5
       && Math.abs(v.share - +u.주민비율) < 1e-5 && v.alt === (+u.주민비율 === 0)
       && v.approx === (u.근사포함 === 'True') && v.capped === (u.상한포함 === 'True')
+      && (u.이용주민평균주행분 === '' ? v.useMin === null : Math.abs(v.useMin! - +u.이용주민평균주행분) < 1e-5)
+      && v.useCapped === (u.이용주민상한포함 === 'True')
   })
 }
 
@@ -245,6 +247,8 @@ describe('가까운 기관 목록 (주민 평균 주행시간 순 + 이용 비�
     const 울진 = rs.find((x) => x.f.기관명 === '울진군의료원')!
     expect(울진.share).toBeGreaterThan(0.29)
     expect(rs.indexOf(울진)).toBe(3)                                   // 주행시간 순 3곳 다음 (4번째)
+    expect(울진.useMin).toBeCloseTo(53.09, 1)                          // 이용 주민(북부) 기준 약 53분, 전체 평균은 88분
+    expect(울진.min).toBeGreaterThan(80)
     for (let i = 1; i < rs.length; i++) expect(rs[i].min).toBeGreaterThanOrEqual(rs[i - 1].min)
     expect(rs.length).toBeLessThanOrEqual(LIST_MAX)
   })

@@ -124,15 +124,15 @@ def facility_usage(points, group='행정기관코드'):
     for kind, c in USAGE_KINDS.items():
         u = pd.DataFrame({group: points[group], 'hpid': points[f'{c}_hpid'], 'w': points['가중치'],
                           'wm': points['가중치'] * points[f'{c}_분'], 'wk': points['가중치'] * points[f'{c}_km'],
-                          'approx': points[f'{c}_근사']})
+                          'approx': points[f'{c}_근사'], 'capped': points[f'{c}_상한']})
         g = u.groupby([group, 'hpid'])
-        a = g[['w', 'wm', 'wk']].sum().join(g['approx'].any())
+        a = g[['w', 'wm', 'wk']].sum().join(g[['approx', 'capped']].any())
         total = u.groupby(group)['w'].sum()
         a = a.assign(주민비율=a['w'] / total.reindex(a.index.get_level_values(0)).to_numpy(),
-                     평균주행분=a['wm'] / a['w'], 평균직선km=a['wk'] / a['w'], 구분=kind).rename(columns={'approx': '근사포함'})
+                     평균주행분=a['wm'] / a['w'], 평균직선km=a['wk'] / a['w'], 구분=kind).rename(columns={'approx': '근사포함', 'capped': '상한포함'})
         out.append(a.reset_index())
     u = pd.concat(out).sort_values([group, '구분', '주민비율', '평균주행분'], ascending=[True, True, False, True])
-    return u[[group, '구분', 'hpid', '주민비율', '평균주행분', '평균직선km', '근사포함']]
+    return u[[group, '구분', 'hpid', '주민비율', '평균주행분', '평균직선km', '근사포함', '상한포함']]
 
 
 # 지역 상세 기관 목록 규칙 (웹 rankFacilities 와 같음): 주행시간 순 상위 LIST_TOP 곳 + 이용 주민 비율 USAGE_FLOOR 이상인 기관은 항상,
@@ -171,7 +171,9 @@ def facility_rank(centers, em, t, raw, approx, d_em, usage, group):
     wsum = np.bincount(inv, weights=w)[:, None]
     mean_t, mean_raw, mean_km = sums['t'] / wsum, sums['raw'] / wsum, sums['km'] / wsum
     hp = em['hpid'].astype(str).to_numpy()
-    share = usage.set_index([group, '구분', 'hpid'])['주민비율'].to_dict()  # dict 조회가 MultiIndex .get 보다 훨씬 빠름
+    idx = usage.set_index([group, '구분', 'hpid'])
+    share = idx['주민비율'].to_dict()  # dict 조회가 MultiIndex .get 보다 훨씬 빠름
+    use_min, use_cap = idx['평균주행분'].to_dict(), idx['상한포함'].to_dict()  # 이용 주민(그 기관이 최근접인 주민) 기준
     rows = []
     for kind, cols in [('응급의료기관', np.arange(t.shape[1])), ('권역지역센터', np.flatnonzero(em['dutyEmcls'].isin(CENTER).to_numpy()))]:
         for i, code in enumerate(codes):
@@ -182,7 +184,8 @@ def facility_rank(centers, em, t, raw, approx, d_em, usage, group):
             for r, j in enumerate(pick_list(order, sh, LIST_TOP[kind]), 1):
                 rows.append({group: code, '구분': kind, '순위': r, '시간순위': rank[j], 'hpid': hp[j], '평균주행분': mean_t[i, j],
                              '평균직선km': mean_km[i, j], '주민비율': sh.get(j, 0.0), '근사포함': sums['approx'][i, j] > 0,
-                             '상한포함': sums['capped'][i, j] > 0})
+                             '상한포함': sums['capped'][i, j] > 0, '이용주민평균주행분': use_min.get((code, kind, hp[j])),
+                             '이용주민상한포함': use_cap.get((code, kind, hp[j]))})
     return pd.DataFrame(rows)
 
 
@@ -221,6 +224,7 @@ def build(out=OUT):
     for c, idx in [('최근접기관', ie), ('최근접센터', ic)]:
         centers[f'{c}_hpid'], centers[f'{c}_분'] = hp[idx], t[rows, idx]
         centers[f'{c}_km'], centers[f'{c}_근사'] = d_em[rows, idx], approx[rows, idx]
+        centers[f'{c}_상한'] = approx[rows, idx] & (raw[rows, idx] > t[rows, idx])
 
     metrics = ['최근접_응급의료기관_분', '최근접_권역지역센터_분', f'{MINUTES}분내_응급의료기관수',
                '최근접_응급의료기관_분_원값', '최근접_권역지역센터_분_원값', '근사반영_인구비율',
@@ -244,7 +248,7 @@ def build(out=OUT):
     centers['행정동코드'] = centers['기준점ID'].str.split('-').str[0]
     point_cols = ['기준점ID', '행정동코드', '행정기관코드', '지점', '가중치', '최근접_응급의료기관_분', '최근접_권역지역센터_분',
                   f'{MINUTES}분내_응급의료기관수', '최근접_응급의료기관_분_원값', '최근접_권역지역센터_분_원값',
-                  *[f'{c}_{k}' for c in USAGE_KINDS.values() for k in ('hpid', '분', 'km', '근사')]]
+                  *[f'{c}_{k}' for c in USAGE_KINDS.values() for k in ('hpid', '분', 'km', '근사', '상한')]]
     centers[point_cols].to_csv(out.parent / 'accessibility_points.csv', index=False, encoding='utf-8-sig')
     usage = facility_usage(centers)
     usage.round(6).to_csv(out.parent / 'facility_usage.csv', index=False, encoding='utf-8-sig')

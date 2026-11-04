@@ -23,13 +23,16 @@ export function FacilityLines({ f }: { f: Facility }) {
 }
 
 /** 지도 기관 마커를 눌렀을 때 뜨는 팝업. 시뮬레이션 중에는 제거 버튼 */
-interface PopupTime { region: string; min: number; km: number; approx: boolean; capped: boolean }
+interface PopupTime { region: string; min: number; km: number; approx: boolean; capped: boolean; use?: { share: number; min: number; capped: boolean; center: boolean } }
 export function FacilityPopup({ f, x, y, time, onRemove, onClose }: { f: Facility; x: number; y: number; time?: PopupTime; onRemove?: () => void; onClose: () => void }) {
   return (
     <div className="chooser fac-popup" style={{ left: Math.max(8, Math.min(x, window.innerWidth - 268)), top: Math.min(y + 8, window.innerHeight - 170) }}
       role="dialog" aria-label={`${f.기관명} 정보`}>
       <FacilityLines f={f} />
-      {time && <div className="small fac-time">{time.region} 주민 평균 자동차 <strong>{time.capped ? `≥ ${fmt.min(time.min)}` : fmt.min(time.min)}</strong> · 직선 {fmt.km(time.km)}
+      {time?.use && <div className="small fac-time">{time.region} 주민 {fmt.pct(time.use.share)}의 가장 가까운 {time.use.center ? '센터' : '응급의료기관'} ·
+        이용 주민 기준 <strong>{time.use.capped ? `≥ ${fmt.min(time.use.min)} (근사)` : fmt.min(time.use.min)}</strong></div>}
+      {time && <div className="small fac-time">{time.region} 전체 주민 평균 자동차 {time.use ? '' : <strong>{time.capped ? `≥ ${fmt.min(time.min)}` : fmt.min(time.min)}</strong>}
+        {time.use && (time.capped ? `≥ ${fmt.min(time.min)}` : fmt.min(time.min))} · 직선 {fmt.km(time.km)}
         {time.approx && <span className="muted">{isVirtual(f) ? ' (근사값: 직선거리 × 우회계수)' : ' (일부 근사값)'}</span>}</div>}
       {onRemove && <button onClick={onRemove}>이 기관 제거</button>}
       <button className="link" onClick={onClose}>닫기</button>

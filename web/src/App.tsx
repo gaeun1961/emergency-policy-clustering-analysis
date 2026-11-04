@@ -9,7 +9,7 @@ import ScatterPlot from './components/ScatterPlot'
 import SimPanel, { AddChooser, type RecKind } from './components/SimPanel'
 import { isIsland, loadData, loadSimData, quantile, regionName, type Data, type Region, type SimData } from './data'
 import { CLUSTER_COLOR, GRADE_COLOR, buildMetrics, clusterDesc, type MetricKey } from './metrics'
-import { LIST_TOP, nearestFacilities, rankFacilities, simulate, type Facility, type FacilityGrade } from './sim/model'
+import { LIST_TOP, facilityUsage, isCenter, nearestFacilities, rankFacilities, simulate, type Facility, type FacilityGrade } from './sim/model'
 import type { Effect } from './sim/recommend'
 import { locateSigungu } from './sim/geo'
 import { EMPTY, applyScenario, fromQuery, keepOnLand, toQuery, type Scenario } from './sim/scenario'
@@ -197,13 +197,19 @@ export default function App() {
     setFacPopup(null)
   }
 
-  /** 팝업: 선택한 시군구 주민 기준 이 기관까지 평균 주행시간. 직선 60km 넘게 먼 기관은 근사만 남아 의미가 없어 생략 */
+  /** 팝업: 선택한 시군구 주민 기준 이 기관까지 평균 주행시간과, 이 기관이 가장 가까운 주민(이용 주민) 기준 시간 */
   const popupTime = (f: Facility) => {
     const r = selected ? view?.byCode.get(selected) : null
     const pts = selected ? simData?.centers[selected] : null
     if (!r || !pts) return undefined
-    const [t] = nearestFacilities(pts, [f], r.우회계수, 1, simData?.baseline.근사상한분)
-    return t.km > 60 ? undefined : { region: regionName(r), min: t.min, km: t.km, approx: t.approx, capped: t.capped }
+    const cap = simData!.baseline.근사상한분
+    const [t] = nearestFacilities(pts, [f], r.우회계수, 1, cap)
+    // 이용 주민: 응급의료기관 전체 중 이 기관이 최근접인 주민. 없고 센터면 센터 중 최근접인 주민
+    const use = facilityUsage(pts, applied!, r.우회계수, cap).find((u) => u.f === f)
+      ?? (isCenter(f) ? facilityUsage(pts, applied!, r.우회계수, cap, true).find((u) => u.f === f) : undefined)
+    if (t.km > 60 && !use) return undefined // 이용 주민도 없는 먼 기관은 근사만 남아 의미가 없어 생략
+    return { region: regionName(r), min: t.min, km: t.km, approx: t.approx, capped: t.capped,
+      use: use && { share: use.share, min: use.min, capped: use.capped, center: !facilityUsage(pts, applied!, r.우회계수, cap).some((u) => u.f === f) } }
   }
   const toggleSim = () => {
     setSimOn(!simOn)
