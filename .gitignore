@@ -6,3 +6,5 @@ design-preview/
 # OSRM 대용량 파일은 레포 밖(~/osrm)에 둔다. 실수로 복사해도 커밋되지 않게
 *.osm.pbf
 *.osrm*
+# 데이터 감시 스크립트 출력 (scripts/check_data_updates.py)
+data-watch/
