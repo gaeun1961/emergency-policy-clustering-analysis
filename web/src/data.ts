@@ -12,9 +12,14 @@ export interface Region {
   고령인구비율: number
   독거노인비율: number
   장애인비율: number
-  최근접_응급의료기관_km: number
+  최근접_응급의료기관_분: number
+  최근접_권역지역센터_분: number
+  '30분내_기관수': number
+  최근접_응급의료기관_km: number   // 직선거리 지표 (비교용으로 보존)
   최근접_권역지역센터_km: number
   반경30km_기관수: number
+  우회계수: number                 // 분/직선km: 실주행시간이 없는 기관·가상 기관 근사에 씀
+  직선거리대체비율: number          // 어느 기관에도 도로로 닿지 않아 직선거리로 대체한 인구 비율 (연륙 안 된 섬 등)
   접근성점수: number
   복지점수: number
   등급: Grade

@@ -4,12 +4,12 @@ import { nearestFacilities, type CenterPoint, type Facility } from '../sim/model
 import { textOn } from '../theme'
 import { FacilityLines } from './FacilityInfo'
 
-interface Props { region: Region | null; total: number; regions: Region[]; facilities?: Facility[]; points?: CenterPoint[] }
+interface Props { region: Region | null; total: number; regions: Region[]; facilities?: Facility[]; points?: CenterPoint[]; sim?: boolean }
 
 /** 전국 중앙값 대비 미니 막대: 선택 지역(막대)과 전국 중앙값(세로선) */
 const COMPARE: { key: keyof Region; label: string; format: (v: number) => string }[] = [
-  { key: '최근접_응급의료기관_km', label: '최근접 응급의료기관', format: fmt.km },
-  { key: '최근접_권역지역센터_km', label: '최근접 권역·지역센터', format: fmt.km },
+  { key: '최근접_응급의료기관_분', label: '최근접 응급의료기관 (자동차)', format: fmt.min },
+  { key: '최근접_권역지역센터_분', label: '최근접 권역·지역센터 (자동차)', format: fmt.min },
   { key: '고령인구비율', label: '고령인구비율', format: fmt.pct },
   { key: '독거노인비율', label: '독거노인비율', format: fmt.pct },
 ]
@@ -40,21 +40,23 @@ function MedianBars({ r, regions }: { r: Region; regions: Region[] }) {
   )
 }
 
-/** 가까운 응급의료기관 3곳: 시군구 기준점에서 잰 직선거리를 주민 수로 가중평균한 거리 순 */
-function NearestFacilities({ facilities, points }: { facilities: Facility[]; points: CenterPoint[] }) {
-  const near = nearestFacilities(points, facilities, 3)
+/** 가까운 응급의료기관 3곳: 시군구 기준점에서 잰 자동차 주행시간을 주민 수로 가중평균한 시간 순 */
+function NearestFacilities({ facilities, points, factor }: { facilities: Facility[]; points: CenterPoint[]; factor: number }) {
+  const near = nearestFacilities(points, facilities, factor, 3)
   return (
     <div className="nearest">
       <h3>가까운 응급의료기관 {near.length}곳</h3>
       <ol>
-        {near.map(({ f, km }) => (
+        {near.map(({ f, min, km, approx }) => (
           <li key={f.hpid}>
-            <div className="nearest-km">{fmt.km(km)}</div>
+            <div className="nearest-km">{fmt.min(min)}{approx && <span className="muted small" title="일부 기준점은 직선거리 × 우회계수 근사"> *</span>}
+              <div className="muted small">직선 {fmt.km(km)}</div></div>
             <div><FacilityLines f={f} /></div>
           </li>
         ))}
       </ol>
-      <p className="hint">거리는 이 시군구의 행정동 기준점(섬 읍·면은 리)에서 잰 <strong>직선거리</strong>를 주민 수로 가중평균한 값이라, 실제 도로 거리·이동 시간과 다릅니다.</p>
+      <p className="hint">시간은 이 시군구의 행정동 기준점(섬 읍·면은 리)에서 OSRM으로 잰 <strong>자동차 주행시간</strong>을 주민 수로 가중평균한 값입니다.
+        실시간 교통·구급차 우선통행은 반영하지 않습니다. * 표시는 일부 기준점이 가까운 10곳 밖이거나 도로로 닿지 않아 직선거리 × 우회계수({factor.toFixed(2)}분/km)로 근사한 값이 섞였다는 뜻입니다.</p>
     </div>
   )
 }
@@ -67,7 +69,7 @@ export function IslandBadge() {
   )
 }
 
-export default function DetailPanel({ region: r, total, regions, facilities, points }: Props) {
+export default function DetailPanel({ region: r, total, regions, facilities, points, sim }: Props) {
   if (!r) return <div className="detail"><p className="muted">지도, 산점도, 표에서 시군구를 선택하세요.</p></div>
 
   const cards: [string, string][] = [
@@ -75,9 +77,9 @@ export default function DetailPanel({ region: r, total, regions, facilities, poi
     ['고령인구비율', fmt.pct(r.고령인구비율)],
     ['독거노인비율', fmt.pct(r.독거노인비율)],
     ['장애인비율', fmt.pct(r.장애인비율)],
-    ['최근접 응급의료기관', fmt.km(r.최근접_응급의료기관_km)],
-    ['최근접 권역·지역센터', fmt.km(r.최근접_권역지역센터_km)],
-    ['반경 30km 응급의료기관', `${r.반경30km_기관수.toFixed(r.반경30km_기관수 % 1 ? 1 : 0)}곳`],
+    ['최근접 응급의료기관', fmt.min(r.최근접_응급의료기관_분) + (sim ? '' : ` (직선 ${fmt.km(r.최근접_응급의료기관_km)})`)],
+    ['최근접 권역·지역센터', fmt.min(r.최근접_권역지역센터_분) + (sim ? '' : ` (직선 ${fmt.km(r.최근접_권역지역센터_km)})`)],
+    ['30분 내 응급의료기관', `${r['30분내_기관수'].toFixed(r['30분내_기관수'] % 1 ? 1 : 0)}곳`],
   ]
   return (
     <div className="detail" aria-live="polite">
@@ -86,6 +88,8 @@ export default function DetailPanel({ region: r, total, regions, facilities, poi
         <div className="badges">
           {r.등급 && <span className="badge" style={{ background: GRADE_COLOR[r.등급], color: textOn(GRADE_COLOR[r.등급]) }}>{r.등급}</span>}
           {isIsland(r) && <IslandBadge />}
+          {r.직선거리대체비율 > 0 && <span className="badge island" title="어느 응급의료기관에도 도로(다리)로 닿지 않는 기준점은 직선거리 × 우회계수로 근사했다 (해상 이동 미반영)">
+            도로 미연결 {fmt.pct(r.직선거리대체비율)} 직선 근사</span>}
         </div>
       </div>
 
@@ -113,7 +117,7 @@ export default function DetailPanel({ region: r, total, regions, facilities, poi
         </div>
       </div>
 
-      {facilities && points && <NearestFacilities facilities={facilities} points={points} />}
+      {facilities && points && <NearestFacilities facilities={facilities} points={points} factor={r.우회계수} />}
 
       <MedianBars r={r} regions={regions} />
     </div>

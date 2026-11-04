@@ -6,7 +6,7 @@ export const GRADE_COLOR: Record<Grade, string> = { '이중 취약': T.grade.dou
 export const CLUSTER_COLOR = T.cluster // 0 도시 / 1 센터 원거리 / 2 응급의료 취약 (취약할수록 진하게)
 const RAMP = T.ramp
 
-export type MetricKey = '등급' | '접근성점수' | '복지점수' | '클러스터' | '최근접_응급의료기관_km' | '최근접_권역지역센터_km'
+export type MetricKey = '등급' | '접근성점수' | '복지점수' | '클러스터' | '최근접_응급의료기관_분' | '최근접_권역지역센터_분' | '최근접_응급의료기관_km' | '최근접_권역지역센터_km'
 
 export interface LegendItem { color: string; label: string }
 export interface Metric {
@@ -21,6 +21,7 @@ export interface Metric {
 const pct = (v: number) => `${(v * 100).toFixed(1)}%`
 export const fmt = {
   km: (v: number) => `${v < 10 ? v.toFixed(1) : v.toFixed(0)}km`,
+  min: (v: number) => `${v < 10 ? v.toFixed(1) : v.toFixed(0)}분`,
   score: (v: number) => v.toFixed(1),
   pct,
   int: (v: number) => Math.round(v).toLocaleString('ko-KR'),
@@ -38,12 +39,14 @@ export function buildMetrics(regions: Region[], clusterLabels: Record<string, st
   const scoreBreaks = [20, 40, 60, 80]
   const acc = stepped(regions.map((r) => r.접근성점수), scoreBreaks, (v) => v.toFixed(0))
   const wel = stepped(regions.map((r) => r.복지점수), scoreBreaks, (v) => v.toFixed(0))
-  const kmScale = (get: (r: Region) => number) => {
+  const qScale = (get: (r: Region) => number, f: (v: number) => string) => {
     const vs = regions.map(get)
-    return stepped(vs, [0.2, 0.4, 0.6, 0.8].map((q) => quantile(vs, q)), (v) => fmt.km(v))
+    return stepped(vs, [0.2, 0.4, 0.6, 0.8].map((q) => quantile(vs, q)), f)
   }
-  const near = kmScale((r) => r.최근접_응급의료기관_km)
-  const ctr = kmScale((r) => r.최근접_권역지역센터_km)
+  const near = qScale((r) => r.최근접_응급의료기관_km, fmt.km)
+  const ctr = qScale((r) => r.최근접_권역지역센터_km, fmt.km)
+  const nearMin = qScale((r) => r.최근접_응급의료기관_분, fmt.min)
+  const ctrMin = qScale((r) => r.최근접_권역지역센터_분, fmt.min)
 
   return {
     등급: {
@@ -68,13 +71,23 @@ export function buildMetrics(regions: Region[], clusterLabels: Record<string, st
       color: (r) => CLUSTER_COLOR[r.클러스터],
       legend: Object.entries(clusterLabels).map(([k, v]) => ({ color: CLUSTER_COLOR[Number(k)], label: `${k}. ${v}` })),
     },
+    최근접_응급의료기관_분: {
+      key: '최근접_응급의료기관_분', label: '최근접 응급의료기관 주행시간',
+      format: (r) => fmt.min(r.최근접_응급의료기관_분), color: (r) => nearMin.color(r.최근접_응급의료기관_분), legend: nearMin.legend,
+      note: '행정동 인구가중 자동차 주행시간(OSRM), 5분위',
+    },
+    최근접_권역지역센터_분: {
+      key: '최근접_권역지역센터_분', label: '최근접 권역·지역응급의료센터 주행시간',
+      format: (r) => fmt.min(r.최근접_권역지역센터_분), color: (r) => ctrMin.color(r.최근접_권역지역센터_분), legend: ctrMin.legend,
+      note: '행정동 인구가중 자동차 주행시간(OSRM), 5분위',
+    },
     최근접_응급의료기관_km: {
-      key: '최근접_응급의료기관_km', label: '최근접 응급의료기관 거리',
+      key: '최근접_응급의료기관_km', label: '최근접 응급의료기관 직선거리',
       format: (r) => fmt.km(r.최근접_응급의료기관_km), color: (r) => near.color(r.최근접_응급의료기관_km), legend: near.legend,
       note: '행정동 인구가중 직선거리, 5분위',
     },
     최근접_권역지역센터_km: {
-      key: '최근접_권역지역센터_km', label: '최근접 권역·지역응급의료센터 거리',
+      key: '최근접_권역지역센터_km', label: '최근접 권역·지역응급의료센터 직선거리',
       format: (r) => fmt.km(r.최근접_권역지역센터_km), color: (r) => ctr.color(r.최근접_권역지역센터_km), legend: ctr.legend,
       note: '행정동 인구가중 직선거리, 5분위',
     },
@@ -92,7 +105,7 @@ export function clusterDesc(regions: Region[], k: number): string {
   const rs = regions.filter((r) => r.클러스터 === k)
   if (!rs.length) return CLUSTER_LEAD[k] ?? ''
   const med = (f: (r: Region) => number) => quantile(rs.map(f), 0.5)
-  return `${CLUSTER_LEAD[k] ?? ''} 중앙값: 최근접 응급의료기관 ${fmt.km(med((r) => r.최근접_응급의료기관_km))}, ` +
-    `권역·지역센터 ${fmt.km(med((r) => r.최근접_권역지역센터_km))}, 반경 30km 기관 ${Math.round(med((r) => r.반경30km_기관수))}곳, ` +
+  return `${CLUSTER_LEAD[k] ?? ''} 중앙값(자동차): 최근접 응급의료기관 ${fmt.min(med((r) => r.최근접_응급의료기관_분))}, ` +
+    `권역·지역센터 ${fmt.min(med((r) => r.최근접_권역지역센터_분))}, 30분 내 기관 ${Math.round(med((r) => r['30분내_기관수']))}곳, ` +
     `고령인구 ${fmt.pct(med((r) => r.고령인구비율))} (${rs.length}곳)`
 }
