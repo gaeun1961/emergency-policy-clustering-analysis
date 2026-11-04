@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import DetailPanel, { IslandBadge } from './components/DetailPanel'
+import DetailPanel, { IslandBadge, type RegionUsage } from './components/DetailPanel'
 import { FacilityPopup, isVirtual } from './components/FacilityInfo'
 import DoubleTable from './components/DoubleTable'
 import MapView, { type MapSim } from './components/MapView'
@@ -7,7 +7,7 @@ import ScatterPlot from './components/ScatterPlot'
 import SimPanel, { AddChooser, type RecKind } from './components/SimPanel'
 import { isIsland, loadData, loadSimData, quantile, regionName, type Data, type Region, type SimData } from './data'
 import { CLUSTER_COLOR, GRADE_COLOR, buildMetrics, clusterDesc, type MetricKey } from './metrics'
-import { nearestFacilities, simulate, type Facility, type FacilityGrade } from './sim/model'
+import { facilityUsage, nearestFacilities, simulate, type Facility, type FacilityGrade } from './sim/model'
 import type { Effect } from './sim/recommend'
 import { locateSigungu } from './sim/geo'
 import { EMPTY, applyScenario, fromQuery, keepOnLand, toQuery, type Scenario } from './sim/scenario'
@@ -126,7 +126,17 @@ export default function App() {
     setTab((t) => (t === 'sim' ? t : 'detail'))
   }, [])
 
-  const markers = useMemo(() => (applied ?? []).filter((f) => showLocal || f.등급 !== 'G007' || f.hpid.startsWith('SIM-')), [applied, showLocal])
+  /** 선택 지역 주민의 이용 기관 (지역 상세 목록 + 지도 강조). 시뮬레이션 중이면 추가·제거가 반영된 기관 목록 기준 */
+  const usage: RegionUsage | null = useMemo(() => {
+    const r = selected ? view?.byCode.get(selected) : null
+    const pts = selected ? simData?.centers[selected] : null
+    if (!r || !pts || !applied || !simData) return null
+    const cap = simData.baseline.근사상한분
+    return { em: facilityUsage(pts, applied, r.우회계수, cap).slice(0, 3), ctr: facilityUsage(pts, applied, r.우회계수, cap, true).slice(0, 2) }
+  }, [selected, view, simData, applied])
+  const highlight = useMemo(() => new Set(usage ? [...usage.em, ...usage.ctr].map((u) => u.f.hpid) : []), [usage])
+  // 강조 기관은 지역응급의료기관 표시를 꺼도 보이게
+  const markers = useMemo(() => (applied ?? []).filter((f) => showLocal || f.등급 !== 'G007' || f.hpid.startsWith('SIM-') || highlight.has(f.hpid)), [applied, showLocal, highlight])
   const mapSim: MapSim | undefined = useMemo(() => {
     if (!simOn || !data || !view) return undefined
     return {
@@ -212,7 +222,7 @@ export default function App() {
       <main className="body">
         <section className="map-area" aria-label="지도">
           <MapView data={data} byCode={view.byCode} metric={metric} selected={selected} onSelect={select} onHover={onHover}
-            facilities={markers} onFacilityClick={onFacilityClick} sim={mapSim}>
+            facilities={markers} onFacilityClick={onFacilityClick} highlight={highlight} sim={mapSim}>
             <label className="select">
               <select value={metricKey} onChange={(e) => setMetricKey(e.target.value as MetricKey)} aria-label="지도 지표">
                 {METRIC_KEYS.filter((k) => !simOn || !k.endsWith('_km')).map((k) => <option key={k} value={k}>{metrics[k].label}</option>)}
@@ -225,6 +235,7 @@ export default function App() {
             <ul className="legend markers-key">
               <li><span className="mk diamond" />권역센터</li>
               <li><span className="mk circle" />지역센터</li>
+              {highlight.size > 0 && <li><span className="mk hl" />선택 지역 이용 기관</li>}
               <li><label><input type="checkbox" checked={showLocal} onChange={(e) => setShowLocal(e.target.checked)} /> 지역응급의료기관 표시</label></li>
               {simOn && <li><span className="mk added" />가상 추가</li>}
               {simOn && <li><span className="mk changed" />등급 변경</li>}
@@ -243,7 +254,7 @@ export default function App() {
           </nav>
           <div className="tab-body" role="tabpanel">
             {tab === 'detail' && <DetailPanel region={selected ? view.byCode.get(selected) ?? null : null} total={meta.시군구수} regions={view.regions}
-              facilities={applied ?? undefined} points={selected ? simData?.centers[selected] : undefined} cap={simData?.baseline.근사상한분} sim={simOn} />}
+              usage={usage} cap={simData?.baseline.근사상한분} sim={simOn} />}
             {tab === 'dist' && (
               <>
                 <ul className="legend">

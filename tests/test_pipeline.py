@@ -153,6 +153,11 @@ def test_end_to_end():
         assert a.loc['36110', '최근접_권역지역센터_분'] == cap < a.loc['36110', '최근접_권역지역센터_분_원값']
         # 근사 반영 인구 비율: 최근접 기관·센터 둘 중 하나라도 근사값이면 1. 종로 a동은 둘 다 실주행(G001 1분)
         assert a.loc['11110', '근사반영_인구비율'] == 0 and a.loc['36110', '근사반영_인구비율'] == 1
+        # 이용 기관: 수원(41110) 주민 400명 모두 2번 기관이 최근접 -> 비율 1, 평균 (1×300 + 20×100)/400분
+        u = pd.read_csv(d / 'facility_usage.csv', dtype={'행정기관코드': str, 'hpid': str}).set_index(['행정기관코드', '구분'])
+        sw = u.loc[('41110', '응급의료기관')]
+        assert sw['hpid'] == '2' and sw['주민비율'] == 1 and abs(sw['평균주행분'] - 5.75) < 1e-6
+        assert (u.groupby(level=[0, 1])['주민비율'].sum().round(6) == 1).all()
 
         t = main(d / 'out', pop_file, sh_file, dis_file, acc_file)
 

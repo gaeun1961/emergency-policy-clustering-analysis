@@ -1,10 +1,10 @@
 import { isIsland, quantile, regionName, type Region } from '../data'
 import { CLUSTER_COLOR, GRADE_COLOR, clusterDesc, fmt } from '../metrics'
-import { nearestFacilities, type CenterPoint, type Facility } from '../sim/model'
+import type { Usage } from '../sim/model'
 import { textOn } from '../theme'
 import { FacilityLines } from './FacilityInfo'
 
-interface Props { region: Region | null; total: number; regions: Region[]; facilities?: Facility[]; points?: CenterPoint[]; cap?: number; sim?: boolean }
+interface Props { region: Region | null; total: number; regions: Region[]; usage?: RegionUsage | null; cap?: number; sim?: boolean }
 
 /** 근사값 반영 인구 비율이 이 이상이면 배지 */
 const APPROX_BADGE = 0.05
@@ -43,24 +43,35 @@ function MedianBars({ r, regions }: { r: Region; regions: Region[] }) {
   )
 }
 
-/** 가까운 응급의료기관 3곳: 시군구 기준점에서 잰 자동차 주행시간을 주민 수로 가중평균한 시간 순 */
-function NearestFacilities({ facilities, points, factor, cap }: { facilities: Facility[]; points: CenterPoint[]; factor: number; cap?: number }) {
-  const near = nearestFacilities(points, facilities, factor, 3, cap)
+/** 이용 기관 목록: 기준점별 주행시간 최근접 기관을 시군구 인구로 집계 (App 에서 계산해 넘김, 지도 강조와 같은 목록) */
+function UsageList({ title, items }: { title: string; items: Usage[] }) {
   return (
-    <div className="nearest">
-      <h3>가까운 응급의료기관 {near.length}곳</h3>
+    <>
+      <h3>{title}</h3>
       <ol>
-        {near.map(({ f, min, km, approx, capped }) => (
+        {items.map(({ f, share, min, km, approx, capped }) => (
           <li key={f.hpid}>
-            <div className="nearest-km">{capped ? `≥ ${fmt.min(min)}` : fmt.min(min)}{approx && <span className="muted small" title="일부 기준점은 직선거리 × 우회계수 근사"> *</span>}
-              <div className="muted small">직선 {fmt.km(km)}</div></div>
-            <div><FacilityLines f={f} /></div>
+            <div className="nearest-km">{fmt.pct(share)}<div className="muted small">주민</div></div>
+            <div>
+              <FacilityLines f={f} />
+              <div className="small">이용 주민 평균 자동차 <strong>{capped ? `≥ ${fmt.min(min)} (근사)` : fmt.min(min)}</strong>{approx && !capped && <span className="muted"> (일부 근사)</span>} · 직선 {fmt.km(km)}</div>
+            </div>
           </li>
         ))}
       </ol>
-      <p className="hint">시간은 이 시군구의 행정동 기준점(섬 읍·면은 리)에서 OSRM으로 잰 <strong>자동차 주행시간</strong>을 주민 수로 가중평균한 값입니다.
-        실시간 교통·구급차 우선통행은 반영하지 않습니다. * 표시는 일부 기준점이 가까운 10곳 밖이거나 도로로 닿지 않아 직선거리 × 우회계수({factor.toFixed(2)}분/km)로 근사한 값이 섞였다는 뜻입니다.
-        {cap !== undefined && <> 근사값은 도로로 잰 주행시간의 99백분위({fmt.min(cap)})에서 잘라, 잘린 값이 섞이면 ≥ 로 표시합니다.</>}</p>
+          </>
+  )
+}
+
+export interface RegionUsage { em: Usage[]; ctr: Usage[] }
+function Usages({ usage, cap, factor }: { usage: RegionUsage; cap?: number; factor: number }) {
+  return (
+    <div className="nearest">
+      <UsageList title="주민이 가장 가깝게 이용하는 응급의료기관" items={usage.em} />
+      <UsageList title="가장 가까운 권역·지역응급의료센터" items={usage.ctr} />
+      <p className="hint">행정동 기준점(섬 읍·면은 리)마다 OSRM <strong>자동차 주행시간</strong>이 가장 짧은 기관을 정하고, 주민 수로 비율을 냈습니다(시군구 밖 기관 포함, 지도에 테두리로 강조).
+        실시간 교통·구급차 우선통행은 반영하지 않습니다. 도로로 닿지 않거나 가까운 10곳 밖이면 직선거리 × 우회계수({factor.toFixed(2)}분/km) 근사값이고,
+        {cap !== undefined && <> 근사값은 {fmt.min(cap)}에서 잘라 "≥"로 표시합니다.</>}</p>
     </div>
   )
 }
@@ -73,7 +84,7 @@ export function IslandBadge() {
   )
 }
 
-export default function DetailPanel({ region: r, total, regions, facilities, points, cap, sim }: Props) {
+export default function DetailPanel({ region: r, total, regions, usage, cap, sim }: Props) {
   if (!r) return <div className="detail"><p className="muted">지도, 산점도, 표에서 시군구를 선택하세요.</p></div>
 
   const cards: [string, string][] = [
@@ -121,7 +132,7 @@ export default function DetailPanel({ region: r, total, regions, facilities, poi
         </div>
       </div>
 
-      {facilities && points && <NearestFacilities facilities={facilities} points={points} factor={r.우회계수} cap={cap} />}
+      {usage && <Usages usage={usage} cap={cap} factor={r.우회계수} />}
 
       <MedianBars r={r} regions={regions} />
     </div>
