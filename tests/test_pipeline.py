@@ -167,6 +167,15 @@ def test_end_to_end():
         assert not t.isna().any().any()
 
 
+def test_sfca():
+    """2SFCA: 기관0(병상 10)은 두 기준점 모두 30분 안, 기관1(병상 20)은 기준점1만. R0=10/400, R1=20/300"""
+    from src.sfca import two_step
+    a, r = two_step(np.array([100., 300.]), np.array([10., 20.]), np.array([[10, np.inf], [20, 25]]))
+    assert np.allclose(r, [10 / 400, 20 / 300]) and np.allclose(a, [10 / 400, 10 / 400 + 20 / 300])
+    a, r = two_step(np.array([100.]), np.array([5.]), np.array([[31.]]))   # 30분 밖이면 공급 0
+    assert a[0] == 0 and r[0] == 0
+
+
 def test_service_key():
     """공공데이터포털 키: DATA_GO_KR_SERVICE_KEY 우선, 없으면 KR_SERVICE_KEY, URL 인코딩은 풀어서"""
     saved = {n: os.environ.pop(n, None) for n in fetch_emergency.KEY_NAMES}
@@ -196,5 +205,6 @@ def test_service_key():
 if __name__ == '__main__':
     test_units()
     test_end_to_end()
+    test_sfca()
     test_service_key()
     print('OK')

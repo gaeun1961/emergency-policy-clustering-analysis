@@ -74,7 +74,8 @@ data/
 - (완료) **도로 네트워크 시간**: 로컬 OSRM 자동차 주행시간으로 바꿨다(#19).
 - **해상 이동 반영**: 여객선 운항 시간표·응급 헬기 이송 시간을 섬 기준점에 더한다.
 - **시간대별 교통**: 실측 교통량·구급차 출동 기록으로 주행시간을 보정한다.
-- **2SFCA 기반 공급/수요 접근성**: 시군구 경계 기준 "인구 대비 기관 수" 대신 2단계 유동 영역(Two-Step Floating Catchment Area) 지표를 쓴다. 기관별로 반경 안 인구 대비 공급(병상·인력)을 구하고, 지역별로 반경 안 기관 공급을 합쳐서 경계와 무관하게 공급/수요를 함께 반영한다.
+- (일부 완료) **2SFCA 기반 공급/수요 접근성**: 응급실 병상·30분 통행권으로 추가 지표를 만들었다(#46, README). 거리 감쇠(개선형 2SFCA)와 판정 반영은 남았다.
+- (원래 계획) **2SFCA 기반 공급/수요 접근성**: 시군구 경계 기준 "인구 대비 기관 수" 대신 2단계 유동 영역(Two-Step Floating Catchment Area) 지표를 쓴다. 기관별로 반경 안 인구 대비 공급(병상·인력)을 구하고, 지역별로 반경 안 기관 공급을 합쳐서 경계와 무관하게 공급/수요를 함께 반영한다.
 
 ## 기준 시점: 2025년 12월 말로 통일 (인천 개편 전 기준)
 
@@ -272,6 +273,12 @@ data/
 - **이용 기관**: `processed/emd_usage.csv` (시군구 `facility_usage.csv` 와 같은 집계를 행정동 단위로)
 - **섬 리**: `processed/emd_li_metrics.csv` (리별 인구·고령 비율)
 - **웹**: `emd.json`(행정동 고정값·전국 분포 217KB)과 `centers.json` 기준점의 `emd` 로 브라우저가 다시 계산하고, Python 결과와 같은지 vitest로 검증한다. 경계는 `scripts/build_emd_boundaries.py` 가 mapshaper로 꼭짓점 40%를 남기게 단순화해 시군구별 229개 파일(합계 6.6MB, 중앙값 30KB, 최대 108KB)로 나눈다. 15%(3.1MB)는 작은 구를 최대로 확대하면 동 경계가 각져 보여 올렸다. 원본(admdongkor)도 동마다 꼭짓점이 수십 개 수준이라(서울 중구 15개 동 666개 → 284개), 더 확대해도 원본보다 매끈해지지는 않는다.
+
+### 3-7. 2SFCA (추가 지표): `processed/sfca_sigungu.csv` (`python -m src.sfca`)
+
+- **공급** `processed/emergency_capacity.csv` (`python -m src.fetch_emergency --capacity`): 응급의료정보조회 서비스의 기본정보 오퍼레이션 `getEgytBassInfoInqire` 로 기관마다 응급실 병상(`hperyn`)·총 병상(`hpbdn`)을 받는다. 기관당 1회, 416회 호출이고 초당 요청 제한(429) 때문에 1초 간격으로 보낸다(약 7분, 이어 받기 됨). 응급실 병상 376곳, 없음·0인 40곳은 2SFCA에서 등급별 중앙값을 쓴다.
+- **주행시간** `processed/drivetime_radius40.csv` (`python -m src.drivetime --radius 40`): 기준점마다 직선 40km 이내 모든 응급의료기관 167,849쌍. 기존 `drivetime_pairs.csv` 와 따로 두어 기존 접근성 지표는 바뀌지 않는다.
+- **결과**: `sfca_sigungu.csv`·`sfca_emd.csv` (인구 10만 명당 30분 안 응급실 병상, 근사 반영 인구 비율, 30분 안 기관 수), `sfca_facility.csv` (기관별 병상·출처·공급 비율). 방법과 기존 점수 비교는 README '2SFCA 접근성'.
 
 ## 4. 복지 취약계층
 
