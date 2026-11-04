@@ -58,6 +58,7 @@ cd web && npm ci && npm run dev
 ```
 
 - `scripts/build_boundaries.py`, `src.emd_centers` 는 mapshaper를 `npx` 로 실행하므로 **node(npx)가 필요**하다.
+- 기준 시점(주민등록 기준연월 `YM`, 행정동 경계 버전, 장애인 기준연도)은 `src/config.py` 한 곳에서 정한다. 갱신할 때는 이 파일을 고치고 위 순서대로 다시 만든다.
 - `src.drivetime` 은 로컬 OSRM 서버가 필요하다. pbf·전처리 파일(약 2GB)은 레포 밖(WSL `~/osrm`)에 둔다. Docker 데몬이 꺼져 있으면 `sudo service docker start`.
 - 대시보드는 master에 `web/` 변경이 push되면 `.github/workflows/deploy-pages.yml` 이 빌드해서 GitHub Pages에 배포한다.
 

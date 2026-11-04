@@ -1,6 +1,6 @@
 """읍면동(행정동) 드릴다운 지표: 시군구 판정은 그대로 두고, 시군구 안 행정동별 접근성 편차를 본다
 
-실행: 레포 루트에서 python -m src.emd_metrics [기준연월, 기본 202512]   (python -m src.accessibility 다음)
+실행: 레포 루트에서 python -m src.emd_metrics [기준연월, 기본 src/config.py YM]   (python -m src.accessibility 다음)
 입력: data/processed/accessibility_points.csv (기준점별 지표·최근접 기관, 섬 읍·면은 리 단위)
       data/raw/emd_population/{연월}/*.json (행정동 인구 API 캐시, 10세 단위 연령), emd_population_{연월}.csv (출장소 -> 소속 행정동)
       data/processed/population_sigungu_{연월}.csv (시군구 65세 이상 인구)
@@ -23,6 +23,7 @@ import numpy as np
 import pandas as pd
 
 from .accessibility import MINUTES, facility_usage
+from .config import YM
 
 ROOT = Path(__file__).resolve().parents[1]
 PROC = ROOT / 'data' / 'processed'
@@ -46,7 +47,7 @@ def age_counts(ym):
     return pd.DataFrame([(c, li, *v) for (c, li), v in cnt.items()], columns=['행정동코드', '리', '인구', '60대', '70세이상'])
 
 
-def main(ym='202512'):
+def main(ym=YM):
     pts = pd.read_csv(POINTS, dtype={'기준점ID': str, '행정동코드': str, '행정기관코드': str})
     sgg_of = pts.drop_duplicates('행정동코드').set_index('행정동코드')['행정기관코드']
 

@@ -21,6 +21,8 @@
 13. `python -m src.emd_metrics`: 읍면동 드릴다운 지표 `data/processed/emd_metrics.csv` 를 만든다 (3-6절).
 14. `python scripts/build_emd_boundaries.py`: 행정동 경계를 시군구별 파일 `web/public/data/emd/{시군구코드}.json` 으로 나눈다.
 
+기준 시점(기준연월 `YM`, 행정동 경계 버전, 장애인 기준연도)은 `src/config.py` 에서 정하고, 파일명의 `202512`·`ver20251231`·`2025` 는 그 값에서 나온다.
+
 3·5·6번은 레포 루트의 `.env` 에 키가 있어야 한다(`.env` 는 .gitignore, 절대 커밋하지 않음). `.env.example` 을 복사해 채운다.
 
 ```

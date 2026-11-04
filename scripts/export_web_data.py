@@ -20,6 +20,7 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from src import accessibility  # noqa: E402
+from src.config import BOUNDARY_DATE, BOUNDARY_NOTE, BOUNDARY_VERSION, DISABILITY_YEAR, YM_LABEL  # noqa: E402
 
 OUT = ROOT / 'web' / 'public' / 'data'
 FIELDS = {  # 내보낼 이름: 원래 컬럼
@@ -35,13 +36,13 @@ FIELDS = {  # 내보낼 이름: 원래 컬럼
     '기준점방식': '기준점방식',  # 행정동 인구가중 / 행정동 인구가중(섬 읍·면은 리 단위)
 }
 SOURCES = [
-    {'이름': '행정안전부 주민등록 인구통계 (연령별 인구현황, 성/연령별 1인세대수)', 'url': 'https://jumin.mois.go.kr', '기준': '2025-12'},
-    {'이름': '보건복지부 장애인현황 (KOSIS DT_11761_N009)', 'url': 'https://kosis.kr/statHtml/statHtml.do?orgId=117&tblId=DT_11761_N009', '기준': '2025 연말'},
+    {'이름': '행정안전부 주민등록 인구통계 (연령별 인구현황, 성/연령별 1인세대수)', 'url': 'https://jumin.mois.go.kr', '기준': YM_LABEL},
+    {'이름': '보건복지부 장애인현황 (KOSIS DT_11761_N009)', 'url': 'https://kosis.kr/statHtml/statHtml.do?orgId=117&tblId=DT_11761_N009', '기준': f'{DISABILITY_YEAR} 연말'},
     {'이름': '국립중앙의료원 응급의료정보조회 서비스 (공공데이터포털 OpenAPI)', 'url': 'https://www.data.go.kr', '기준': None},
     {'이름': '카카오 로컬 API (행정복지센터·리 좌표)', 'url': 'https://developers.kakao.com', '기준': None},
     {'이름': '© OpenStreetMap contributors (ODbL), Geofabrik south-korea 추출본', 'url': 'https://www.openstreetmap.org/copyright', '기준': None},
     {'이름': 'OSRM (Open Source Routing Machine, 자동차 프로필) 주행시간', 'url': 'https://project-osrm.org', '기준': None},
-    {'이름': '행정동 경계 vuski/admdongkor ver20251231 (CC BY 4.0)', 'url': 'https://github.com/vuski/admdongkor', '기준': '2025-12-31'},
+    {'이름': f'행정동 경계 vuski/admdongkor {BOUNDARY_VERSION} (CC BY 4.0)', 'url': 'https://github.com/vuski/admdongkor', '기준': BOUNDARY_DATE},
     {'이름': '통계청 SGIS 행정구역 경계 (admdongkor 원자료)', 'url': 'https://sgis.kostat.go.kr', '기준': None},
 ]
 
@@ -66,7 +67,7 @@ def main():
     SOURCES[6]['기준'] = stamp.read_text(encoding='utf-8').strip()[:10] if stamp.exists() else None
     counts = df['등급'].value_counts()
     meta = {
-        '기준시점': {'인구·복지': '2025-12', '응급의료기관': collected, '경계': '2025-12-31 (2026.7 인천·광주전남 개편 이전)'},
+        '기준시점': {'인구·복지': YM_LABEL, '응급의료기관': collected, '경계': f'{BOUNDARY_DATE} ({BOUNDARY_NOTE})'},
         '시군구수': len(df),
         '이중취약수': int(counts.get('이중 취약', 0)),
         '준이중취약수': int(counts.get('준 이중 취약', 0)),

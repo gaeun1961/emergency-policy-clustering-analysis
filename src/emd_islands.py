@@ -1,8 +1,8 @@
 """섬으로 나뉜 읍·면: 리(섬) 단위 기준점
 
-실행: 레포 루트에서 python -m src.emd_islands [기준연월, 기본 202512]
+실행: 레포 루트에서 python -m src.emd_islands [기준연월, 기본 src/config.py YM]
 입력: data/raw/emd_population/{연월}/*.json (src.fetch_emd_population 캐시, 통·반 행에 리 이름 포함)
-      data/raw/boundary/HangJeongDong_ver20251231.geojson, data/processed/emd_centers.csv
+      data/raw/boundary/HangJeongDong_{경계 버전}.geojson, data/processed/emd_centers.csv
       data/emd_li_weighted.csv: 리 단위 인구가중으로 바꿀 행정동 목록 (직접 관리)
 출력: data/processed/emd_li_points.csv: 리 좌표·인구·섬 조각 번호 (캐시: 이미 받은 리는 다시 호출 안 함)
       data/processed/island_eupmyeon.csv: 경계가 여러 섬 조각이고 면사무소와 다른 섬에 사람이 사는 읍·면 목록
@@ -20,6 +20,7 @@ import pandas as pd
 import requests
 from dotenv import load_dotenv
 
+from .config import YM
 from .emd_centers import OUT as EMD_CENTERS, RAW, in_polygon, km_to_polygon
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -112,7 +113,7 @@ def geocode_li(targets, names):
     return out
 
 
-def main(ym='202512'):
+def main(ym=YM):
     feats = {f['properties']['adm_cd2']: f for f in json.loads(RAW.read_text(encoding='utf-8'))['features']}
     names = {k: f['properties']['adm_nm'] for k, f in feats.items()}
     centers = pd.read_csv(EMD_CENTERS, dtype={'코드': str}).set_index('코드')

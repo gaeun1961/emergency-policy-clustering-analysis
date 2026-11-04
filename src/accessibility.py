@@ -4,7 +4,7 @@
 입력: data/processed/emergency_facilities.csv (python -m src.fetch_emergency)
       data/processed/emd_centers.csv: 행정동 기준점(행정복지센터·읍면사무소)과 인구 (python -m src.emd_centers, --population)
       data/processed/drivetime_pairs.csv: 기준점 × 가까운 기관 주행시간 (python -m src.drivetime, 로컬 OSRM)
-      data/processed/population_sigungu_202512.csv, data/region_mapping.csv
+      data/processed/population_sigungu_{기준연월}.csv (src/config.py), data/region_mapping.csv
 출력: data/processed/accessibility_sigungu.csv
       data/processed/accessibility_points.csv: 기준점(행정동·섬 리)별 지표·최근접 기관 (읍면동 집계용)
       data/processed/facility_rank.csv, emd_facility_rank.csv: 시군구·행정동별 주민 평균 주행시간 가까운 기관 순위 (+ 이용 비율)
@@ -24,6 +24,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from .config import YM
 from .loaders import clean_sido_name
 from .regions import attach_code, load_mapping
 
@@ -33,7 +34,7 @@ FACILITIES = PROC / 'emergency_facilities.csv'
 EMD_CENTERS = PROC / 'emd_centers.csv'
 LI_POINTS = PROC / 'emd_li_points.csv'
 LI_WEIGHTED = ROOT / 'data' / 'emd_li_weighted.csv'
-POP_CSV = PROC / 'population_sigungu_202512.csv'
+POP_CSV = PROC / f'population_sigungu_{YM}.csv'
 MAPPING = ROOT / 'data' / 'region_mapping.csv'
 OUT = PROC / 'accessibility_sigungu.csv'
 MOHW_CSV = ROOT / 'data' / 'raw' / 'emergency' / '보건복지부_응급의료기관 수_시도별_20241231.csv'

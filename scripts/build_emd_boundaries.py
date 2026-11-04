@@ -1,7 +1,7 @@
 """대시보드 읍면동 드릴다운용 행정동 경계: 시군구별 파일로 나눠 선택할 때만 불러온다
 
 실행: 레포 루트에서 python scripts/build_emd_boundaries.py   (node·npx 필요, python -m src.emd_metrics 다음)
-입력: data/raw/boundary/HangJeongDong_ver20251231.geojson (scripts/build_boundaries.py 가 내려받음)
+입력: data/raw/boundary/HangJeongDong_{경계 버전}.geojson (scripts/build_boundaries.py 가 내려받음, src/config.py)
       data/processed/emd_metrics.csv (행정동 -> 시군구 코드, 일반구는 상위 시)
 출력: web/public/data/emd/{시군구코드}.json  행정동 면 (속성 code = 행정동코드). 섬 리는 소속 읍·면 면 안에 있다
 """

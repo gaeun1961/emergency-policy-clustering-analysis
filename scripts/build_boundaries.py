@@ -1,8 +1,8 @@
 """대시보드용 시군구 경계: admdongkor 행정동 -> 기준 코드표 229개 시군구
 
 실행: 레포 루트에서 python scripts/build_boundaries.py   (node·npx 필요, mapshaper는 npx로 받음)
-입력: data/raw/boundary/HangJeongDong_ver20251231.geojson (없으면 내려받음, gitignore)
-      data/processed/population_sigungu_202512.csv (기준 코드표)
+입력: data/raw/boundary/HangJeongDong_{경계 버전}.geojson (없으면 내려받음, gitignore)
+      data/processed/population_sigungu_{기준연월}.csv (기준 코드표)   (기준 시점은 src/config.py)
 출력: web/public/data/sigungu.geojson (시군구 면), web/public/data/sido.geojson (시도 경계선)
 
 출처: vuski/admdongkor (CC BY 4.0), 원자료 통계청 SGIS 행정구역 경계
@@ -17,13 +17,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+from src.config import BOUNDARY_VERSION, YM  # noqa: E402
 from src.loaders import clean_sido_name  # noqa: E402
 from src.regions import parent_city  # noqa: E402
 
-VERSION = 'ver20251231'  # 2025년 12월 말, 2026.7 인천·광주전남 개편 이전 (기준 코드표와 같은 시점)
+VERSION = BOUNDARY_VERSION  # 기준 코드표와 같은 시점)
 URL = f'https://raw.githubusercontent.com/vuski/admdongkor/master/{VERSION}/HangJeongDong_{VERSION}.geojson'
 RAW = ROOT / 'data' / 'raw' / 'boundary' / f'HangJeongDong_{VERSION}.geojson'
-POP_CSV = ROOT / 'data' / 'processed' / 'population_sigungu_202512.csv'
+POP_CSV = ROOT / 'data' / 'processed' / f'population_sigungu_{YM}.csv'
 OUT = ROOT / 'web' / 'public' / 'data'
 MAPSHAPER = 'mapshaper@0.7.101'
 SIMPLIFY = '10%'  # 남길 꼭짓점 비율
