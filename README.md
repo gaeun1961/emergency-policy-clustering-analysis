@@ -33,6 +33,7 @@
 
 ```bash
 python -m pip install -r requirements.txt
+cp .env.example .env                       # 키 채우기 (공공데이터포털: DATA_GO_KR_SERVICE_KEY 또는 KR_SERVICE_KEY, 카카오)
 # 데이터 수집·통합 (data/README.md 의 raw 파일과 .env 키 필요)
 python -m src.population                  # 인구·1인세대 -> 기준 코드표
 python -m src.disability                  # 등록장애인
@@ -64,8 +65,8 @@ cd web && npm ci && npm run dev
 - `scripts/check_data_updates.py` 가 아래 두 가지를 확인하고, 바뀐 것이 있을 때만 `data-watch` 라벨 이슈를 만든다. 같은 제목의 열린 이슈가 있으면 댓글을 단다.
   - **응급의료기관 API**: 현재 `web/public/data/facilities.json`(권역·지역센터, 지역응급의료기관)과 비교해 추가·삭제·등급·이름 변경, 50m 이상 좌표 이동을 찾는다. 이슈에는 로컬 OSRM 주행시간 재계산 안내가 붙는다.
   - **행정동 인구 API**: 사용 중인 기준월(`data/processed/emd_population_*.csv`) 다음 달부터 지난달까지 데이터가 있는지 본다. 시도 수가 바뀌었으면(행정구역 개편) 경고를 붙인다.
-- 필요한 GitHub Secret은 `DATA_GO_KR_SERVICE_KEY`(공공데이터포털 일반 인증키, 두 API 활용신청 필요) 하나다. 키는 코드·로그에 출력하지 않고, 오류 메시지에서도 지운다.
-- 로컬 실행: `python scripts/check_data_updates.py` (`.env` 키 사용, 결과는 `data-watch/`, gitignore)
+- 필요한 GitHub Secret은 공공데이터포털 일반 인증키 하나다(두 API 활용신청 필요). 이름은 `DATA_GO_KR_SERVICE_KEY` 또는 `KR_SERVICE_KEY`이고, 둘 다 있으면 앞 이름을 쓴다. 키는 코드·로그에 출력하지 않고, 오류 메시지에서도 지운다.
+- 로컬 실행: `python scripts/check_data_updates.py` (`.env` 키 사용, 결과는 `data-watch/`, gitignore). `.env` 는 `.env.example` 을 복사해 만든다(같은 두 이름 중 하나).
 - 주행시간(OSRM)은 Actions에서 계산하지 않는다. 이슈를 받으면 로컬에서 [실행 순서](#실행-순서)대로 다시 만든다.
 
 **수동 갱신 체크리스트** (API가 없는 데이터)

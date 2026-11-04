@@ -1,7 +1,7 @@
 """원천 데이터 변경 감지 (GitHub Actions data-watch.yml 이 월 1회 실행, 로컬 실행도 가능)
 
 실행: 레포 루트에서 python scripts/check_data_updates.py [출력 폴더, 기본 data-watch]
-필요: 환경변수 또는 .env 의 DATA_GO_KR_SERVICE_KEY (Actions 에서는 GitHub Secrets)
+필요: 환경변수 또는 .env 의 DATA_GO_KR_SERVICE_KEY (없으면 KR_SERVICE_KEY). Actions 에서는 GitHub Secrets
 출력: {출력 폴더}/facilities.md  응급의료기관 변경 목록 (변경 있을 때만)
       {출력 폴더}/population.md  행정동 인구 새 기준월 안내 (새 달이 있을 때만)
       GITHUB_OUTPUT 이 있으면 facilities_changed=true/false, population_ym=YYYYMM(없으면 빈 값)

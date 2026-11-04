@@ -1,7 +1,7 @@
 name: Data watch (원천 데이터 변경 감지)
 
 # 매월 응급의료기관 API·행정동 인구 API를 확인해, 바뀐 것이 있으면 이슈로 알린다 (scripts/check_data_updates.py)
-# 주행시간(OSRM)은 로컬에서만 다시 계산한다. 필요한 시크릿: DATA_GO_KR_SERVICE_KEY (공공데이터포털 일반 인증키)
+# 주행시간(OSRM)은 로컬에서만 다시 계산한다. 필요한 시크릿: DATA_GO_KR_SERVICE_KEY 또는 KR_SERVICE_KEY (공공데이터포털 일반 인증키, 앞 이름 우선)
 on:
   schedule:
     - cron: '0 0 3 * *'  # 매월 3일 09:00 KST
@@ -25,6 +25,7 @@ jobs:
         name: 변경 확인
         env:
           DATA_GO_KR_SERVICE_KEY: ${{ secrets.DATA_GO_KR_SERVICE_KEY }}
+          KR_SERVICE_KEY: ${{ secrets.KR_SERVICE_KEY }}
         run: python scripts/check_data_updates.py data-watch
       - name: 이슈 생성 (같은 제목의 열린 이슈가 있으면 댓글)
         if: steps.check.outputs.facilities_changed == 'true' || steps.check.outputs.population_ym != ''
