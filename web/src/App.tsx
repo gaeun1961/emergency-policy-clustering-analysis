@@ -33,7 +33,7 @@ export default function App() {
   const [tab, setTab] = useState<Tab>(initial.on ? 'sim' : 'detail')
   const [showLocal, setShowLocal] = useState(false) // 지역응급의료기관(G007) 마커
   // 읍면동 드릴다운: emd.json(전국 고정값·분포)은 처음 열 때, 행정동 경계는 시군구별로 선택할 때 불러온다
-  const [detailView, setDetailView] = useState<'overview' | 'emd'>('overview')
+  const [detailView, setDetailView] = useState<'overview' | 'facilities' | 'emd'>('overview') // 지역을 바꿔도 유지
   const [emdData, setEmdData] = useState<EmdData | null>(null)
   const [emdGeo, setEmdGeo] = useState<{ code: string; fc: MapOverlay['fc'] } | null>(null)
   const [selEmd, setSelEmd] = useState<string | null>(null)
@@ -167,13 +167,15 @@ export default function App() {
     if (!drill || !emd || !emdGeo || emdGeo.code !== selected) return undefined
     const byCode = new Map(emd.map((x) => [x.code, x]))
     return {
-      fc: emdGeo.fc, selected: selEmd, onClick: setSelEmd,
+      key: emdGeo.code, fc: emdGeo.fc, selected: selEmd, onClick: setSelEmd, label: (c) => byCode.get(c)?.이름 ?? '',
       color: (c) => (byCode.has(c) ? bandColor(byCode.get(c)!.구간) : '#ccc'),
       title: (c) => { const x = byCode.get(c); return x ? `${x.이름} · ${emdData!.구간[x.구간]} · 인구 ${x.인구.toLocaleString('ko-KR')}명` : c },
     }
   }, [drill, emd, emdGeo, selected, selEmd, emdData])
 
-  const highlight = useMemo(() => new Set(usage ? [...usage.em, ...usage.ctr].map((u) => u.f.hpid) : []), [usage])
+  // 이용 기관 강조 링은 '이용 기관' 탭을 볼 때만
+  const showFacilities = tab === 'detail' && detailView === 'facilities'
+  const highlight = useMemo(() => new Set(usage && showFacilities ? [...usage.em, ...usage.ctr].map((u) => u.f.hpid) : []), [usage, showFacilities])
   // 강조 기관은 지역응급의료기관 표시를 꺼도 보이게
   const markers = useMemo(() => (applied ?? []).filter((f) => showLocal || f.등급 !== 'G007' || f.hpid.startsWith('SIM-') || highlight.has(f.hpid)), [applied, showLocal, highlight])
   const mapSim: MapSim | undefined = useMemo(() => {
@@ -300,7 +302,7 @@ export default function App() {
           <div className="tab-body" role="tabpanel">
             {tab === 'detail' && selected && (
               <div className="subtabs" role="tablist" aria-label="지역 상세 보기">
-                {([['overview', '개요'], ['emd', '읍면동 보기']] as const).map(([v, label]) => (
+                {([['overview', '개요'], ['facilities', '이용 기관'], ['emd', '읍면동 보기']] as const).map(([v, label]) => (
                   <button key={v} role="tab" aria-selected={detailView === v} className={detailView === v ? 'on' : ''} onClick={() => setDetailView(v)}>{label}</button>
                 ))}
               </div>
@@ -311,7 +313,7 @@ export default function App() {
                 <EmdPanel region={view.byCode.get(selected)!} rows={emd} data={emdData} selected={selEmd} onSelect={setSelEmd} cap={simData?.baseline.근사상한분} />
               </div>
             ) : tab === 'detail' && <DetailPanel region={selected ? view.byCode.get(selected) ?? null : null} total={meta.시군구수} regions={view.regions}
-              usage={usage} cap={simData?.baseline.근사상한분} sim={simOn} />}
+              usage={usage} cap={simData?.baseline.근사상한분} sim={simOn} section={detailView === 'facilities' ? 'facilities' : 'overview'} />}
             {tab === 'dist' && (
               <>
                 <ul className="legend">
