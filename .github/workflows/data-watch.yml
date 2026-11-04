@@ -1,6 +1,7 @@
 name: Data watch (원천 데이터 변경 감지)
 
-# 매월 응급의료기관 API·행정동 인구 API를 확인해, 바뀐 것이 있으면 이슈로 알린다 (scripts/check_data_updates.py)
+# 매월 응급의료기관 API·행정동 인구 API를 확인하고, 응급의료기관 변경·행정구역 개편·연간 갱신 시점(12개월 경과)일 때만 이슈로 알린다
+# (scripts/check_data_updates.py, 데이터 갱신은 연 1회 12월 기준)
 # 주행시간(OSRM)은 로컬에서만 다시 계산한다. 필요한 시크릿: DATA_GO_KR_SERVICE_KEY 또는 KR_SERVICE_KEY (공공데이터포털 일반 인증키, 앞 이름 우선)
 on:
   schedule:
@@ -28,11 +29,11 @@ jobs:
           KR_SERVICE_KEY: ${{ secrets.KR_SERVICE_KEY }}
         run: python scripts/check_data_updates.py data-watch
       - name: 이슈 생성 (같은 제목의 열린 이슈가 있으면 댓글)
-        if: steps.check.outputs.facilities_changed == 'true' || steps.check.outputs.population_ym != ''
+        if: steps.check.outputs.facilities_changed == 'true' || steps.check.outputs.population_alert == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           FAC_CHANGED: ${{ steps.check.outputs.facilities_changed }}
-          POP_YM: ${{ steps.check.outputs.population_ym }}
+          POP_ALERT: ${{ steps.check.outputs.population_alert }}
         run: |
           gh label create data-watch --color 0E8A16 --description '원천 데이터 변경 감지' 2>/dev/null || true
           notify() {
@@ -40,4 +41,4 @@ jobs:
             if [ -n "$n" ]; then gh issue comment "$n" --body-file "$2"; else gh issue create --title "$1" --label data-watch --body-file "$2"; fi
           }
           if [ "$FAC_CHANGED" = true ]; then notify '[데이터] 응급의료기관 변경 감지' data-watch/facilities.md; fi
-          if [ -n "$POP_YM" ]; then notify '[데이터] 행정동 인구 새 기준월' data-watch/population.md; fi
+          if [ "$POP_ALERT" = true ]; then notify '[데이터] 연간 갱신·행정구역 개편 점검' data-watch/population.md; fi
