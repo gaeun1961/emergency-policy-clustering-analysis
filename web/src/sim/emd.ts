@@ -4,7 +4,7 @@
  * 시뮬레이션 중에는 추가·제거가 반영된 기관 목록을 넘기면 된다. 시군구 판정에는 쓰지 않는다
  */
 import {
-  ACCESS_KEYS, aggregate, isCenter, nearestOf, percentile, pointMetrics, rankFacilities,
+  ACCESS_KEYS, LIST_TOP, aggregate, isCenter, nearestOf, percentile, pointMetrics, rankFacilities,
   type AccessKey, type CenterPoint, type Facility, type PointMetrics, type RankedFacility,
 } from './model'
 
@@ -28,13 +28,10 @@ export interface EmdRow {
   점수: number
   구간: number                // EmdData.구간 위치 (클수록 취약)
   근사반영비율: number
-  em: RankedFacility[]        // 가까운 응급의료기관 2곳 (주민 평균 주행시간 순 + 이용 비율, 시군구 상세와 같은 규칙)
-  ctr: RankedFacility[]       // 가까운 권역·지역센터 2곳
+  em: RankedFacility[]        // 가까운 응급의료기관 (시군구 상세와 같은 규칙: 주행시간 순 3곳 + 이용 10% 이상, 최대 5곳)
+  ctr: RankedFacility[]       // 가까운 권역·지역센터 (2곳 + 이용 10% 이상)
   li: EmdLi[]                 // 섬 읍·면만
 }
-
-/** 읍면동 목록에 보이는 가까운 기관 수 */
-export const EMD_TOP = 2
 
 export function emdScore(m: PointMetrics, d: EmdData): number {
   return ACCESS_KEYS.reduce((s, k) => s + percentile(d.지표[k], m[k], d.방향[k]), 0) / ACCESS_KEYS.length
@@ -59,7 +56,7 @@ export function emdRows(points: CenterPoint[], facilities: Facility[], factor: n
     const liInfo = d.리[code]
     return {
       code, 이름, 인구, 고령인구비율, metrics, 점수: score, 구간: emdBand(score, d), 근사반영비율: approxW / wsum,
-      em: rankFacilities(ps, facilities, factor, cap, EMD_TOP), ctr: rankFacilities(ps, facilities, factor, cap, EMD_TOP, true),
+      em: rankFacilities(ps, facilities, factor, cap, LIST_TOP.em), ctr: rankFacilities(ps, facilities, factor, cap, LIST_TOP.ctr, true),
       li: liInfo ? ps.map((p, i) => {
         const name = p.지점.split(' ').at(-1)!
         return { 리: name, 인구: liInfo[name]?.[0] ?? p.weight, 고령인구비율: liInfo[name]?.[1] ?? null, metrics: per[i] }

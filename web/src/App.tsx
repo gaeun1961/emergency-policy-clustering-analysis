@@ -9,7 +9,7 @@ import ScatterPlot from './components/ScatterPlot'
 import SimPanel, { AddChooser, type RecKind } from './components/SimPanel'
 import { isIsland, loadData, loadSimData, quantile, regionName, type Data, type Region, type SimData } from './data'
 import { CLUSTER_COLOR, GRADE_COLOR, buildMetrics, clusterDesc, type MetricKey } from './metrics'
-import { nearestFacilities, rankFacilities, simulate, type Facility, type FacilityGrade } from './sim/model'
+import { LIST_TOP, nearestFacilities, rankFacilities, simulate, type Facility, type FacilityGrade } from './sim/model'
 import type { Effect } from './sim/recommend'
 import { locateSigungu } from './sim/geo'
 import { EMPTY, applyScenario, fromQuery, keepOnLand, toQuery, type Scenario } from './sim/scenario'
@@ -135,14 +135,13 @@ export default function App() {
   }, [])
 
   /** 선택 지역의 가까운 기관 (주민 평균 주행시간 순 + 이용 비율, 지역 상세 목록 + 지도 강조). 시뮬레이션 중이면 추가·제거 반영
-   *  응급의료기관 3곳, 센터 2곳(3위도 이용 주민이 있으면 3곳) */
+   *  주행시간 순 응급의료기관 3곳·센터 2곳 + 이용 주민 10% 이상 기관은 항상 (최대 5곳, model.rankFacilities) */
   const usage: RegionUsage | null = useMemo(() => {
     const r = selected ? view?.byCode.get(selected) : null
     const pts = selected ? simData?.centers[selected] : null
     if (!r || !pts || !applied || !simData) return null
     const cap = simData.baseline.근사상한분
-    const ctr = rankFacilities(pts, applied, r.우회계수, cap, 3, true)
-    return { em: rankFacilities(pts, applied, r.우회계수, cap, 3), ctr: ctr.filter((x, i) => i < 2 || !x.alt) }
+    return { em: rankFacilities(pts, applied, r.우회계수, cap, LIST_TOP.em), ctr: rankFacilities(pts, applied, r.우회계수, cap, LIST_TOP.ctr, true) }
   }, [selected, view, simData, applied])
   const drill = tab === 'detail' && detailView === 'emd' && !!selected
   useEffect(() => {

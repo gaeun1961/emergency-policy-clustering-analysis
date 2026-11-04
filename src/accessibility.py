@@ -135,11 +135,28 @@ def facility_usage(points, group='행정기관코드'):
     return u[[group, '구분', 'hpid', '주민비율', '평균주행분', '평균직선km', '근사포함']]
 
 
-RANK_TOP = 5  # 저장하는 순위 수 (웹은 응급의료기관 3곳, 센터 2~3곳을 보여 줌)
+# 지역 상세 기관 목록 규칙 (웹 rankFacilities 와 같음): 주행시간 순 상위 LIST_TOP 곳 + 이용 주민 비율 USAGE_FLOOR 이상인 기관은 항상,
+# 합계 LIST_MAX 곳까지 (넘치면 상위 목록의 대안(이용 0%)부터 느린 순으로 뺀다). 목록은 주행시간 순
+LIST_TOP = {'응급의료기관': 3, '권역지역센터': 2}
+USAGE_FLOOR = 0.10
+LIST_MAX = 5
+
+
+def pick_list(order, share, n):
+    """order: 주행시간 순 기관, share: 기관 -> 이용 주민 비율. 화면에 보일 기관 (주행시간 순)"""
+    base = order[:n]
+    floor = [j for j in order if share.get(j, 0) >= USAGE_FLOOR]
+    keep = set(base) | set(floor)
+    for j in reversed(base):
+        if len(keep) <= LIST_MAX:
+            break
+        if share.get(j, 0) == 0:
+            keep.discard(j)
+    return [j for j in order if j in keep][:LIST_MAX]
 
 
 def facility_rank(centers, em, t, raw, approx, d_em, usage, group):
-    """group(시군구·행정동)별로 기관을 주민 평균 주행시간(인구가중, 근사값 상한 적용) 짧은 순으로 RANK_TOP 곳.
+    """group(시군구·행정동)별 화면 기관 목록(pick_list): 주민 평균 주행시간(인구가중, 근사값 상한 적용) 짧은 순.
     같으면 자르기 전 평균이 짧은 순. 주민비율은 facility_usage(그 기관이 최근접인 주민 비율, 없으면 0)
     근사포함: 근사값인 기준점이 섞임, 상한포함: 상한에 걸린 기준점이 섞임 (웹 nearestFacilities 와 같은 정의)
     """
@@ -154,14 +171,17 @@ def facility_rank(centers, em, t, raw, approx, d_em, usage, group):
     wsum = np.bincount(inv, weights=w)[:, None]
     mean_t, mean_raw, mean_km = sums['t'] / wsum, sums['raw'] / wsum, sums['km'] / wsum
     hp = em['hpid'].astype(str).to_numpy()
-    share = usage.set_index([group, '구분', 'hpid'])['주민비율']
+    share = usage.set_index([group, '구분', 'hpid'])['주민비율'].to_dict()  # dict 조회가 MultiIndex .get 보다 훨씬 빠름
     rows = []
     for kind, cols in [('응급의료기관', np.arange(t.shape[1])), ('권역지역센터', np.flatnonzero(em['dutyEmcls'].isin(CENTER).to_numpy()))]:
         for i, code in enumerate(codes):
-            order = cols[np.lexsort((mean_raw[i, cols], mean_t[i, cols]))[:RANK_TOP]]
-            for r, j in enumerate(order, 1):
-                rows.append({group: code, '구분': kind, '순위': r, 'hpid': hp[j], '평균주행분': mean_t[i, j], '평균직선km': mean_km[i, j],
-                             '주민비율': share.get((code, kind, hp[j]), 0.0), '근사포함': sums['approx'][i, j] > 0,
+            order = list(cols[np.lexsort((mean_raw[i, cols], mean_t[i, cols]))])
+            sh = {j: share.get((code, kind, hp[j]), 0.0) for j in order[:LIST_TOP[kind]]}
+            sh |= {j: v for j in order if (v := share.get((code, kind, hp[j]), 0.0)) > 0}
+            rank = {j: r for r, j in enumerate(order, 1)}
+            for r, j in enumerate(pick_list(order, sh, LIST_TOP[kind]), 1):
+                rows.append({group: code, '구분': kind, '순위': r, '시간순위': rank[j], 'hpid': hp[j], '평균주행분': mean_t[i, j],
+                             '평균직선km': mean_km[i, j], '주민비율': sh.get(j, 0.0), '근사포함': sums['approx'][i, j] > 0,
                              '상한포함': sums['capped'][i, j] > 0})
     return pd.DataFrame(rows)
 
