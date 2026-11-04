@@ -82,23 +82,41 @@ export function pointMetrics(p: CenterPoint, facilities: Facility[], factor: num
 }
 
 export interface NearFacility { f: Facility; min: number; km: number; approx: boolean; capped: boolean }
-/** 시군구 기준점(인구 가중치)에서 기관까지 주행시간의 가중평균이 짧은 순 n곳. approx: 근사값이 섞임, capped: 상한에 걸린 근사값이 섞임 */
+/**
+ * 시군구(또는 행정동) 기준점에서 기관까지 주행시간의 인구 가중평균이 짧은 순 n곳. 같으면 자르기 전 평균이 짧은 순
+ * (Python src.accessibility.facility_rank 와 같음). approx: 근사값이 섞임, capped: 상한에 걸린 근사값이 섞임
+ */
 export function nearestFacilities(points: CenterPoint[], facilities: Facility[], factor: number, n = 3, cap = Infinity): NearFacility[] {
   const wsum = points.reduce((s, p) => s + p.weight, 0)
   return facilities
     .map((f) => {
-      let min = 0, km = 0, approx = false, capped = false
+      let min = 0, raw = 0, km = 0, approx = false, capped = false
       for (const p of points) {
         const t = driveMinutes(p, f, factor, cap)
+        const d = haversine(p.lat, p.lon, f.위도, f.경도)
         min += t.min * p.weight
-        km += haversine(p.lat, p.lon, f.위도, f.경도) * p.weight
+        raw += (t.capped ? d * factor : t.min) * p.weight
+        km += d * p.weight
         approx ||= t.approx
         capped ||= t.capped
       }
-      return { f, min: min / wsum, km: km / wsum, approx, capped }
+      return { f, min: min / wsum, raw: raw / wsum, km: km / wsum, approx, capped }
     })
-    .sort((a, b) => a.min - b.min)
+    .sort((a, b) => a.min - b.min || a.raw - b.raw)
     .slice(0, n)
+    .map(({ raw: _raw, ...x }) => x)
+}
+
+export interface RankedFacility extends NearFacility { share: number; alt: boolean; plus: number }
+/**
+ * 지역 상세 기관 목록: 주민 평균 주행시간 가까운 순 n곳 + 이용 주민 비율(그 기관이 최근접인 주민).
+ * 이용 비율 0이면 대안(alt), plus 는 1위 대비 추가 시간(분)
+ */
+export function rankFacilities(points: CenterPoint[], facilities: Facility[], factor: number, cap: number, n: number, centersOnly = false): RankedFacility[] {
+  const pool = centersOnly ? facilities.filter(isCenter) : facilities
+  const share = new Map(aggregateUsage(points, points.map((p) => nearestOf(p, pool, factor, cap))).map((u) => [u.f, u.share]))
+  const near = nearestFacilities(points, pool, factor, n, cap)
+  return near.map((x) => ({ ...x, share: share.get(x.f) ?? 0, alt: !share.has(x.f), plus: x.min - near[0].min }))
 }
 
 export interface Usage { f: Facility; share: number; min: number; km: number; approx: boolean; capped: boolean }

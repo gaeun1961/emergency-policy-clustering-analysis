@@ -7,6 +7,7 @@
       data/processed/population_sigungu_202512.csv, data/region_mapping.csv
 출력: data/processed/accessibility_sigungu.csv
       data/processed/accessibility_points.csv: 기준점(행정동·섬 리)별 지표·최근접 기관 (읍면동 집계용)
+      data/processed/facility_rank.csv, emd_facility_rank.csv: 시군구·행정동별 주민 평균 주행시간 가까운 기관 순위 (+ 이용 비율)
       data/processed/facility_usage.csv: 시군구별 "주민이 가장 가깝게 이용하는 기관" 비율 (대시보드 지역 상세와 같은 집계, vitest 검증용)
 
 기준점: 전국 행정동 약 3,557곳. 시군구 지표 = 행정동별 지표의 인구가중 평균
@@ -134,6 +135,37 @@ def facility_usage(points, group='행정기관코드'):
     return u[[group, '구분', 'hpid', '주민비율', '평균주행분', '평균직선km', '근사포함']]
 
 
+RANK_TOP = 5  # 저장하는 순위 수 (웹은 응급의료기관 3곳, 센터 2~3곳을 보여 줌)
+
+
+def facility_rank(centers, em, t, raw, approx, d_em, usage, group):
+    """group(시군구·행정동)별로 기관을 주민 평균 주행시간(인구가중, 근사값 상한 적용) 짧은 순으로 RANK_TOP 곳.
+    같으면 자르기 전 평균이 짧은 순. 주민비율은 facility_usage(그 기관이 최근접인 주민 비율, 없으면 0)
+    근사포함: 근사값인 기준점이 섞임, 상한포함: 상한에 걸린 기준점이 섞임 (웹 nearestFacilities 와 같은 정의)
+    """
+    codes, inv = np.unique(centers[group].to_numpy(), return_inverse=True)
+    w = centers['가중치'].to_numpy()
+    sums = {k: np.zeros((len(codes), t.shape[1])) for k in ('t', 'raw', 'km', 'approx', 'capped')}
+    np.add.at(sums['t'], inv, w[:, None] * t)
+    np.add.at(sums['raw'], inv, w[:, None] * raw)
+    np.add.at(sums['km'], inv, w[:, None] * d_em)
+    np.add.at(sums['approx'], inv, approx.astype(float))
+    np.add.at(sums['capped'], inv, (approx & (raw > t)).astype(float))
+    wsum = np.bincount(inv, weights=w)[:, None]
+    mean_t, mean_raw, mean_km = sums['t'] / wsum, sums['raw'] / wsum, sums['km'] / wsum
+    hp = em['hpid'].astype(str).to_numpy()
+    share = usage.set_index([group, '구분', 'hpid'])['주민비율']
+    rows = []
+    for kind, cols in [('응급의료기관', np.arange(t.shape[1])), ('권역지역센터', np.flatnonzero(em['dutyEmcls'].isin(CENTER).to_numpy()))]:
+        for i, code in enumerate(codes):
+            order = cols[np.lexsort((mean_raw[i, cols], mean_t[i, cols]))[:RANK_TOP]]
+            for r, j in enumerate(order, 1):
+                rows.append({group: code, '구분': kind, '순위': r, 'hpid': hp[j], '평균주행분': mean_t[i, j], '평균직선km': mean_km[i, j],
+                             '주민비율': share.get((code, kind, hp[j]), 0.0), '근사포함': sums['approx'][i, j] > 0,
+                             '상한포함': sums['capped'][i, j] > 0})
+    return pd.DataFrame(rows)
+
+
 def load_facilities():
     """기준 코드표(시군구 인구 표)와 시군구 코드가 붙은 기관 목록 (매칭 실패 목록 포함)"""
     pop = pd.read_csv(POP_CSV, dtype={'행정기관코드': str}).fillna({'시군구': ''})
@@ -194,7 +226,13 @@ def build(out=OUT):
                   f'{MINUTES}분내_응급의료기관수', '최근접_응급의료기관_분_원값', '최근접_권역지역센터_분_원값',
                   *[f'{c}_{k}' for c in USAGE_KINDS.values() for k in ('hpid', '분', 'km', '근사')]]
     centers[point_cols].to_csv(out.parent / 'accessibility_points.csv', index=False, encoding='utf-8-sig')
-    facility_usage(centers).round(6).to_csv(out.parent / 'facility_usage.csv', index=False, encoding='utf-8-sig')
+    usage = facility_usage(centers)
+    usage.round(6).to_csv(out.parent / 'facility_usage.csv', index=False, encoding='utf-8-sig')
+    emd_r = em.reset_index(drop=True)
+    facility_rank(centers, emd_r, t, raw, approx, d_em, usage, '행정기관코드').round(6).to_csv(
+        out.parent / 'facility_rank.csv', index=False, encoding='utf-8-sig')
+    facility_rank(centers, emd_r, t, raw, approx, d_em, facility_usage(centers, '행정동코드'), '행정동코드').round(6).to_csv(
+        out.parent / 'emd_facility_rank.csv', index=False, encoding='utf-8-sig')
     print(f'\n-> {out}')
     return table
 
