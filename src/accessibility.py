@@ -11,7 +11,9 @@
 (예전의 시군구청 1곳 기준점과 섬 지역 예외는 이 방식으로 대체됨)
 
 주행시간(분): 기준점마다 직선거리 가까운 응급의료기관 10곳 + 센터 10곳은 OSRM 실주행시간.
-그 밖의 기관과 도로로 닿지 않는 쌍(연륙 안 된 섬 등)은 직선거리 × 시군구 우회계수(분/직선km)로 근사한다.
+그 밖의 기관과 도로로 닿지 않는 쌍(연륙 안 된 섬 등)은 직선거리 × 시군구 우회계수(분/직선km)로 근사하고,
+근사값은 도로로 잰 주행시간의 99백분위(APPROX_CAP_Q)를 넘지 않게 자른다(바다 건너 수백 분 같은 값이 점수·범례·K-means를 끌지 않게).
+자르기 전 값은 *_원값 컬럼에 남긴다.
 웹 시뮬레이터(web/src/sim/model.ts)도 같은 규칙이다.
 """
 from pathlib import Path
@@ -39,6 +41,7 @@ EMERGENCY = ['G001', 'G006', 'G007']  # 응급의료법상 응급의료기관. G
 CENTER = ['G001', 'G006']             # 권역·지역응급의료센터
 RADIUS_KM = 30
 MINUTES = 30                          # 주행시간 기준 기관 수: 30분 안
+APPROX_CAP_Q = 99                     # 근사값 상한: 도로로 잰 주행시간(쌍)의 99백분위
 DRIVE_PAIRS = PROC / 'drivetime_pairs.csv'
 KOREA = dict(lat=(33.0, 38.7), lon=(124.5, 132.0))  # 독도(131.9)까지 포함하는 대략 범위
 
@@ -81,7 +84,7 @@ def load_centers(path=None):
 
 
 def drive_minutes(centers, em, d_em):
-    """기준점 × 응급의료기관 주행시간(분) 행렬, 기준점별 실주행 여부, 시군구 우회계수(분/직선km)
+    """기준점 × 응급의료기관 주행시간(분) 행렬(근사값 상한 적용), 상한 전 행렬, 근사 여부 행렬, 시군구 우회계수(분/직선km), 상한(분)
 
     우회계수: 기준점마다 도로로 닿는 기관 중 직선거리 가장 가까운 곳(1km 이상)의 주행분/직선km, 시군구 중앙값.
     값이 없는 시군구는 전국 중앙값. 소수 3자리(출력 CSV 정밀도)로 반올림해 웹과 같은 값을 쓴다
@@ -97,11 +100,14 @@ def drive_minutes(centers, em, d_em):
     ratio = (near['주행시간초'] / 60 / near['km']).groupby(near['sgg']).median()
     factor = ratio.reindex(centers['행정기관코드'].unique()).fillna(ratio.median()).round(3)
 
-    t = d_em * factor[centers['행정기관코드']].to_numpy()[:, None]
-    t[ri, ci] = pairs['주행시간초'].to_numpy() / 60
-    reached = np.zeros(len(centers), bool)
-    reached[ri] = True
-    return t, reached, factor
+    real = pairs['주행시간초'].to_numpy() / 60
+    cap = round(float(np.percentile(real, APPROX_CAP_Q)), 1)
+    raw = d_em * factor[centers['행정기관코드']].to_numpy()[:, None]
+    raw[ri, ci] = real
+    approx = np.ones(raw.shape, bool)
+    approx[ri, ci] = False
+    t = np.where(approx, np.minimum(raw, cap), raw)
+    return t, raw, approx, factor, cap
 
 
 def load_facilities():
@@ -122,20 +128,27 @@ def build(out=OUT):
     centers['최근접_응급의료기관_km'] = d_em.min(axis=1)
     centers['최근접_권역지역센터_km'] = d_ctr.min(axis=1)
     centers[f'반경{RADIUS_KM}km_응급의료기관수'] = (d_em <= RADIUS_KM).sum(axis=1)
-    t, reached, factor = drive_minutes(centers, em.reset_index(drop=True), d_em)
+    t, raw, approx, factor, cap = drive_minutes(centers, em.reset_index(drop=True), d_em)
     is_ctr = em['dutyEmcls'].isin(CENTER).to_numpy()
-    centers['최근접_응급의료기관_분'] = t.min(axis=1)
-    centers['최근접_권역지역센터_분'] = t[:, is_ctr].min(axis=1)
+    rows = np.arange(len(centers))
+    ie, ic = t.argmin(axis=1), np.flatnonzero(is_ctr)[t[:, is_ctr].argmin(axis=1)]
+    centers['최근접_응급의료기관_분'] = t[rows, ie]
+    centers['최근접_권역지역센터_분'] = t[rows, ic]
     centers[f'{MINUTES}분내_응급의료기관수'] = (t <= MINUTES).sum(axis=1)
-    centers['직선거리대체_인구비율'] = (~reached).astype(float)  # 어느 기관에도 도로로 닿지 않는 기준점 (연륙 안 된 섬 등)
+    centers['최근접_응급의료기관_분_원값'] = raw.min(axis=1)
+    centers['최근접_권역지역센터_분_원값'] = raw[:, is_ctr].min(axis=1)
+    # 최근접 기관 또는 최근접 센터가 근사값(도로 미연결·10곳 밖)인 기준점의 인구 비율
+    centers['근사반영_인구비율'] = (approx[rows, ie] | approx[rows, ic]).astype(float)
 
-    metrics = ['최근접_응급의료기관_분', '최근접_권역지역센터_분', f'{MINUTES}분내_응급의료기관수', '직선거리대체_인구비율',
+    metrics = ['최근접_응급의료기관_분', '최근접_권역지역센터_분', f'{MINUTES}분내_응급의료기관수',
+               '최근접_응급의료기관_분_원값', '최근접_권역지역센터_분_원값', '근사반영_인구비율',
                '최근접_응급의료기관_km', '최근접_권역지역센터_km', f'반경{RADIUS_KM}km_응급의료기관수']
     wsum = centers.groupby('행정기관코드')['가중치'].sum()
     acc = centers[metrics].mul(centers['가중치'], axis=0).groupby(centers['행정기관코드']).sum().div(wsum, axis=0)
     # 섬 읍·면을 리 단위로 나눈 시군구는 그렇게 표시
     acc.insert(0, '기준점방식', centers.groupby('행정기관코드')['가중방식'].agg(lambda v: max(v, key=len)))
     acc['우회계수_분per직선km'] = factor
+    acc['근사상한_분'] = cap
 
     table = pop.set_index('행정기관코드')[['시도', '시군구', '총인구']].join(acc)
     table['응급의료기관수'] = em['행정기관코드'].value_counts().reindex(table.index, fill_value=0)
@@ -178,7 +191,7 @@ def report(fac, miss, centers, table):
         print(f'[좌표 범위] {name} {len(lat)}개 중 한국 범위 밖 {out.sum()}개')
 
     cols = ['시도', '시군구', '최근접_응급의료기관_분', '최근접_권역지역센터_분', f'{MINUTES}분내_응급의료기관수',
-            '최근접_응급의료기관_km', '우회계수_분per직선km', '직선거리대체_인구비율']
+            '최근접_권역지역센터_분_원값', '우회계수_분per직선km', '근사반영_인구비율']
     s = table.sort_values('최근접_응급의료기관_분', ascending=False)[cols].round(2)
     print(f'\n[최근접 응급의료기관 주행시간 상위 10]\n{s.head(10).to_string()}')
     print(f'\n[하위 10]\n{s.tail(10).to_string()}')

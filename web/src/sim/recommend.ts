@@ -44,7 +44,7 @@ export function recommend(
   const points: PointState[] = Object.entries(centers).flatMap(([code, ps]) =>
     ps.map((p, idx) => {
       const k = baseline.우회계수[code]
-      const m = pointMetrics(p, facilities, k, baseline.기준분, index)
+      const m = pointMetrics(p, facilities, k, baseline.기준분, baseline.근사상한분, index)
       return { code, idx, lat: p.lat, lon: p.lon, m, reachE: Math.max(m.최근접_응급의료기관_분, baseline.기준분) / k, reachC: m.최근접_권역지역센터_분 / k }
     }))
   const byCode = new Map<string, PointState[]>()
@@ -82,7 +82,7 @@ function evaluate(
     const reach = Math.max(addsEmergency ? p.reachE : 0, addsCenter ? p.reachC : 0) * 1.05
     if (!real && (Math.abs(p.lat - c.lat) * KM_PER_LAT > reach || Math.abs(p.lon - c.lon) * KM_PER_LON > reach)) continue
     const k = baseline.우회계수[p.code]
-    const t = real ? cp.drive![c.hpid!] / 60 : haversine(p.lat, p.lon, c.lat, c.lon) * k
+    const t = real ? cp.drive![c.hpid!] / 60 : Math.min(haversine(p.lat, p.lon, c.lat, c.lon) * k, baseline.근사상한분)
     const near = addsEmergency && t < p.m.최근접_응급의료기관_분
     const ctr = addsCenter && t < p.m.최근접_권역지역센터_분
     const inR = addsEmergency && t <= baseline.기준분
