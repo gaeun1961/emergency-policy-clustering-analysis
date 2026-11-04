@@ -21,6 +21,7 @@ interface Props {
   onHover: (code: string | null, e?: React.MouseEvent) => void
   facilities: Facility[]      // 표시할 응급의료기관 (마커)
   onFacilityClick: (f: Facility, clientX: number, clientY: number) => void
+  highlight?: Set<string>     // 강조할 기관 hpid (선택 지역 주민이 이용하는 기관)
   sim?: MapSim
   children?: ReactNode        // 지도 위에 겹쳐 놓을 범례·지표 선택
 }
@@ -30,6 +31,8 @@ const MARKER = { G001: 3.2, G006: 2.3, G007: 1.6 } as const
 /** 마커 불투명도: 전국 화면에서는 흐리게(수도권 뭉침 완화), 확대할수록 진하게 */
 const markerOpacity = (k: number) => Math.min(1, 0.35 + 0.22 * Math.log2(k))
 const LABEL_K = 2.5  // 이 배율 이상에서 시군구 이름표
+/** 기관 클릭 히트 반경(px, 줌과 무관). 터치 기기는 더 크게. CSS .hit 의 r 과 같은 값 */
+const HIT_PX = () => (matchMedia('(pointer: coarse)').matches ? 22 : 12)
 const GRADE_RANK = { '이중 취약': 1, '준 이중 취약': 2, '': 3 } as const
 /** 터치 기기: 한 손가락은 페이지 스크롤, 두 손가락(핀치)만 지도 확대·이동 */
 const zoomFilter = (e: Event) => {
@@ -54,7 +57,7 @@ function useSize<T extends HTMLElement>() {
 }
 
 /** 시군구 단계구분도. 배경 지도 없이 SVG, d3-zoom으로 확대·이동 */
-function MapView({ data, byCode, metric, selected, onSelect, onHover, facilities, onFacilityClick, sim, children }: Props) {
+function MapView({ data, byCode, metric, selected, onSelect, onHover, facilities, onFacilityClick, highlight, sim, children }: Props) {
   const [boxRef, { w, h }] = useSize<HTMLDivElement>()
   const svgRef = useRef<SVGSVGElement>(null)
   const zoomRef = useRef<ZoomBehavior<SVGSVGElement, unknown> | null>(null)
@@ -100,6 +103,27 @@ function MapView({ data, byCode, metric, selected, onSelect, onHover, facilities
 
   const sel = paths.find((p) => p.code === selected)
 
+  /** 화면에 보이는 기관 마커의 화면 좌표 */
+  const placed = useMemo(() => facilities.flatMap((f) => {
+    const xy = projection([f.경도, f.위도])
+    if (!xy) return []
+    const [x, y] = t.apply(xy)
+    return x < -10 || y < -10 || x > w + 10 || y > h + 10 ? [] : [{ f, x, y }]
+  }), [facilities, projection, t, w, h])
+
+  /** 히트 영역 클릭: 클릭 지점에서 가장 가까운 기관 (히트 반경 안) */
+  const hitClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const box = svgRef.current!.getBoundingClientRect()
+    const cx = e.clientX - box.left, cy = e.clientY - box.top
+    let best: Facility | null = null, bd = HIT_PX() + 1
+    for (const { f, x, y } of placed) {
+      const d = Math.hypot(x - cx, y - cy)
+      if (d < bd) { best = f; bd = d }
+    }
+    if (best) onFacilityClick(best, e.clientX, e.clientY)
+  }
+
   /** 이름표: 선택 지역 > 이중 취약 > 준 이중 > 면적 큰 순으로 놓고, 겹치면 생략 */
   const labels = useMemo(() => {
     if (t.k < LABEL_K) return []
@@ -133,22 +157,21 @@ function MapView({ data, byCode, metric, selected, onSelect, onHover, facilities
           {sel && <path d={sel.d} className="region-selected" />}
         </g>
         <g className="markers" style={{ opacity: markerOpacity(t.k) }}>
-          {facilities.map((f) => {
-            const xy = projection([f.경도, f.위도])
-            if (!xy) return null
-            const [x, y] = t.apply(xy)
-            if (x < -10 || y < -10 || x > w + 10 || y > h + 10) return null
+          {placed.map(({ f, x, y }) => {
             const added = f.hpid.startsWith('SIM-')
             const r = MARKER[f.등급] + (added ? 1.4 : 0)
-            const common = {
-              className: `marker g-${f.등급}${added ? ' added' : ''}`,
-              onClick: (e: React.MouseEvent) => { e.stopPropagation(); onFacilityClick(f, e.clientX, e.clientY) },
-            }
-            const title = <title>{added ? `가상 기관 (${f.기관명})` : f.기관명}</title>
+            const className = `marker g-${f.등급}${added ? ' added' : ''}`
             return f.등급 === 'G001' && !added
-              ? <rect key={f.hpid} x={x - r} y={y - r} width={r * 2} height={r * 2} transform={`rotate(45 ${x} ${y})`} {...common}>{title}</rect>
-              : <circle key={f.hpid} cx={x} cy={y} r={r} {...common}>{title}</circle>
+              ? <rect key={f.hpid} x={x - r} y={y - r} width={r * 2} height={r * 2} transform={`rotate(45 ${x} ${y})`} className={className} />
+              : <circle key={f.hpid} cx={x} cy={y} r={r} className={className} />
           })}
+        </g>
+        <g className="markers-hl">
+          {placed.filter(({ f }) => highlight?.has(f.hpid)).map(({ f, x, y }) => <circle key={f.hpid} cx={x} cy={y} r={7} className="marker-hl" />)}
+        </g>
+        {/* 투명 히트 영역: 겹치면 커서에 가장 가까운 기관 */}
+        <g className="hits" onClick={hitClick}>
+          {placed.map(({ f, x, y }) => <circle key={f.hpid} cx={x} cy={y} className="hit"><title>{f.hpid.startsWith('SIM-') ? `가상 기관 (${f.기관명})` : f.기관명}</title></circle>)}
         </g>
         <g className="labels">
           {labels.map((l) => <text key={l.code} x={l.x} y={l.y} className={l.code === selected ? 'label sel' : 'label'}>{l.text}</text>)}

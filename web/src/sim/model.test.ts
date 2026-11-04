@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import type { Region } from '../data'
-import { ACCESS_KEYS, RAW_KEYS, driveMinutes, haversine, makeScorer, nearestFacilities, scoreAgainstBaseline, simulate, type Baseline, type Centers, type Facility } from './model'
+import { ACCESS_KEYS, RAW_KEYS, driveMinutes, facilityUsage, haversine, makeScorer, nearestFacilities, scoreAgainstBaseline, simulate, type Baseline, type Centers, type Facility } from './model'
 import { recommend } from './recommend'
 import type { SigunguGeo } from '../data'
 import { locateSigungu } from './geo'
@@ -210,5 +210,48 @@ describe('주행시간 (OSRM)', () => {
       return km >= 1 && km / (sec / 3600) > 120 ? `${p.지점}->${f.기관명}` : null
     })).filter(Boolean)
     expect(fast).toEqual([])
+  })
+})
+
+describe('이용 기관 (기준점별 주행시간 최근접 기관의 주민 비율)', () => {
+  // Python src.accessibility.facility_usage 결과: 행정기관코드,구분,hpid,주민비율,평균주행분,평균직선km,근사포함
+  const rows = readFileSync(new URL('../../../data/processed/facility_usage.csv', import.meta.url), 'utf-8')
+    .replace(/^\uFEFF/, '').trim().split(/\r?\n/).slice(1).map((l) => l.split(','))
+  const cap = baseline.근사상한분
+
+  for (const [kind, centersOnly] of [['응급의료기관', false], ['권역지역센터', true]] as const) {
+    it(`${kind}: 229곳 기관·비율·평균 주행시간·직선거리·근사 여부가 Python과 같다`, () => {
+      const bad: unknown[] = []
+      for (const r of regions) {
+        const py = rows.filter((x) => x[0] === r.코드 && x[1] === kind)
+        const js = facilityUsage(centers[r.코드], facilities, r.우회계수, cap, centersOnly)
+        const same = py.length === js.length && py.every((x, i) => {
+          const u = js.find((v) => v.f.hpid === x[2])
+          return u && Math.abs(u.share - +x[3]) < 1e-5 && Math.abs(u.min - +x[4]) < 1e-5 && Math.abs(u.km - +x[5]) < 1e-5
+            && u.approx === (x[6] === 'True') && (i > 0 || js[0].f.hpid === x[2] || Math.abs(js[0].share - +x[3]) < 1e-9)
+        })
+        if (!same) bad.push([r.시군구, py.map((x) => x[2]), js.map((u) => u.f.hpid)])
+      }
+      expect(bad).toEqual([])
+    })
+  }
+
+  it('비율 합은 1, 비율이 큰 순', () => {
+    for (const r of regions) {
+      const u = facilityUsage(centers[r.코드], facilities, r.우회계수, cap)
+      expect(u.reduce((s, x) => s + x.share, 0)).toBeCloseTo(1, 9)
+      for (let i = 1; i < u.length; i++) expect(u[i - 1].share).toBeGreaterThanOrEqual(u[i].share)
+    }
+  })
+
+  it('시뮬레이터 추가 기관도 이용 기관 집계에 들어간다 (근사값)', () => {
+    const 영덕 = [...centers['47770']].sort((a, b) => b.weight - a.weight)[0]
+    const added: Facility = { hpid: 'SIM-1', 기관명: '가상', 등급: 'G006', 위도: 영덕.lat, 경도: 영덕.lon, 시군구코드: '47770' }
+    const factor = regions.find((r) => r.코드 === '47770')!.우회계수
+    for (const centersOnly of [false, true]) {
+      const [top] = facilityUsage(centers['47770'], [...facilities, added], factor, cap, centersOnly)
+      expect(top.f.hpid).toBe('SIM-1')
+      expect(top.approx).toBe(true)
+    }
   })
 })

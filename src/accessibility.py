@@ -6,6 +6,7 @@
       data/processed/drivetime_pairs.csv: 기준점 × 가까운 기관 주행시간 (python -m src.drivetime, 로컬 OSRM)
       data/processed/population_sigungu_202512.csv, data/region_mapping.csv
 출력: data/processed/accessibility_sigungu.csv
+      data/processed/facility_usage.csv: 시군구별 "주민이 가장 가깝게 이용하는 기관" 비율 (대시보드 지역 상세와 같은 집계, vitest 검증용)
 
 기준점: 전국 행정동 약 3,557곳. 시군구 지표 = 행정동별 지표의 인구가중 평균
 (예전의 시군구청 1곳 기준점과 섬 지역 예외는 이 방식으로 대체됨)
@@ -110,6 +111,26 @@ def drive_minutes(centers, em, d_em):
     return t, raw, approx, factor, cap
 
 
+def facility_usage(centers, em, t, d_em, approx, ie, ic):
+    """기준점마다 주행시간 최근접 기관(ie)·센터(ic)를 정하고, 시군구 인구 기준 기관별 이용 주민 비율을 집계한다.
+    평균주행분·평균직선km 는 그 기관을 이용하는 주민 기준 가중평균. 근사포함: 근사값(도로 미연결·10곳 밖)인 기준점이 섞임
+    """
+    rows = np.arange(len(centers))
+    w = centers['가중치'].to_numpy()
+    out = []
+    for kind, idx in [('응급의료기관', ie), ('권역지역센터', ic)]:
+        u = pd.DataFrame({'행정기관코드': centers['행정기관코드'].to_numpy(), 'hpid': em['hpid'].astype(str).to_numpy()[idx],
+                          'w': w, 'wm': w * t[rows, idx], 'wk': w * d_em[rows, idx], 'approx': approx[rows, idx]})
+        g = u.groupby(['행정기관코드', 'hpid'])
+        a = g[['w', 'wm', 'wk']].sum().join(g['approx'].any())
+        total = u.groupby('행정기관코드')['w'].sum()
+        a = a.assign(주민비율=a['w'] / total.reindex(a.index.get_level_values(0)).to_numpy(),
+                     평균주행분=a['wm'] / a['w'], 평균직선km=a['wk'] / a['w'], 구분=kind).rename(columns={'approx': '근사포함'})
+        out.append(a.reset_index())
+    u = pd.concat(out).sort_values(['행정기관코드', '구분', '주민비율', '평균주행분'], ascending=[True, True, False, True])
+    return u[['행정기관코드', '구분', 'hpid', '주민비율', '평균주행분', '평균직선km', '근사포함']]
+
+
 def load_facilities():
     """기준 코드표(시군구 인구 표)와 시군구 코드가 붙은 기관 목록 (매칭 실패 목록 포함)"""
     pop = pd.read_csv(POP_CSV, dtype={'행정기관코드': str}).fillna({'시군구': ''})
@@ -131,7 +152,9 @@ def build(out=OUT):
     t, raw, approx, factor, cap = drive_minutes(centers, em.reset_index(drop=True), d_em)
     is_ctr = em['dutyEmcls'].isin(CENTER).to_numpy()
     rows = np.arange(len(centers))
-    ie, ic = t.argmin(axis=1), np.flatnonzero(is_ctr)[t[:, is_ctr].argmin(axis=1)]
+    # 최근접 기관: 주행시간 최소. 상한(cap)에 걸려 같은 값이 여럿이면 자르기 전 값(raw)이 작은 기관
+    nearest = lambda tt, rr: np.where(tt == tt.min(axis=1, keepdims=True), rr, np.inf).argmin(axis=1)  # noqa: E731
+    ie, ic = nearest(t, raw), np.flatnonzero(is_ctr)[nearest(t[:, is_ctr], raw[:, is_ctr])]
     centers['최근접_응급의료기관_분'] = t[rows, ie]
     centers['최근접_권역지역센터_분'] = t[rows, ic]
     centers[f'{MINUTES}분내_응급의료기관수'] = (t <= MINUTES).sum(axis=1)
@@ -158,6 +181,8 @@ def build(out=OUT):
     report(fac, miss, centers, table)
     out.parent.mkdir(parents=True, exist_ok=True)
     table.round(3).to_csv(out, encoding='utf-8-sig')
+    usage = facility_usage(centers, em, t, d_em, approx, ie, ic)
+    usage.round(6).to_csv(out.parent / 'facility_usage.csv', index=False, encoding='utf-8-sig')
     print(f'\n-> {out}')
     return table
 
