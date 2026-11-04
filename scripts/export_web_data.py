@@ -7,6 +7,7 @@
       drivetime_pairs.csv (기준점 × 가까운 기관 주행시간, python -m src.drivetime)
 출력: web/public/data/sigungu_metrics.json, meta.json
       시뮬레이터용 facilities.json, centers.json, baseline.json
+      읍면동 드릴다운용 emd.json (data/processed/emd_metrics.csv·emd_li_metrics.csv, python -m src.emd_metrics)
 """
 import json
 import sys
@@ -99,7 +100,8 @@ def export_simulation(scores):
     c = accessibility.load_centers()
     pairs = pd.read_csv(accessibility.DRIVE_PAIRS, dtype={'기준점ID': str, 'hpid': str}).dropna(subset=['주행시간초'])
     drive = {pid: dict(zip(g['hpid'], g['주행시간초'].astype(float))) for pid, g in pairs.groupby('기준점ID')}
-    centers = {code: [{'lat': r.lat, 'lon': r.lon, 'weight': float(r.가중치), '지점': r.지점, 'drive': drive.get(r.기준점ID, {})}
+    centers = {code: [{'lat': r.lat, 'lon': r.lon, 'weight': float(r.가중치), '지점': r.지점, 'emd': r.기준점ID.split('-')[0],
+                       'drive': drive.get(r.기준점ID, {})}
                       for r in g.itertuples()]
                for code, g in c.groupby('행정기관코드', sort=False)}
 
@@ -131,8 +133,31 @@ def export_simulation(scores):
     }
     for name, obj in [('facilities.json', facilities), ('centers.json', centers), ('baseline.json', baseline)]:
         (OUT / name).write_text(json.dumps(obj, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
+    export_emd()
     print(f'시뮬레이터: 기관 {len(facilities)}곳, 기준점 {sum(map(len, centers.values()))}개({len(centers)}개 시군구), '
           f'기준선 상위25% 접근성 {cut[TOP][0]:.3f} / 복지 {cut[TOP][1]:.3f}, 등급 재현 일치')
+
+
+def export_emd():
+    """읍면동 드릴다운: 고정값(이름·인구·고령 비율, 섬 리)과 전국 행정동 접근성 점수 분포(웹이 같은 방식으로 다시 계산)"""
+    from src.emd_metrics import ACCESS as EMD_ACCESS, BANDS, REVERSE as EMD_REVERSE
+    e = pd.read_csv(ROOT / 'data' / 'processed' / 'emd_metrics.csv', dtype={'행정동코드': str, '시군구코드': str})
+    li = pd.read_csv(ROOT / 'data' / 'processed' / 'emd_li_metrics.csv', dtype={'행정동코드': str})
+    # 구간 경계: CSV 점수(소수 6자리)가 아니라 지표에서 다시 낸 전체 정밀도 점수로 (src.emd_metrics 와 같은 값)
+    X = e[EMD_ACCESS].copy()
+    X[EMD_REVERSE] = -X[EMD_REVERSE]
+    cuts = (X.rank(pct=True) * 100).mean(axis=1).quantile([0.25, 0.5, 0.75]).tolist()
+    emd = {
+        '설명': '행정동 고정값 [이름, 인구, 고령인구비율]과 섬 리 [인구, 고령인구비율]. 주행시간 지표는 centers.json 기준점(emd)으로 웹이 계산',
+        '행정동': {r.행정동코드: [r.이름, int(r.인구), round(r.고령인구비율, 4)] for r in e.itertuples()},
+        '리': {c: {r.리: [int(r.인구), round(r.고령인구비율, 4)] for r in g.itertuples()} for c, g in li.groupby('행정동코드')},
+        '지표': {k: e[k].round(3).tolist() for k in EMD_ACCESS},   # 전국 행정동 분포 (점수 = 이 분포 기준 백분위 평균)
+        '방향': {k: (-1 if k in EMD_REVERSE else 1) for k in EMD_ACCESS},
+        '구간': BANDS, '구간경계': cuts,
+    }
+    (OUT / 'emd.json').write_text(json.dumps(emd, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
+    print(f'읍면동: 행정동 {len(e)}곳, 섬 리 {len(li)}곳, 구간 경계 {[round(c, 2) for c in cuts]}, '
+          f'emd.json {(OUT / "emd.json").stat().st_size / 1e3:.0f}KB')
 
 
 if __name__ == '__main__':

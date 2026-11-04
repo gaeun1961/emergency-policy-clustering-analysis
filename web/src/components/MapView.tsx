@@ -2,9 +2,19 @@ import { geoMercator, geoPath } from 'd3-geo'
 import { select } from 'd3-selection'
 import { zoom, zoomIdentity, type ZoomBehavior, type ZoomTransform } from 'd3-zoom'
 import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import type { FeatureCollection, Geometry } from 'geojson'
 import type { Data, Region } from '../data'
 import type { Metric } from '../metrics'
 import type { Facility } from '../sim/model'
+
+/** 읍면동 드릴다운: 선택 시군구의 행정동 면을 위에 덮어 그리고, 바뀌면 그 범위로 확대 */
+export interface MapOverlay {
+  fc: FeatureCollection<Geometry, { code: string }>
+  color: (code: string) => string
+  title: (code: string) => string
+  selected: string | null
+  onClick: (code: string) => void
+}
 
 /** 시뮬레이션 모드에서만 넘긴다 */
 export interface MapSim {
@@ -22,6 +32,7 @@ interface Props {
   facilities: Facility[]      // 표시할 응급의료기관 (마커)
   onFacilityClick: (f: Facility, clientX: number, clientY: number) => void
   highlight?: Set<string>     // 강조할 기관 hpid (선택 지역 주민이 이용하는 기관)
+  overlay?: MapOverlay
   sim?: MapSim
   children?: ReactNode        // 지도 위에 겹쳐 놓을 범례·지표 선택
 }
@@ -57,18 +68,18 @@ function useSize<T extends HTMLElement>() {
 }
 
 /** 시군구 단계구분도. 배경 지도 없이 SVG, d3-zoom으로 확대·이동 */
-function MapView({ data, byCode, metric, selected, onSelect, onHover, facilities, onFacilityClick, highlight, sim, children }: Props) {
+function MapView({ data, byCode, metric, selected, onSelect, onHover, facilities, onFacilityClick, highlight, overlay, sim, children }: Props) {
   const [boxRef, { w, h }] = useSize<HTMLDivElement>()
   const svgRef = useRef<SVGSVGElement>(null)
   const zoomRef = useRef<ZoomBehavior<SVGSVGElement, unknown> | null>(null)
   const [t, setT] = useState<ZoomTransform>(zoomIdentity)
   const [legendOpen, setLegendOpen] = useState(false) // 390px 이하에서만 의미 있음 (CSS)
 
-  const { projection, paths, sidoPath } = useMemo(() => {
+  const { projection, path, paths, sidoPath } = useMemo(() => {
     const projection = geoMercator().fitExtent([[12, 12], [w - 12, h - 12]], data.sigungu)
     const path = geoPath(projection)
     return {
-      projection,
+      projection, path,
       paths: data.sigungu.features.map((f) => ({ code: f.properties.code, d: path(f) ?? '', c: path.centroid(f), area: path.area(f) })),
       sidoPath: data.sido.features.map((f) => path(f) ?? '').join(''),
     }
@@ -85,6 +96,15 @@ function MapView({ data, byCode, metric, selected, onSelect, onHover, facilities
   }, [w, h])
 
   const reset = () => svgRef.current && zoomRef.current && select(svgRef.current).call(zoomRef.current.transform, zoomIdentity)
+
+  // 읍면동 면이 바뀌면(다른 시군구 선택) 그 범위로 확대
+  const overlayPaths = useMemo(() => overlay?.fc.features.map((f) => ({ code: f.properties.code, d: path(f) ?? '' })) ?? [], [overlay?.fc, path])
+  useEffect(() => {
+    if (!overlay || !svgRef.current || !zoomRef.current) return
+    const [[x0, y0], [x1, y1]] = path.bounds(overlay.fc)
+    const k = Math.min(14, 0.8 / Math.max((x1 - x0) / w, (y1 - y0) / h))
+    select(svgRef.current).call(zoomRef.current.transform, zoomIdentity.translate(w / 2 - (k * (x0 + x1)) / 2, h / 2 - (k * (y0 + y1)) / 2).scale(k))
+  }, [overlay?.fc, path, w, h]) // eslint-disable-line react-hooks/exhaustive-deps
 
   /** 화면 좌표 -> SVG 좌표 -> 줌 역변환 -> 위경도 */
   const handleClick = (e: React.MouseEvent) => {
@@ -152,6 +172,10 @@ function MapView({ data, byCode, metric, selected, onSelect, onHover, facilities
         aria-label={`시군구 지도: ${metric.label}`} onClick={sim ? handleClick : undefined}>
         <g transform={t.toString()}>
           {regions}
+          {overlay && overlayPaths.map(({ code, d }) => (
+            <path key={code} d={d} fill={overlay.color(code)} className={`emd${code === overlay.selected ? ' sel' : ''}`}
+              onClick={(e) => { e.stopPropagation(); overlay.onClick(code) }}><title>{overlay.title(code)}</title></path>
+          ))}
           <path d={sidoPath} className="sido-line" />
           {sim && paths.filter((p) => sim.changed.has(p.code)).map((p) => <path key={p.code} d={p.d} className="region-changed" />)}
           {sel && <path d={sel.d} className="region-selected" />}

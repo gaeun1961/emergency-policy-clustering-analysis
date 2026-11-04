@@ -2,7 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import DetailPanel, { IslandBadge, type RegionUsage } from './components/DetailPanel'
 import { FacilityPopup, isVirtual } from './components/FacilityInfo'
 import DoubleTable from './components/DoubleTable'
-import MapView, { type MapSim } from './components/MapView'
+import EmdPanel, { bandColor } from './components/EmdPanel'
+import MapView, { type MapOverlay, type MapSim } from './components/MapView'
+import { emdRows, type EmdData } from './sim/emd'
 import ScatterPlot from './components/ScatterPlot'
 import SimPanel, { AddChooser, type RecKind } from './components/SimPanel'
 import { isIsland, loadData, loadSimData, quantile, regionName, type Data, type Region, type SimData } from './data'
@@ -30,6 +32,12 @@ export default function App() {
   const [hover, setHover] = useState<{ code: string; x: number; y: number } | null>(null)
   const [tab, setTab] = useState<Tab>(initial.on ? 'sim' : 'detail')
   const [showLocal, setShowLocal] = useState(false) // 지역응급의료기관(G007) 마커
+  // 읍면동 드릴다운: emd.json(전국 고정값·분포)은 처음 열 때, 행정동 경계는 시군구별로 선택할 때 불러온다
+  const [detailView, setDetailView] = useState<'overview' | 'emd'>('overview')
+  const [emdData, setEmdData] = useState<EmdData | null>(null)
+  const [emdGeo, setEmdGeo] = useState<{ code: string; fc: MapOverlay['fc'] } | null>(null)
+  const [selEmd, setSelEmd] = useState<string | null>(null)
+  const geoCache = useRef(new Map<string, MapOverlay['fc']>())
 
   // 시뮬레이션: 시나리오는 URL 쿼리와 동기화
   const [simOn, setSimOn] = useState(initial.on)
@@ -134,6 +142,36 @@ export default function App() {
     const cap = simData.baseline.근사상한분
     return { em: facilityUsage(pts, applied, r.우회계수, cap).slice(0, 3), ctr: facilityUsage(pts, applied, r.우회계수, cap, true).slice(0, 2) }
   }, [selected, view, simData, applied])
+  const drill = tab === 'detail' && detailView === 'emd' && !!selected
+  useEffect(() => {
+    if (!drill) return
+    const get = (name: string) => fetch(`${import.meta.env.BASE_URL}data/${name}`).then((r) => {
+      if (!r.ok) throw new Error(`${name}: ${r.status}`)
+      return r.json()
+    })
+    if (!emdData) get('emd.json').then(setEmdData).catch((e) => setError(String(e)))
+    const code = selected!
+    const hit = geoCache.current.get(code)
+    if (hit) setEmdGeo({ code, fc: hit })
+    else get(`emd/${code}.json`).then((fc) => { geoCache.current.set(code, fc); setEmdGeo({ code, fc }) }).catch((e) => setError(String(e)))
+  }, [drill, selected, emdData])
+  useEffect(() => setSelEmd(null), [selected])
+  /** 선택 시군구의 행정동별 지표 (시뮬레이션 중이면 추가·제거 반영) */
+  const emd = useMemo(() => {
+    const r = selected ? view?.byCode.get(selected) : null
+    if (!drill || !r || !simData || !applied || !emdData) return null
+    return emdRows(simData.centers[r.코드], applied, r.우회계수, simData.baseline.근사상한분, simData.baseline.기준분, emdData)
+  }, [drill, selected, view, simData, applied, emdData])
+  const overlay: MapOverlay | undefined = useMemo(() => {
+    if (!drill || !emd || !emdGeo || emdGeo.code !== selected) return undefined
+    const byCode = new Map(emd.map((x) => [x.code, x]))
+    return {
+      fc: emdGeo.fc, selected: selEmd, onClick: setSelEmd,
+      color: (c) => (byCode.has(c) ? bandColor(byCode.get(c)!.구간) : '#ccc'),
+      title: (c) => { const x = byCode.get(c); return x ? `${x.이름} · ${emdData!.구간[x.구간]} · 인구 ${x.인구.toLocaleString('ko-KR')}명` : c },
+    }
+  }, [drill, emd, emdGeo, selected, selEmd, emdData])
+
   const highlight = useMemo(() => new Set(usage ? [...usage.em, ...usage.ctr].map((u) => u.f.hpid) : []), [usage])
   // 강조 기관은 지역응급의료기관 표시를 꺼도 보이게
   const markers = useMemo(() => (applied ?? []).filter((f) => showLocal || f.등급 !== 'G007' || f.hpid.startsWith('SIM-') || highlight.has(f.hpid)), [applied, showLocal, highlight])
@@ -222,7 +260,7 @@ export default function App() {
       <main className="body">
         <section className="map-area" aria-label="지도">
           <MapView data={data} byCode={view.byCode} metric={metric} selected={selected} onSelect={select} onHover={onHover}
-            facilities={markers} onFacilityClick={onFacilityClick} highlight={highlight} sim={mapSim}>
+            facilities={markers} onFacilityClick={onFacilityClick} highlight={highlight} overlay={overlay} sim={mapSim}>
             <label className="select">
               <select value={metricKey} onChange={(e) => setMetricKey(e.target.value as MetricKey)} aria-label="지도 지표">
                 {METRIC_KEYS.filter((k) => !simOn || !k.endsWith('_km')).map((k) => <option key={k} value={k}>{metrics[k].label}</option>)}
@@ -253,7 +291,19 @@ export default function App() {
             ))}
           </nav>
           <div className="tab-body" role="tabpanel">
-            {tab === 'detail' && <DetailPanel region={selected ? view.byCode.get(selected) ?? null : null} total={meta.시군구수} regions={view.regions}
+            {tab === 'detail' && selected && (
+              <div className="subtabs" role="tablist" aria-label="지역 상세 보기">
+                {([['overview', '개요'], ['emd', '읍면동 보기']] as const).map(([v, label]) => (
+                  <button key={v} role="tab" aria-selected={detailView === v} className={detailView === v ? 'on' : ''} onClick={() => setDetailView(v)}>{label}</button>
+                ))}
+              </div>
+            )}
+            {tab === 'detail' && detailView === 'emd' && selected && view.byCode.get(selected) ? (
+              <div className="detail">
+                <h2>{regionName(view.byCode.get(selected)!)} <span className="muted small">읍면동</span></h2>
+                <EmdPanel region={view.byCode.get(selected)!} rows={emd} data={emdData} selected={selEmd} onSelect={setSelEmd} cap={simData?.baseline.근사상한분} />
+              </div>
+            ) : tab === 'detail' && <DetailPanel region={selected ? view.byCode.get(selected) ?? null : null} total={meta.시군구수} regions={view.regions}
               usage={usage} cap={simData?.baseline.근사상한분} sim={simOn} />}
             {tab === 'dist' && (
               <>
@@ -295,6 +345,7 @@ export default function App() {
                   <li>다리가 없는 섬은 배·헬기 이동(운항 시간, 기상)을 반영하지 못하고 직선거리 근사를 씁니다(옹진·완도·신안 등).</li>
                   <li>기준점은 행정동 행정복지센터 한 점이라, 넓은 읍·면 안의 마을별 거리 차이는 남아 있습니다(섬 읍·면은 리 단위).</li>
                   <li>독거노인은 주민등록상 65세 이상 1인세대로, 실제 단독 거주와 다를 수 있습니다.</li>
+                  <li>읍면동 보기는 접근성과 고령 비율(10세 단위 인구로 추정)만 보여줍니다. 독거노인·장애인 비율은 시군구 단위로만 공개됩니다.</li>
                   <li>일반구는 상위 시로 합쳤고, 기초생활수급자는 시군구 단위 공개 통계가 없어 제외했습니다.</li>
                   <li>기준선 근처 지역은 기준이 조금만 바뀌어도 등급이 달라질 수 있습니다.</li>
                 </ul>

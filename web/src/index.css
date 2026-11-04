@@ -63,6 +63,8 @@ button { font: inherit; color: inherit; }
 .sido-line { fill: none; stroke: var(--ink); stroke-opacity: 0.55; stroke-width: 1; vector-effect: non-scaling-stroke; pointer-events: none; }
 .region-selected { fill: none; stroke: var(--ink); stroke-width: 2; stroke-linejoin: round; vector-effect: non-scaling-stroke; pointer-events: none; }
 .region-changed { fill: none; stroke: var(--ink); stroke-width: 2.4; stroke-dasharray: 5 3; stroke-linejoin: round; vector-effect: non-scaling-stroke; pointer-events: none; }
+.emd { stroke: #fff; stroke-width: 0.6; vector-effect: non-scaling-stroke; cursor: pointer; }
+.emd.sel { stroke: var(--ink); stroke-width: 2; }
 .marker { fill: var(--marker); fill-opacity: 0.28; stroke: var(--marker); stroke-opacity: 0.75; stroke-width: 0.8; pointer-events: none; }
 /* 기관 클릭 히트 영역: 투명, 줌과 무관한 고정 반경(MapView HIT_PX 와 같은 값) */
 .hit { r: 12px; fill: transparent; pointer-events: all; cursor: pointer; }
@@ -252,3 +254,19 @@ tbody tr:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px;
 @media (max-width: 420px) {
   .scores, .sim-counts { grid-template-columns: 1fr; }
 }
+
+/* ---- 읍면동 드릴다운 ---- */
+.subtabs { display: inline-flex; gap: 0; margin: 0 0 10px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.subtabs button { font-size: 0.82rem; padding: 5px 14px; border: 0; background: #fff; color: var(--ink-2); cursor: pointer; }
+.subtabs button.on { background: var(--accent); color: #fff; font-weight: 700; }
+.emd-summary { margin: 4px 0 8px; font-size: 0.9rem; }
+.emd-summary.strong { background: var(--accent-soft); border-radius: 6px; padding: 6px 10px; }
+.emd-legend { margin: 0 0 4px; }
+.emd-list { list-style: none; padding: 0; margin: 8px 0 0; }
+.emd-list > li { padding: 7px 4px; border-top: 1px solid var(--line); }
+.emd-list > li.sel { background: var(--accent-soft); }
+.emd-head { display: flex; align-items: center; gap: 6px; border: 0; background: none; padding: 0; cursor: pointer; font-size: 0.92rem; color: var(--ink); }
+.emd-cells { display: flex; flex-wrap: wrap; gap: 2px 12px; margin: 3px 0 2px; font-variant-numeric: tabular-nums; }
+.emd-cells .warn { color: #8a4b00; font-style: normal; }
+.emd-li table { border-collapse: collapse; margin-top: 4px; width: 100%; }
+.emd-li th, .emd-li td { text-align: left; padding: 2px 6px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }

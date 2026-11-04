@@ -13,7 +13,7 @@ export interface Facility {
   hpid: string; 기관명: string; 등급: FacilityGrade; 위도: number; 경도: number; 시군구코드: string | null
   주소?: string; 응급실전화?: string; 대표전화?: string  // 시뮬레이터로 추가한 가상 기관에는 없음
 }
-export interface CenterPoint { lat: number; lon: number; weight: number; 지점: string; drive?: Record<string, number> }
+export interface CenterPoint { lat: number; lon: number; weight: number; 지점: string; emd?: string; drive?: Record<string, number> }  // emd: 행정동코드
 export type Centers = Record<string, CenterPoint[]>
 
 export const ACCESS_KEYS = ['최근접_응급의료기관_분', '최근접_권역지역센터_분', '30분내_응급의료기관수'] as const
@@ -107,28 +107,42 @@ export interface Usage { f: Facility; share: number; min: number; km: number; ap
  * 기관별 이용 주민 비율과 그 주민들의 평균 주행시간·직선거리를 집계한다. Python src.accessibility.facility_usage 와 같다.
  * 지역 밖 기관도 포함, 비율이 큰 순(같으면 주행시간 짧은 순)
  */
-export function facilityUsage(points: CenterPoint[], facilities: Facility[], factor: number, cap = Infinity, centersOnly = false): Usage[] {
-  const pool = centersOnly ? facilities.filter((f) => CENTER_GRADES.includes(f.등급)) : facilities
+export const isCenter = (f: Facility) => CENTER_GRADES.includes(f.등급)
+
+export interface Nearest { f: Facility; min: number; approx: boolean; capped: boolean }
+/** 기준점 한 곳의 주행시간 최근접 기관. 상한에 걸린 동률은 자르기 전 값이 작은 기관 (Python 과 같음) */
+export function nearestOf(p: CenterPoint, pool: Facility[], factor: number, cap = Infinity): Nearest | null {
+  let best: Nearest | null = null, braw = Infinity
+  for (const f of pool) {
+    const t = driveMinutes(p, f, factor, cap)
+    const raw = t.capped ? haversine(p.lat, p.lon, f.위도, f.경도) * factor : t.min
+    if (!best || t.min < best.min || (t.min === best.min && raw < braw)) { best = { f, ...t }; braw = raw }
+  }
+  return best
+}
+
+/** 기준점별 최근접 기관을 주민 수로 집계 (이용 비율 큰 순, 같으면 주행시간 짧은 순) */
+export function aggregateUsage(points: CenterPoint[], nearest: (Nearest | null)[]): Usage[] {
   const wsum = points.reduce((s, p) => s + p.weight, 0)
   const acc = new Map<Facility, { w: number; wm: number; wk: number; approx: boolean; capped: boolean }>()
-  for (const p of points) {
-    let best: Facility | null = null, bt = Infinity, braw = Infinity, bApprox = false, bCapped = false
-    for (const f of pool) {
-      const t = driveMinutes(p, f, factor, cap)
-      const raw = t.capped ? haversine(p.lat, p.lon, f.위도, f.경도) * factor : t.min
-      if (t.min < bt || (t.min === bt && raw < braw)) { best = f; bt = t.min; braw = raw; bApprox = t.approx; bCapped = t.capped }
-    }
-    if (!best) continue
-    const a = acc.get(best) ?? { w: 0, wm: 0, wk: 0, approx: false, capped: false }
+  points.forEach((p, i) => {
+    const n = nearest[i]
+    if (!n) return
+    const a = acc.get(n.f) ?? { w: 0, wm: 0, wk: 0, approx: false, capped: false }
     a.w += p.weight
-    a.wm += p.weight * bt
-    a.wk += p.weight * haversine(p.lat, p.lon, best.위도, best.경도)
-    a.approx ||= bApprox
-    a.capped ||= bCapped
-    acc.set(best, a)
-  }
+    a.wm += p.weight * n.min
+    a.wk += p.weight * haversine(p.lat, p.lon, n.f.위도, n.f.경도)
+    a.approx ||= n.approx
+    a.capped ||= n.capped
+    acc.set(n.f, a)
+  })
   return [...acc].map(([f, a]) => ({ f, share: a.w / wsum, min: a.wm / a.w, km: a.wk / a.w, approx: a.approx, capped: a.capped }))
     .sort((x, y) => y.share - x.share || x.min - y.min)
+}
+
+export function facilityUsage(points: CenterPoint[], facilities: Facility[], factor: number, cap = Infinity, centersOnly = false): Usage[] {
+  const pool = centersOnly ? facilities.filter(isCenter) : facilities
+  return aggregateUsage(points, points.map((p) => nearestOf(p, pool, factor, cap)))
 }
 
 /** 기준점 지표를 가중평균하고 소수 3자리로 반올림 (Python table.round(3)와 같게) */
