@@ -12,11 +12,11 @@ from pathlib import Path
 
 import pandas as pd
 
+from .config import YM  # 기준연월
 from .loaders import clean_col_name
 from .regions import age_start, build_master, rollup
 
 ROOT = Path(__file__).resolve().parents[1]
-YM = '202512'
 DATASETS = {
     'population': dict(pattern='연령별인구현황', total='총인구수',
                        cols=('총인구', '65세이상인구', '80세이상인구'), national_total=51_117_378),

@@ -2,8 +2,8 @@
 
 실행: 레포 루트에서 python -m src.emd_centers
 필요: .env 의 KAKAO_REST_API_KEY, node(npx) (mapshaper로 행정동 내부 대표점 계산)
-입력: data/raw/boundary/HangJeongDong_ver20251231.geojson (scripts/build_boundaries.py 가 받음)
-      data/processed/population_sigungu_202512.csv (기준 코드표, 일반구 -> 상위 시)
+입력: data/raw/boundary/HangJeongDong_{경계 버전}.geojson (scripts/build_boundaries.py 가 받음, src/config.py)
+      data/processed/population_sigungu_{기준연월}.csv (기준 코드표, 일반구 -> 상위 시)
 출력: data/processed/emd_centers.csv (캐시: 이미 받은 행정동은 다시 호출하지 않음)
       컬럼: 코드(행정동 10자리), 시군구코드, 이름, 위도, 경도, 좌표출처(kakao / inner), 장소명
       인구 컬럼은 src.emd_population 이 붙인다
@@ -21,12 +21,13 @@ from pathlib import Path
 import requests
 from dotenv import load_dotenv
 
+from .config import BOUNDARY_VERSION, YM
 from .loaders import clean_sido_name
 from .regions import parent_city
 
 ROOT = Path(__file__).resolve().parents[1]
-RAW = ROOT / 'data' / 'raw' / 'boundary' / 'HangJeongDong_ver20251231.geojson'
-POP_CSV = ROOT / 'data' / 'processed' / 'population_sigungu_202512.csv'
+RAW = ROOT / 'data' / 'raw' / 'boundary' / f'HangJeongDong_{BOUNDARY_VERSION}.geojson'
+POP_CSV = ROOT / 'data' / 'processed' / f'population_sigungu_{YM}.csv'
 OUT = ROOT / 'data' / 'processed' / 'emd_centers.csv'
 OVERRIDES = ROOT / 'data' / 'emd_center_overrides.csv'
 KEYWORD_URL = 'https://dapi.kakao.com/v2/local/search/keyword.json'
@@ -228,7 +229,7 @@ def apply_overrides():
     return c
 
 
-def attach_population(ym='202512'):
+def attach_population(ym=YM):
     """emd_centers.csv 에 행정동 인구(src.fetch_emd_population 결과)를 붙이고 검증한다.
     - 행정동 코드(10자리) = 경계 adm_cd2 로 바로 매칭
     - 경계가 없는 출장소는 소속 행정동에 더한다. 순서대로
@@ -241,6 +242,7 @@ def attach_population(ym='202512'):
     from collections import Counter
     c = pd.read_csv(OUT, dtype={'코드': str, '시군구코드': str})
     p = pd.read_csv(ROOT / 'data' / 'processed' / f'emd_population_{ym}.csv', dtype={'행정동코드': str})
+    p = p.drop(columns=[c for c in p.columns if c.startswith('소속행정동코드')])  # 다시 실행해도 같은 결과 (이전 실행이 붙인 컬럼 제거)
     name = dict(zip(c['코드'], c['이름'].str.split().str[-1]))
     cache = ROOT / 'data' / 'raw' / 'emd_population' / ym
     geom = None

@@ -2,8 +2,8 @@
 
 실행: 레포 루트에서 python -m src.build_table
 입력: data/processed/ 의 시군구 표 (모두 같은 행정기관코드 5자리, 각 스크립트가 매칭·검증을 마친 결과)
-      population_sigungu_202512.csv (기준 코드표), single_household_sigungu_202512.csv  <- python -m src.population
-      disability_sigungu_2025.csv  <- python -m src.disability
+      population_sigungu_{기준연월}.csv (기준 코드표), single_household_sigungu_{기준연월}.csv  <- python -m src.population
+      disability_sigungu_{장애인 기준연도}.csv  <- python -m src.disability   (기준 시점은 src/config.py)
       accessibility_sigungu.csv    <- python -m src.fetch_emergency, src.emd_centers, src.accessibility
 출력: data/processed/sigungu_table.csv
 """
@@ -11,11 +11,13 @@ from pathlib import Path
 
 import pandas as pd
 
+from .config import DISABILITY_YEAR, YM
+
 ROOT = Path(__file__).resolve().parents[1]
 PROC = ROOT / 'data' / 'processed'
-POP_FILE = PROC / 'population_sigungu_202512.csv'
-SINGLE_FILE = PROC / 'single_household_sigungu_202512.csv'
-DISABILITY_FILE = PROC / 'disability_sigungu_2025.csv'
+POP_FILE = PROC / f'population_sigungu_{YM}.csv'
+SINGLE_FILE = PROC / f'single_household_sigungu_{YM}.csv'
+DISABILITY_FILE = PROC / f'disability_sigungu_{DISABILITY_YEAR}.csv'
 ACCESS_FILE = PROC / 'accessibility_sigungu.csv'
 
 

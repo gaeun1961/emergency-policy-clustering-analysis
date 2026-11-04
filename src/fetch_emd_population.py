@@ -1,6 +1,6 @@
 """행정동 인구 수집: 행정안전부_법정동별(행정동 통반단위) 성/연령별 주민등록 인구수 OpenAPI (공공데이터포털 15108074)
 
-실행: 레포 루트에서 python -m src.fetch_emd_population [기준연월, 기본 202512]
+실행: 레포 루트에서 python -m src.fetch_emd_population [기준연월, 기본 src/config.py YM]
 필요: .env 의 DATA_GO_KR_SERVICE_KEY 또는 KR_SERVICE_KEY (이 API 활용신청 필요, src.fetch_emergency.service_key)
 출력: data/processed/emd_population_{기준연월}.csv  (행정동코드, 행정동명, 시도명, 시군구명, 총인구)
 캐시: data/raw/emd_population/{기준연월}/*.json  (법정 읍면동별 응답. 중간에 끊겨도 이어 받음, gitignore)
@@ -23,6 +23,7 @@ from pathlib import Path
 import pandas as pd
 import requests
 from . import fetch_emergency
+from .config import YM
 
 ROOT = Path(__file__).resolve().parents[1]
 URL = 'https://apis.data.go.kr/1741000/stdgSexdAgePpltn/selectStdgSexdAgePpltn'
@@ -78,7 +79,7 @@ def sigungu_codes(key, ym):
     return [c for c, _ in rows if c not in parents]
 
 
-def main(ym='202512'):
+def main(ym=YM):
     key = service_key()
     cache = ROOT / 'data' / 'raw' / 'emd_population' / ym
     cache.mkdir(parents=True, exist_ok=True)

@@ -1,19 +1,20 @@
 """KOSIS 등록장애인(DT_11761_N009, 시군구별·장애정도별·성별) -> 시군구 등록장애인 수
 
 실행: 레포 루트에서 python -m src.disability
-입력: data/raw/disability/*.xlsx (시트 '데이터'), data/processed/population_sigungu_202512.csv (기준 코드표)
-출력: data/processed/disability_sigungu_2025.csv
+입력: data/raw/disability/*.xlsx (시트 '데이터'), data/processed/population_sigungu_{기준연월}.csv (기준 코드표, src/config.py)
+출력: data/processed/disability_sigungu_{장애인 기준연도}.csv
 """
 from pathlib import Path
 
 import pandas as pd
 
+from .config import DISABILITY_YEAR, YM
 from .regions import attach_code, load_mapping, rollup
 
 ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / 'data' / 'raw' / 'disability'
-OUT = ROOT / 'data' / 'processed' / 'disability_sigungu_2025.csv'
-POP_CSV = ROOT / 'data' / 'processed' / 'population_sigungu_202512.csv'
+OUT = ROOT / 'data' / 'processed' / f'disability_sigungu_{DISABILITY_YEAR}.csv'
+POP_CSV = ROOT / 'data' / 'processed' / f'population_sigungu_{YM}.csv'
 NATIONAL_TOTAL = 2_627_761  # 2025년 연말 전국 등록장애인
 
 
