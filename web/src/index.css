@@ -90,6 +90,7 @@ button { font: inherit; color: inherit; }
   paint-order: stroke; stroke: #fff; stroke-width: 3px; stroke-linejoin: round; stroke-opacity: 0.85;
 }
 .label.sel { font-weight: 700; font-size: 12px; }
+.label.emd-label { font-size: 11px; fill: #fff; stroke: rgba(13, 66, 86, 0.75); }
 .zoom-hint.mobile { display: none; }
 .legend-toggle { display: none; }
 .toast {

@@ -17,7 +17,7 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 from build_boundaries import PRECISION, RAW, mapshaper, rewind_for_d3  # noqa: E402
 
 OUT = ROOT / 'web' / 'public' / 'data' / 'emd'
-SIMPLIFY = '15%'  # 시군구 하나만 확대해서 보므로 시군구 경계(10%)보다 조금 더 남긴다
+SIMPLIFY = '40%'  # 시군구 하나만 확대해서 본다. 15%는 작은 구(서울 중구 등)에서 동 경계가 각져 40%로 (합계 3.1MB -> 6.6MB, 선택한 시군구만 불러옴)
 
 
 def main():

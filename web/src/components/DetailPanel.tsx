@@ -4,7 +4,7 @@ import type { RankedFacility } from '../sim/model'
 import { textOn } from '../theme'
 import { FacilityLines } from './FacilityInfo'
 
-interface Props { region: Region | null; total: number; regions: Region[]; usage?: RegionUsage | null; cap?: number; sim?: boolean }
+interface Props { region: Region | null; total: number; regions: Region[]; usage?: RegionUsage | null; cap?: number; sim?: boolean; section: 'overview' | 'facilities' }
 
 /** 근사값 반영 인구 비율이 이 이상이면 배지 */
 const APPROX_BADGE = 0.05
@@ -91,7 +91,8 @@ export function IslandBadge() {
   )
 }
 
-export default function DetailPanel({ region: r, total, regions, usage, cap, sim }: Props) {
+/** 지역 상세: 개요(판정·점수·지표·군집) 또는 이용 기관(응급의료기관·센터 목록). 읍면동 보기는 EmdPanel */
+export default function DetailPanel({ region: r, total, regions, usage, cap, sim, section }: Props) {
   if (!r) return <div className="detail"><p className="muted">지도, 산점도, 표에서 시군구를 선택하세요.</p></div>
 
   const cards: [string, string][] = [
@@ -103,8 +104,7 @@ export default function DetailPanel({ region: r, total, regions, usage, cap, sim
     ['최근접 권역·지역센터', fmt.minAtLeast(r.최근접_권역지역센터_분, r.최근접_권역지역센터_분_원값) + (sim ? '' : ` · 직선 ${fmt.km(r.최근접_권역지역센터_km)}`)],
     ['30분 내 응급의료기관', `${r['30분내_기관수'].toFixed(r['30분내_기관수'] % 1 ? 1 : 0)}곳`],
   ]
-  return (
-    <div className="detail" aria-live="polite">
+  const head = (
       <div className="detail-head">
         <h2>{regionName(r)}</h2>
         <div className="badges">
@@ -114,6 +114,18 @@ export default function DetailPanel({ region: r, total, regions, usage, cap, sim
             근사값 반영 {fmt.pct(r.근사반영비율)}</span>}
         </div>
       </div>
+  )
+  if (section === 'facilities') {
+    return (
+      <div className="detail" aria-live="polite">
+        {head}
+        {usage ? <Usages usage={usage} cap={cap} factor={r.우회계수} /> : <p className="muted small">기관 데이터를 불러오는 중…</p>}
+      </div>
+    )
+  }
+  return (
+    <div className="detail" aria-live="polite">
+      {head}
 
       <div className="scores">
         {([['응급의료 접근성 취약', r.접근성점수, r.접근성순위], ['복지 취약', r.복지점수, r.복지순위]] as const).map(([label, score, rank]) => (
@@ -138,8 +150,6 @@ export default function DetailPanel({ region: r, total, regions, usage, cap, sim
           <p>{clusterDesc(regions, r.클러스터)}</p>
         </div>
       </div>
-
-      {usage && <Usages usage={usage} cap={cap} factor={r.우회계수} />}
 
       <MedianBars r={r} regions={regions} />
     </div>

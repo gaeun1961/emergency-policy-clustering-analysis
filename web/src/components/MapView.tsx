@@ -9,7 +9,9 @@ import type { Facility } from '../sim/model'
 
 /** 읍면동 드릴다운: 선택 시군구의 행정동 면을 위에 덮어 그리고, 바뀌면 그 범위로 확대 */
 export interface MapOverlay {
+  key: string                 // 시군구 코드: 이 값이 바뀔 때만 자동 확대 (탭을 오가도 줌·위치 유지)
   fc: FeatureCollection<Geometry, { code: string }>
+  label: (code: string) => string
   color: (code: string) => string
   title: (code: string) => string
   selected: string | null
@@ -42,6 +44,9 @@ const MARKER = { G001: 3.2, G006: 2.3, G007: 1.6 } as const
 /** 마커 불투명도: 전국 화면에서는 흐리게(수도권 뭉침 완화), 확대할수록 진하게 */
 const markerOpacity = (k: number) => Math.min(1, 0.35 + 0.22 * Math.log2(k))
 const LABEL_K = 2.5  // 이 배율 이상에서 시군구 이름표
+const MAX_K = 14     // 기본 최대 배율. 읍면동 보기에서는 시군구 크기에 맞춰 높인다 (EMD_ZOOM_X)
+const EMD_ZOOM_X = 3 // 읍면동 보기 최대 배율 = 시군구를 화면에 맞춘 배율 × 이 값 (작은 구는 기본 최대 14배를 넘어 동이 구분되게)
+const EMD_LABEL_PX = 2.2 // 읍면동 이름표: 면의 화면 폭이 글자 폭의 이 배 이상일 때
 /** 기관 클릭 히트 반경(px, 줌과 무관). 터치 기기는 더 크게. CSS .hit 의 r 과 같은 값 */
 const HIT_PX = () => (matchMedia('(pointer: coarse)').matches ? 22 : 12)
 const GRADE_RANK = { '이중 취약': 1, '준 이중 취약': 2, '': 3 } as const
@@ -87,7 +92,7 @@ function MapView({ data, byCode, metric, selected, onSelect, onHover, facilities
 
   useEffect(() => {
     if (!svgRef.current) return
-    const z = zoom<SVGSVGElement, unknown>().scaleExtent([1, 14]).filter(zoomFilter)
+    const z = zoom<SVGSVGElement, unknown>().scaleExtent([1, MAX_K]).filter(zoomFilter)
       .translateExtent([[-w * 0.2, -h * 0.2], [w * 1.2, h * 1.2]])
       .on('zoom', (e) => setT(e.transform))
     zoomRef.current = z
@@ -98,13 +103,22 @@ function MapView({ data, byCode, metric, selected, onSelect, onHover, facilities
   const reset = () => svgRef.current && zoomRef.current && select(svgRef.current).call(zoomRef.current.transform, zoomIdentity)
 
   // 읍면동 면이 바뀌면(다른 시군구 선택) 그 범위로 확대
-  const overlayPaths = useMemo(() => overlay?.fc.features.map((f) => ({ code: f.properties.code, d: path(f) ?? '' })) ?? [], [overlay?.fc, path])
+  const overlayPaths = useMemo(() => overlay?.fc.features.map((f) => ({
+    code: f.properties.code, d: path(f) ?? '', c: path.centroid(f), b: path.bounds(f),
+  })) ?? [], [overlay?.fc, path])
+  // 읍면동 보기: 최대 배율을 시군구 크기에 맞춰 높이고, 시군구가 바뀔 때만 그 범위로 확대
+  const zoomed = useRef<string | null>(null)
   useEffect(() => {
-    if (!overlay || !svgRef.current || !zoomRef.current) return
+    const z = zoomRef.current
+    if (!z || !svgRef.current) return
+    if (!overlay) { z.scaleExtent([1, MAX_K]); return }
     const [[x0, y0], [x1, y1]] = path.bounds(overlay.fc)
-    const k = Math.min(14, 0.8 / Math.max((x1 - x0) / w, (y1 - y0) / h))
-    select(svgRef.current).call(zoomRef.current.transform, zoomIdentity.translate(w / 2 - (k * (x0 + x1)) / 2, h / 2 - (k * (y0 + y1)) / 2).scale(k))
-  }, [overlay?.fc, path, w, h]) // eslint-disable-line react-hooks/exhaustive-deps
+    const fit = 0.8 / Math.max((x1 - x0) / w, (y1 - y0) / h)
+    z.scaleExtent([1, Math.max(MAX_K, fit * EMD_ZOOM_X)])
+    if (zoomed.current === overlay.key) return
+    zoomed.current = overlay.key
+    select(svgRef.current).call(z.transform, zoomIdentity.translate(w / 2 - (fit * (x0 + x1)) / 2, h / 2 - (fit * (y0 + y1)) / 2).scale(fit))
+  }, [overlay?.key, overlay?.fc, path, w, h]) // eslint-disable-line react-hooks/exhaustive-deps
 
   /** 화면 좌표 -> SVG 좌표 -> 줌 역변환 -> 위경도 */
   const handleClick = (e: React.MouseEvent) => {
@@ -146,15 +160,27 @@ function MapView({ data, byCode, metric, selected, onSelect, onHover, facilities
 
   /** 이름표: 선택 지역 > 이중 취약 > 준 이중 > 면적 큰 순으로 놓고, 겹치면 생략 */
   const labels = useMemo(() => {
-    if (t.k < LABEL_K) return []
+    if (t.k < LABEL_K && !overlay) return []
     const order = [...paths].sort((a, b) => {
       const ra = a.code === selected ? 0 : GRADE_RANK[byCode.get(a.code)!.등급]
       const rb = b.code === selected ? 0 : GRADE_RANK[byCode.get(b.code)!.등급]
       return ra - rb || b.area - a.area
     })
     const placed: { x: number; y: number; w: number; h: number }[] = []
-    const out: { code: string; x: number; y: number; text: string }[] = []
-    for (const p of order) {
+    const out: { code: string; x: number; y: number; text: string; emd?: boolean }[] = []
+    // 읍면동 이름표 먼저: 면이 글자보다 충분히 넓게 보일 때만
+    for (const o of overlay ? overlayPaths : []) {
+      const [x, y] = t.apply(o.c)
+      if (!Number.isFinite(x) || x < 0 || y < 0 || x > w || y > h) continue
+      const text = overlay!.label(o.code)
+      if ((o.b[1][0] - o.b[0][0]) * t.k < text.length * 11 * EMD_LABEL_PX) continue
+      const box = { x: x - text.length * 5.5 - 2, y: y - 8, w: text.length * 11 + 4, h: 16 }
+      if (placed.some((b) => box.x < b.x + b.w && b.x < box.x + box.w && box.y < b.y + b.h && b.y < box.y + box.h)) continue
+      placed.push(box)
+      out.push({ code: o.code, x, y, text, emd: true })
+    }
+    for (const p of t.k < LABEL_K ? [] : order) {
+      if (overlay && p.code === overlay.key) continue // 읍면동을 보는 시군구 이름은 생략
       const [x, y] = t.apply(p.c)
       if (!Number.isFinite(x) || x < 0 || y < 0 || x > w || y > h) continue
       const r = byCode.get(p.code)!
@@ -165,7 +191,7 @@ function MapView({ data, byCode, metric, selected, onSelect, onHover, facilities
       out.push({ code: p.code, x, y, text })
     }
     return out
-  }, [paths, t, w, h, byCode, selected])
+  }, [paths, t, w, h, byCode, selected, overlay, overlayPaths])
   return (
     <div ref={boxRef} className="map-box">
       <svg ref={svgRef} width={w} height={h} className={sim ? 'map sim' : 'map'} role="img"
@@ -178,7 +204,7 @@ function MapView({ data, byCode, metric, selected, onSelect, onHover, facilities
           ))}
           <path d={sidoPath} className="sido-line" />
           {sim && paths.filter((p) => sim.changed.has(p.code)).map((p) => <path key={p.code} d={p.d} className="region-changed" />)}
-          {sel && <path d={sel.d} className="region-selected" />}
+          {sel && sel.code !== overlay?.key && <path d={sel.d} className="region-selected" />}{/* 읍면동 보기에서는 동 경계가 대신 보임 */}
         </g>
         <g className="markers" style={{ opacity: markerOpacity(t.k) }}>
           {placed.map(({ f, x, y }) => {
@@ -198,7 +224,7 @@ function MapView({ data, byCode, metric, selected, onSelect, onHover, facilities
           {placed.map(({ f, x, y }) => <circle key={f.hpid} cx={x} cy={y} className="hit"><title>{f.hpid.startsWith('SIM-') ? `가상 기관 (${f.기관명})` : f.기관명}</title></circle>)}
         </g>
         <g className="labels">
-          {labels.map((l) => <text key={l.code} x={l.x} y={l.y} className={l.code === selected ? 'label sel' : 'label'}>{l.text}</text>)}
+          {labels.map((l) => <text key={l.code} x={l.x} y={l.y} className={l.emd ? 'label emd-label' : l.code === selected ? 'label sel' : 'label'}>{l.text}</text>)}
         </g>
       </svg>
       <div className={`map-overlay${legendOpen ? '' : ' collapsed'}`}>
