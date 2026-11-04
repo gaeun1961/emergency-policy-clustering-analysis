@@ -20,6 +20,7 @@
 <summary><b>목차 · 실행 방법 · 상세 결과 펼치기</b></summary>
 
 - [실행 순서](#실행-순서)
+- [데이터 갱신 (자동 감지·수동 체크리스트)](#데이터-갱신)
 - [핵심 결과](#핵심-결과-시군구-229개-2025년-12월-기준)
   - [주행시간 전환에 따른 결과 변화](#주행시간-전환에-따른-결과-변화-직선거리--자동차-주행시간)
   - [기준점 변경에 따른 결과 변화](#기준점-변경에-따른-결과-변화-시군구청-1점--행정동-인구가중)
@@ -56,6 +57,22 @@ cd web && npm ci && npm run dev
 - `scripts/build_boundaries.py`, `src.emd_centers` 는 mapshaper를 `npx` 로 실행하므로 **node(npx)가 필요**하다.
 - `src.drivetime` 은 로컬 OSRM 서버가 필요하다. pbf·전처리 파일(약 2GB)은 레포 밖(WSL `~/osrm`)에 둔다. Docker 데몬이 꺼져 있으면 `sudo service docker start`.
 - 대시보드는 master에 `web/` 변경이 push되면 `.github/workflows/deploy-pages.yml` 이 빌드해서 GitHub Pages에 배포한다.
+
+## 데이터 갱신
+
+**자동 감지** (`.github/workflows/data-watch.yml`, 매월 3일 + 수동 실행)
+- `scripts/check_data_updates.py` 가 아래 두 가지를 확인하고, 바뀐 것이 있을 때만 `data-watch` 라벨 이슈를 만든다. 같은 제목의 열린 이슈가 있으면 댓글을 단다.
+  - **응급의료기관 API**: 현재 `web/public/data/facilities.json`(권역·지역센터, 지역응급의료기관)과 비교해 추가·삭제·등급·이름 변경, 50m 이상 좌표 이동을 찾는다. 이슈에는 로컬 OSRM 주행시간 재계산 안내가 붙는다.
+  - **행정동 인구 API**: 사용 중인 기준월(`data/processed/emd_population_*.csv`) 다음 달부터 지난달까지 데이터가 있는지 본다. 시도 수가 바뀌었으면(행정구역 개편) 경고를 붙인다.
+- 필요한 GitHub Secret은 `DATA_GO_KR_SERVICE_KEY`(공공데이터포털 일반 인증키, 두 API 활용신청 필요) 하나다. 키는 코드·로그에 출력하지 않고, 오류 메시지에서도 지운다.
+- 로컬 실행: `python scripts/check_data_updates.py` (`.env` 키 사용, 결과는 `data-watch/`, gitignore)
+- 주행시간(OSRM)은 Actions에서 계산하지 않는다. 이슈를 받으면 로컬에서 [실행 순서](#실행-순서)대로 다시 만든다.
+
+**수동 갱신 체크리스트** (API가 없는 데이터)
+- [ ] 인구·1인세대: 행안부 주민등록 인구통계에서 새 기준월 `연령별 인구현황`, `성/연령별 1인세대수` 파일을 받아 `data/raw/population/`, `data/raw/single_household/` 에 넣고 `python -m src.population` (행정동 인구 API 기준월과 맞춘다)
+- [ ] 등록장애인: KOSIS DT_11761_N009 새 연도 파일을 `data/raw/disability/` 에 넣고 `python -m src.disability` (매년 상반기 전년 연말 기준 공개)
+- [ ] 행정구역 개편이 있으면 `data/region_mapping.csv`, 경계(`scripts/build_boundaries.py` 의 admdongkor 버전)를 먼저 맞춘다
+- [ ] 이어서 행정동 기준점·주행시간·접근성·통합 테이블·노트북·웹 데이터를 다시 만들고, README·data/README 의 기준 시점을 바꾼다
 
 ## 핵심 결과 (시군구 229개, 2025년 12월 기준)
 
