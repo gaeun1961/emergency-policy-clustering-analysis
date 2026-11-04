@@ -1,3 +1,4 @@
+import { fmt } from '../metrics'
 import type { Facility } from '../sim/model'
 import { GRADE_NAME } from '../sim/scenario'
 
@@ -22,11 +23,14 @@ export function FacilityLines({ f }: { f: Facility }) {
 }
 
 /** 지도 기관 마커를 눌렀을 때 뜨는 팝업. 시뮬레이션 중에는 제거 버튼 */
-export function FacilityPopup({ f, x, y, onRemove, onClose }: { f: Facility; x: number; y: number; onRemove?: () => void; onClose: () => void }) {
+interface PopupTime { region: string; min: number; km: number; approx: boolean }
+export function FacilityPopup({ f, x, y, time, onRemove, onClose }: { f: Facility; x: number; y: number; time?: PopupTime; onRemove?: () => void; onClose: () => void }) {
   return (
     <div className="chooser fac-popup" style={{ left: Math.max(8, Math.min(x, window.innerWidth - 268)), top: Math.min(y + 8, window.innerHeight - 170) }}
       role="dialog" aria-label={`${f.기관명} 정보`}>
       <FacilityLines f={f} />
+      {time && <div className="small fac-time">{time.region} 주민 평균 자동차 <strong>{fmt.min(time.min)}</strong> · 직선 {fmt.km(time.km)}
+        {time.approx && <span className="muted">{isVirtual(f) ? ' (근사값: 직선거리 × 우회계수)' : ' (일부 근사값)'}</span>}</div>}
       {onRemove && <button onClick={onRemove}>이 기관 제거</button>}
       <button className="link" onClick={onClose}>닫기</button>
     </div>

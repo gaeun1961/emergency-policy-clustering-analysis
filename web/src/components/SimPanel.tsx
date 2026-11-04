@@ -27,8 +27,8 @@ const names = (codes: string[], byCode: Map<string, Region>) => codes.map((c) =>
 export function reason(e: Effect, byCode: Map<string, Region>): string {
   const parts: string[] = []
   if (e.escaped.length) parts.push(`${names(e.escaped, byCode)} ${e.escaped.length}곳이 이중 취약에서 벗어남`)
-  if (e.nearImproved.elderly) parts.push(`65세 이상 ${fmt.int(e.nearImproved.elderly)}명의 최근접 응급의료기관 거리 평균 ${e.nearImproved.kmAvg.toFixed(1)}km 감소`)
-  if (e.ctrImproved.elderly) parts.push(`${fmt.int(e.ctrImproved.elderly)}명의 최근접 센터 거리 평균 ${e.ctrImproved.kmAvg.toFixed(1)}km 감소`)
+  if (e.nearImproved.elderly) parts.push(`65세 이상 ${fmt.int(e.nearImproved.elderly)}명의 최근접 응급의료기관 주행시간 평균 ${e.nearImproved.minAvg.toFixed(1)}분 감소`)
+  if (e.ctrImproved.elderly) parts.push(`${fmt.int(e.ctrImproved.elderly)}명의 최근접 센터 주행시간 평균 ${e.ctrImproved.minAvg.toFixed(1)}분 감소`)
   return parts.join(', ')
 }
 
@@ -49,7 +49,8 @@ export default function SimPanel(p: Props) {
           <button onClick={copy}>{copied ? '복사됨' : '링크 복사'}</button>
         </div>
       </div>
-      <p className="notice">가상 시나리오이며, 전국 행정동(섬은 리) 기준점에서 잰 직선거리를 인구로 가중평균합니다. 판정 기준선은 현재 분포로 고정합니다.</p>
+      <p className="notice">가상 시나리오이며, 전국 행정동(섬은 리) 기준점에서 잰 자동차 주행시간을 인구로 가중평균합니다. 새로 추가한 기관은 실제 도로 경로가 없어
+        <strong> 직선거리 × 시군구 우회계수로 계산한 근사값</strong>입니다. 판정 기준선은 현재 분포로 고정합니다.</p>
       <p className="hint">지도를 누르면 그 위치에 기관을 추가하고, 기관 점을 누르면 정보와 제거 버튼이 뜹니다.
         추가 {p.scenario.added.length}곳 · 제거 {p.scenario.removed.length}곳</p>
 
@@ -88,7 +89,7 @@ export default function SimPanel(p: Props) {
         ))}
       </div>
       <p className="hint">후보: 행정동 기준점 위치{p.recKind === 'G006' ? ' + 기존 지역기관의 지역센터 승격' : ''}.
-        순위: ① 이중 취약에서 벗어나는 시군구 수 ② 65세 이상 인구 가중 거리 감소. 시군구당 1곳.</p>
+        순위: ① 이중 취약에서 벗어나는 시군구 수 ② 65세 이상 인구 가중 주행시간 감소(근사값). 시군구당 1곳.</p>
       {!p.recs ? <p className="muted small">계산 중…</p> : p.recs.length === 0 ? <p className="muted small">개선되는 후보가 없습니다.</p> : (
         <ol className="recs">
           {p.recs.map((e) => {
@@ -108,7 +109,7 @@ export default function SimPanel(p: Props) {
         </ol>
       )}
       </details>
-      <p className="hint">후보지는 행정동 행정복지센터(섬은 리) 위치입니다. 거리는 시군구 안 모든 행정동 주민 기준이라, 후보 위치와 측정 지점이 한 점으로 겹치지 않습니다.</p>
+      <p className="hint">후보지는 행정동 행정복지센터(섬은 리) 위치입니다. 신설 후보의 주행시간은 직선거리 × 시군구 우회계수(분/직선km) 근사값이고, 승격 후보는 기존 기관의 실주행시간을 씁니다.</p>
     </div>
   )
 }

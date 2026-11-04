@@ -7,13 +7,13 @@ import ScatterPlot from './components/ScatterPlot'
 import SimPanel, { AddChooser, type RecKind } from './components/SimPanel'
 import { isIsland, loadData, loadSimData, quantile, regionName, type Data, type Region, type SimData } from './data'
 import { CLUSTER_COLOR, GRADE_COLOR, buildMetrics, clusterDesc, type MetricKey } from './metrics'
-import { simulate, type Facility, type FacilityGrade } from './sim/model'
+import { nearestFacilities, simulate, type Facility, type FacilityGrade } from './sim/model'
 import type { Effect } from './sim/recommend'
 import { locateSigungu } from './sim/geo'
 import { EMPTY, applyScenario, fromQuery, keepOnLand, toQuery, type Scenario } from './sim/scenario'
 
 const REPO = 'https://github.com/gaeun1961/emergency-policy-clustering-analysis'
-const METRIC_KEYS: MetricKey[] = ['등급', '접근성점수', '복지점수', '클러스터', '최근접_응급의료기관_km', '최근접_권역지역센터_km']
+const METRIC_KEYS: MetricKey[] = ['등급', '접근성점수', '복지점수', '클러스터', '최근접_응급의료기관_분', '최근접_권역지역센터_분', '최근접_응급의료기관_km', '최근접_권역지역센터_km']
 type Tab = 'detail' | 'dist' | 'list' | 'sim' | 'about'
 const TABS: { id: Tab; label: string }[] = [
   { id: 'detail', label: '지역 상세' }, { id: 'dist', label: '분포' }, { id: 'list', label: '목록' },
@@ -88,8 +88,8 @@ export default function App() {
       const s = simResult[r.코드]
       return {
         ...r, 접근성점수: s.접근성점수, 등급: s.등급,
-        최근접_응급의료기관_km: s.metrics.최근접_응급의료기관_km, 최근접_권역지역센터_km: s.metrics.최근접_권역지역센터_km,
-        반경30km_기관수: s.metrics.반경30km_응급의료기관수,
+        최근접_응급의료기관_분: s.metrics.최근접_응급의료기관_분, 최근접_권역지역센터_분: s.metrics.최근접_권역지역센터_분,
+        '30분내_기관수': s.metrics['30분내_응급의료기관수'],
         접근성순위: 1 + scores.filter((v) => v > s.접근성점수).length,
         합산점수: s.등급 === '이중 취약' ? s.접근성점수 + r.복지점수 : null,
       }
@@ -147,10 +147,19 @@ export default function App() {
     setFacPopup(null)
   }
 
+  /** 팝업: 선택한 시군구 주민 기준 이 기관까지 평균 주행시간. 직선 60km 넘게 먼 기관은 근사만 남아 의미가 없어 생략 */
+  const popupTime = (f: Facility) => {
+    const r = selected ? view?.byCode.get(selected) : null
+    const pts = selected ? simData?.centers[selected] : null
+    if (!r || !pts) return undefined
+    const [t] = nearestFacilities(pts, [f], r.우회계수, 1)
+    return t.km > 60 ? undefined : { region: regionName(r), min: t.min, km: t.km, approx: t.approx }
+  }
   const toggleSim = () => {
     setSimOn(!simOn)
     setPending(null)
     setFacPopup(null)
+    if (!simOn && metricKey.endsWith('_km')) setMetricKey('등급') // 시뮬레이션은 주행시간만 다시 계산
     setTab(simOn ? 'detail' : 'sim')
   }
   const addAt = (grade: FacilityGrade) => {
@@ -205,7 +214,7 @@ export default function App() {
             facilities={markers} onFacilityClick={onFacilityClick} sim={mapSim}>
             <label className="select">
               <select value={metricKey} onChange={(e) => setMetricKey(e.target.value as MetricKey)} aria-label="지도 지표">
-                {METRIC_KEYS.map((k) => <option key={k} value={k}>{metrics[k].label}</option>)}
+                {METRIC_KEYS.filter((k) => !simOn || !k.endsWith('_km')).map((k) => <option key={k} value={k}>{metrics[k].label}</option>)}
               </select>
             </label>
             <ul className="legend" aria-label={`${metric.label} 범례`}>
@@ -233,7 +242,7 @@ export default function App() {
           </nav>
           <div className="tab-body" role="tabpanel">
             {tab === 'detail' && <DetailPanel region={selected ? view.byCode.get(selected) ?? null : null} total={meta.시군구수} regions={view.regions}
-              facilities={applied ?? undefined} points={selected ? simData?.centers[selected] : undefined} />}
+              facilities={applied ?? undefined} points={selected ? simData?.centers[selected] : undefined} sim={simOn} />}
             {tab === 'dist' && (
               <>
                 <ul className="legend">
@@ -264,11 +273,13 @@ export default function App() {
                     </li>
                   ))}
                 </ul>
-                <h3>거리 계산 기준점</h3>
-                <p className="small">시군구마다 전국 행정동의 행정복지센터(섬 읍·면은 리)에서 가장 가까운 응급의료기관·센터까지 직선거리를 재고, 행정동 주민 수로 가중평균합니다. 군청 한 곳만 보던 예전 방식보다 시군구 전체 주민의 거리를 반영합니다.</p>
+                <h3>접근성 계산</h3>
+                <p className="small">시군구마다 전국 행정동의 행정복지센터(섬 읍·면은 리)에서 가장 가까운 응급의료기관·센터까지 <strong>자동차 주행시간</strong>을 재고, 행정동 주민 수로 가중평균합니다.
+                  주행시간은 OpenStreetMap 도로망으로 OSRM이 계산했습니다(페리 제외). 가까운 10곳 밖 기관, 도로로 닿지 않는 섬, 시뮬레이터로 추가한 가상 기관은 직선거리 × 시군구 우회계수(분/직선km) 근사값입니다.</p>
                 <h3>데이터 한계</h3>
                 <ul className="small">
-                  <li>거리는 직선거리라 실제 도로 이동보다 짧고, 섬 지역의 배·헬기 이동(운항 시간, 기상)은 반영하지 못합니다.</li>
+                  <li>주행시간은 자유 주행 기준이라 실시간 교통(정체)과 구급차 우선통행은 반영하지 않습니다.</li>
+                  <li>다리가 없는 섬은 배·헬기 이동(운항 시간, 기상)을 반영하지 못하고 직선거리 근사를 씁니다(옹진·완도·신안 등).</li>
                   <li>기준점은 행정동 행정복지센터 한 점이라, 넓은 읍·면 안의 마을별 거리 차이는 남아 있습니다(섬 읍·면은 리 단위).</li>
                   <li>독거노인은 주민등록상 65세 이상 1인세대로, 실제 단독 거주와 다를 수 있습니다.</li>
                   <li>일반구는 상위 시로 합쳤고, 기초생활수급자는 시군구 단위 공개 통계가 없어 제외했습니다.</li>
@@ -297,7 +308,7 @@ export default function App() {
         </div>
       )}
       {toast && <div className="toast" role="status">{toast}</div>}
-      {facPopup && <FacilityPopup f={facPopup.f} x={facPopup.x} y={facPopup.y} onClose={() => setFacPopup(null)}
+      {facPopup && <FacilityPopup f={facPopup.f} x={facPopup.x} y={facPopup.y} onClose={() => setFacPopup(null)} time={popupTime(facPopup.f)}
         onRemove={simOn ? () => removeFacility(facPopup.f) : undefined} />}
       {simOn && pending && <AddChooser x={pending.x} y={pending.y} onPick={addAt} onCancel={() => setPending(null)} />}
     </div>

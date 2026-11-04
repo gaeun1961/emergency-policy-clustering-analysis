@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import type { Region } from '../data'
-import { ACCESS_KEYS, haversine, makeScorer, nearestFacilities, scoreAgainstBaseline, simulate, type Baseline, type Centers, type Facility } from './model'
+import { ACCESS_KEYS, driveMinutes, haversine, makeScorer, nearestFacilities, scoreAgainstBaseline, simulate, type Baseline, type Centers, type Facility } from './model'
 import { recommend } from './recommend'
 import type { SigunguGeo } from '../data'
 import { locateSigungu } from './geo'
@@ -13,7 +13,7 @@ const centers = load<Centers>('centers.json')
 const baseline = load<Baseline>('baseline.json')
 const regions = load<Region[]>('sigungu_metrics.json')
 const sim = simulate(facilities, centers, baseline)
-const FIELD = { 최근접_응급의료기관_km: '최근접_응급의료기관_km', 최근접_권역지역센터_km: '최근접_권역지역센터_km', 반경30km_응급의료기관수: '반경30km_기관수' } as const
+const FIELD = { 최근접_응급의료기관_분: '최근접_응급의료기관_분', 최근접_권역지역센터_분: '최근접_권역지역센터_분', '30분내_응급의료기관수': '30분내_기관수' } as const
 
 describe('수정 없는 상태 = Python 결과 (sigungu_metrics.json)', () => {
   it('입력 규모', () => {
@@ -58,23 +58,23 @@ describe('시뮬레이션 동작', () => {
     const 영덕 = [...centers['47770']].sort((a, b) => b.weight - a.weight)[0]
     const added: Facility = { hpid: 'SIM-1', 기관명: '가상', 등급: 'G006', 위도: 영덕.lat, 경도: 영덕.lon, 시군구코드: '47770' }
     const after = simulate([...facilities, added], centers, baseline)
-    expect(after['47770'].metrics.최근접_응급의료기관_km).toBeLessThan(sim['47770'].metrics.최근접_응급의료기관_km)
+    expect(after['47770'].metrics.최근접_응급의료기관_분).toBeLessThan(sim['47770'].metrics.최근접_응급의료기관_분)
     expect(after['47770'].접근성점수).toBeLessThan(sim['47770'].접근성점수)
     const rank = { '이중 취약': 2, '준 이중 취약': 1, '': 0 }
     const worse = Object.keys(sim).filter((c) => rank[after[c].등급] > rank[sim[c].등급])
     expect(worse).toEqual([])
   })
 
-  it('기관을 제거하면 거리가 줄지 않는다', () => {
+  it('기관을 제거하면 주행시간이 줄지 않는다', () => {
     const after = simulate(facilities.slice(1), centers, baseline)
-    for (const c of Object.keys(sim)) expect(after[c].metrics.최근접_응급의료기관_km).toBeGreaterThanOrEqual(sim[c].metrics.최근접_응급의료기관_km)
+    for (const c of Object.keys(sim)) expect(after[c].metrics.최근접_응급의료기관_분).toBeGreaterThanOrEqual(sim[c].metrics.최근접_응급의료기관_분)
   })
 
   it('makeScorer(이진 탐색) = scoreAgainstBaseline(선형)', () => {
     const score = makeScorer(baseline)
     const samples = Object.values(sim).flatMap((s) => [s.metrics, {
-      최근접_응급의료기관_km: s.metrics.최근접_응급의료기관_km * 0.7, 최근접_권역지역센터_km: s.metrics.최근접_권역지역센터_km + 3.3,
-      반경30km_응급의료기관수: s.metrics.반경30km_응급의료기관수 + 1,
+      최근접_응급의료기관_분: s.metrics.최근접_응급의료기관_분 * 0.7, 최근접_권역지역센터_분: s.metrics.최근접_권역지역센터_분 + 3.3,
+      '30분내_응급의료기관수': s.metrics['30분내_응급의료기관수'] + 1,
     }])
     for (const m of samples) expect(score(m)).toBeCloseTo(scoreAgainstBaseline(m, baseline), 9)
   })
@@ -151,18 +151,42 @@ describe('가까운 응급의료기관 (지역 상세)', () => {
     expect(facilities.filter((f) => !f.기관명 || !f.주소 || !f.응급실전화)).toEqual([])
   })
 
-  it('거리 오름차순 3곳, 1위 거리 ≥ 최근접 응급의료기관 지표(점별 최소의 평균)', () => {
+  it('주행시간 오름차순 3곳, 1위 시간 ≥ 최근접 응급의료기관 지표(점별 최소의 평균)', () => {
     for (const r of regions) {
-      const near = nearestFacilities(centers[r.코드], facilities, 3)
+      const near = nearestFacilities(centers[r.코드], facilities, r.우회계수, 3)
       expect(near).toHaveLength(3)
-      expect(near[0].km <= near[1].km && near[1].km <= near[2].km).toBe(true)
-      expect(near[0].km).toBeGreaterThanOrEqual(r.최근접_응급의료기관_km - 0.001)
+      expect(near[0].min <= near[1].min && near[1].min <= near[2].min).toBe(true)
+      expect(near[0].min).toBeGreaterThanOrEqual(r.최근접_응급의료기관_분 - 0.001)
     }
   })
 
-  it('기준점이 1곳뿐이면 1위 거리 = 최근접 거리', () => {
+  it('기준점이 1곳뿐이면 1위 시간 = 최근접 시간', () => {
     const c = centers[regions[0].코드][0]
-    const [top] = nearestFacilities([c], facilities, 1)
-    expect(top.km).toBeCloseTo(Math.min(...facilities.map((f) => haversine(c.lat, c.lon, f.위도, f.경도))), 9)
+    const [top] = nearestFacilities([c], facilities, regions[0].우회계수, 1)
+    expect(top.min).toBeCloseTo(Math.min(...facilities.map((f) => driveMinutes(c, f, regions[0].우회계수).min)), 9)
+  })
+})
+
+describe('주행시간 (OSRM)', () => {
+  it('우회계수: baseline과 sigungu_metrics가 같은 값', () => {
+    expect(regions.filter((r) => baseline.우회계수[r.코드] !== r.우회계수).map((r) => r.시군구)).toEqual([])
+  })
+
+  it('실주행시간이 있으면 그 값, 없으면(가상 기관) 직선거리 × 우회계수 근사', () => {
+    const p = centers['47770'][0]
+    const [hpid, sec] = Object.entries(p.drive!)[0]
+    const f = facilities.find((x) => x.hpid === hpid)!
+    expect(driveMinutes(p, f, 1.5)).toEqual({ min: sec / 60, approx: false })
+    const v: Facility = { ...f, hpid: 'SIM-1' }
+    expect(driveMinutes(p, v, 1.5)).toEqual({ min: haversine(p.lat, p.lon, f.위도, f.경도) * 1.5, approx: true })
+  })
+
+  it('주행시간은 직선거리보다 길다: 실주행 쌍의 평균 속도가 직선 기준 120km/h 이하', () => {
+    const fast = Object.values(centers).flat().flatMap((p) => Object.entries(p.drive ?? {}).map(([h, sec]) => {
+      const f = facilities.find((x) => x.hpid === h)!
+      const km = haversine(p.lat, p.lon, f.위도, f.경도)
+      return km >= 1 && km / (sec / 3600) > 120 ? `${p.지점}->${f.기관명}` : null
+    })).filter(Boolean)
+    expect(fast).toEqual([])
   })
 })

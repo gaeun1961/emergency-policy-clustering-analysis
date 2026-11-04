@@ -121,6 +121,10 @@ def test_end_to_end():
         accessibility.FACILITIES, accessibility.EMD_CENTERS, accessibility.POP_CSV = d / 'fac.csv', d / 'emd.csv', pop_file
         accessibility.MAPPING, accessibility.MOHW_CSV = mapping, d / 'none.csv'
         accessibility.LI_WEIGHTED = d / 'no_li.csv'  # 실제 섬 리 단위 목록을 읽지 않게
+        # 주행시간: 군위읍->4 15분(11.12km), 수원 A동->2 1분(0km라 계수 계산 제외), B동->2 20분(22.24km), 세종 c동->5 도달 불가
+        pd.DataFrame({'기준점ID': ['2772025000', '4111152000', '4111353000', '3611051000'], 'hpid': ['4', '2', '2', '5'],
+                      '직선km': 0, '주행시간초': [900, 60, 1200, None], '주행거리m': 0}).to_csv(d / 'drive.csv', index=False)
+        accessibility.DRIVE_PAIRS = d / 'drive.csv'
         acc_file = d / 'acc.csv'
         a = accessibility.build(acc_file)
         km01 = accessibility.haversine([36.0], [128.0], [36.1], [128.0])[0, 0]  # 위도 0.1도 ≈ 11.12km
@@ -130,6 +134,14 @@ def test_end_to_end():
         assert abs(a.loc['27720', '최근접_응급의료기관_km'] - km01) < 1e-6  # G009(36.0,128.0)는 제외
         assert abs(a.loc['41110', '최근접_응급의료기관_km'] - km01 * 2 * 100 / 400) < 1e-6  # A동 0km×300명, B동 22.24km×100명
         assert a.loc['41110', '기준점방식'] == '행정동 인구가중'
+        # 우회계수(분/직선km): 군위 15/11.12, 수원 20/22.24, 나머지는 두 값의 중앙값
+        f_gw, f_sw = round(15 / km01, 3), round(20 / (2 * km01), 3)
+        assert a.loc['27720', '우회계수_분per직선km'] == f_gw and a.loc['41110', '우회계수_분per직선km'] == f_sw
+        assert a.loc['36110', '우회계수_분per직선km'] == round((15 / km01 + 20 / (2 * km01)) / 2, 3)
+        assert a.loc['27720', '최근접_응급의료기관_분'] == 15
+        assert a.loc['41110', '최근접_응급의료기관_분'] == (1 * 300 + 20 * 100) / 400   # 실주행 쌍이 근사(직선×계수)보다 우선
+        assert a.loc['41110', '30분내_응급의료기관수'] == (2 * 300 + 1 * 100) / 400     # A동: 2(1분)·1(22km×계수=20분), B동: 2만
+        assert a.loc['36110', '직선거리대체_인구비율'] == 1 and a.loc['41110', '직선거리대체_인구비율'] == 0
 
         t = main(d / 'out', pop_file, sh_file, dis_file, acc_file)
 
