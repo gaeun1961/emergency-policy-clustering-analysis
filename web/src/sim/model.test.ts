@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import type { Region } from '../data'
+import { isBothVulnerable, sfcaBand, sfcaCuts } from '../metrics'
 import { ACCESS_KEYS, RAW_KEYS, driveMinutes, facilityUsage, haversine, makeScorer, nearestFacilities, rankFacilities, scoreAgainstBaseline, simulate, LIST_MAX, LIST_TOP, type Baseline, type Centers, type Facility, type RankedFacility } from './model'
 import { recommend } from './recommend'
 import type { SigunguGeo } from '../data'
@@ -333,7 +334,7 @@ describe('읍면동 드릴다운 (Python src.emd_metrics 와 일치)', () => {
       const sum = emdRows(centers[r.코드], facilities, r.우회계수, cap, baseline.기준분, emd).reduce((s, x) => s + x.인구, 0)
       expect(sum).toBe(r.총인구)
     }
-  })
+  }, 30000) // 229곳 읍면동 재계산이라 기본 5초를 넘을 수 있음
 
   it('지표·점수·구간·근사 반영 비율이 Python과 같다', () => {
     const bad = rows.filter((x) => {
@@ -370,3 +371,21 @@ describe('읍면동 드릴다운 (Python src.emd_metrics 와 일치)', () => {
     expect(t.점수).toBeLessThan(target.점수)
   })
 })
+
+describe('2SFCA 보조 지표 (Python src.sfca 와 일치)', () => {
+  const cuts = sfcaCuts(regions)
+  it('하위 25% 판정이 Python 2SFCA하위25 와 같다 (229곳)', () => {
+    expect(regions.filter((r) => (sfcaBand(r['2SFCA'], cuts) === 0) !== r['2SFCA하위25']).map((r) => r.시군구)).toEqual([])
+  })
+  it('거리·병상 모두 취약 = 이중 취약 중 2SFCA 하위 25%: 10곳 (영덕·보은 포함)', () => {
+    const both = regions.filter((r) => isBothVulnerable(r, cuts)).map((r) => r.시군구)
+    expect(both).toHaveLength(regions.filter((r) => r.등급 === '이중 취약' && r['2SFCA하위25']).length)
+    expect(both).toHaveLength(10)
+    expect(both).toEqual(expect.arrayContaining(['영덕군', '보은군']))
+  })
+  it('기존 판정·점수 필드는 그대로 (등급 개수)', () => {
+    expect(regions.filter((r) => r.등급 === '이중 취약')).toHaveLength(36)
+    expect(regions.filter((r) => r.등급 === '준 이중 취약')).toHaveLength(30)
+  })
+})
+

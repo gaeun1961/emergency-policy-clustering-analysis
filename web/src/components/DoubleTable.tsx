@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { isIsland, regionName, type Region } from '../data'
-import { CLUSTER_COLOR, GRADE_COLOR, fmt } from '../metrics'
+import { CLUSTER_COLOR, GRADE_COLOR, fmt, isBothVulnerable, sfcaCuts } from '../metrics'
 import { textOn } from '../theme'
 
 type Key = '합산' | '등급' | '시도' | '시군구' | '접근성점수' | '복지점수' | '클러스터'
@@ -16,15 +16,19 @@ const PAGE = 10
 const value = (r: Region, k: Key): number | string =>
   k === '합산' ? r.접근성점수 + r.복지점수 : k === '등급' ? (r.등급 === '이중 취약' ? 0 : 1) : k === '시군구' ? regionName(r) : r[k]
 
-interface Props { regions: Region[]; selected: string | null; onSelect: (code: string) => void }
+interface Props { regions: Region[]; selected: string | null; onSelect: (code: string) => void; sim?: boolean }
 
 /** 이중·준 이중 취약 목록. 머리글 정렬, 이름 검색, 처음 10개 + 더보기, 행 클릭으로 지도 선택 */
-export default function DoubleTable({ regions, selected, onSelect }: Props) {
+export default function DoubleTable({ regions, selected, onSelect, sim }: Props) {
   const [sort, setSort] = useState<{ key: Key; desc: boolean }>({ key: '합산', desc: true })
   const [q, setQ] = useState('')
   const [all, setAll] = useState(false)
+  const [bothOnly, setBothOnly] = useState(false)
+  const cuts = sfcaCuts(regions)
+  const both = (r: Region) => !sim && isBothVulnerable(r, cuts) // 시뮬레이션 중에는 2SFCA 를 다시 계산하지 않아 표시 안 함
+  const nBoth = regions.filter(both).length
   const rows = regions
-    .filter((r) => r.등급 && regionName(r).replace(/\s/g, '').includes(q.replace(/\s/g, '')))
+    .filter((r) => r.등급 && regionName(r).replace(/\s/g, '').includes(q.replace(/\s/g, '')) && (!bothOnly || both(r)))
     .sort((a, b) => {
       const va = value(a, sort.key), vb = value(b, sort.key)
       const c = typeof va === 'number' && typeof vb === 'number' ? va - vb : String(va).localeCompare(String(vb), 'ko')
@@ -39,6 +43,7 @@ export default function DoubleTable({ regions, selected, onSelect }: Props) {
       <div className="list-head">
         <input type="search" placeholder="시군구 검색" value={q} onChange={(e) => setQ(e.target.value)} aria-label="시군구 검색" />
         <span className="muted small">이중 {n('이중 취약')} · 준 이중 {n('준 이중 취약')}</span>
+        {!sim && <label className="small both-filter"><input type="checkbox" checked={bothOnly} onChange={(e) => setBothOnly(e.target.checked)} /> 거리·병상 모두 취약만 ({nBoth})</label>}
       </div>
       <div className="table-wrap">
         <table>
@@ -57,7 +62,8 @@ export default function DoubleTable({ regions, selected, onSelect }: Props) {
               <tr key={r.코드} className={r.코드 === selected ? 'selected' : ''} tabIndex={0}
                 onClick={() => onSelect(r.코드)} onKeyDown={(e) => e.key === 'Enter' && onSelect(r.코드)}>
                 <td><span className="grade-pill" style={{ background: GRADE_COLOR[r.등급], color: textOn(GRADE_COLOR[r.등급]) }}>{r.등급 === '이중 취약' ? '이중' : '준'}</span></td>
-                <td>{regionName(r)}{isIsland(r) && <span className="island-mark" title="섬 읍·면을 리(섬) 단위로 계산"> ◆</span>}</td>
+                <td>{regionName(r)}{isIsland(r) && <span className="island-mark" title="섬 읍·면을 리(섬) 단위로 계산"> ◆</span>}
+                  {both(r) && <span className="both-mark" title="거리·병상 모두 취약: 이중 취약이면서 2SFCA(30분 안 응급실 병상) 하위 25%"> ●</span>}</td>
                 <td className="num">{fmt.score(r.접근성점수)}</td>
                 <td className="num">{fmt.score(r.복지점수)}</td>
                 <td className="num">{(r.접근성점수 + r.복지점수).toFixed(1)}</td>
@@ -70,7 +76,7 @@ export default function DoubleTable({ regions, selected, onSelect }: Props) {
       {!q && rows.length > PAGE && (
         <button className="more" onClick={() => setAll(!all)}>{all ? '상위 10개만 보기' : `더보기 (${rows.length - PAGE}곳 더)`}</button>
       )}
-      <p className="hint">◆ 섬 읍·면을 리(섬) 단위로 계산 · 행을 누르면 지도에서 선택됩니다</p>
+      <p className="hint">◆ 섬 읍·면을 리(섬) 단위로 계산 · ● 거리·병상 모두 취약(이중 취약 + 2SFCA 하위 25%) · 행을 누르면 지도에서 선택됩니다</p>
     </div>
   )
 }

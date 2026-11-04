@@ -273,3 +273,13 @@ tbody tr:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px;
 .emd-li th, .emd-li td { text-align: left; padding: 2px 6px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
 .nearest li.alt, .emd-near .alt { opacity: 0.55; }
 .emd-near { color: var(--ink-2); }
+
+/* ---- 2SFCA 보조 지표 ---- */
+.sfca { margin: 12px 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; }
+.sfca h3 { margin: 0 0 6px; }
+.sfca-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; }
+.sfca .score-value { font-size: 1.3rem; }
+.sfca details { margin-top: 4px; }
+.badge.both { background: #8a2f1d; color: #fff; }
+.both-mark { color: #8a2f1d; }
+.both-filter { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }

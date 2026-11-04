@@ -6,7 +6,7 @@ export const GRADE_COLOR: Record<Grade, string> = { '이중 취약': T.grade.dou
 export const CLUSTER_COLOR = T.cluster // 0 도시 / 1 센터 원거리 / 2 응급의료 취약 (취약할수록 진하게)
 const RAMP = T.ramp
 
-export type MetricKey = '등급' | '접근성점수' | '복지점수' | '클러스터' | '최근접_응급의료기관_분' | '최근접_권역지역센터_분' | '최근접_응급의료기관_km' | '최근접_권역지역센터_km'
+export type MetricKey = '등급' | '접근성점수' | '복지점수' | '클러스터' | '최근접_응급의료기관_분' | '최근접_권역지역센터_분' | '최근접_응급의료기관_km' | '최근접_권역지역센터_km' | '2SFCA'
 
 export interface LegendItem { color: string; label: string }
 export interface Metric {
@@ -22,6 +22,7 @@ const pct = (v: number) => `${(v * 100).toFixed(1)}%`
 export const fmt = {
   km: (v: number) => `${v < 10 ? v.toFixed(1) : v.toFixed(0)}km`,
   min: (v: number) => `${v < 10 ? v.toFixed(1) : v.toFixed(0)}분`,
+  beds: (v: number) => `${v < 10 ? v.toFixed(1) : v.toFixed(0)}병상`,
   /** 근사값 상한에 걸려 실제는 더 길 수 있는 값: "≥ N분 (근사)" */
   minAtLeast: (v: number, raw: number) => (raw > v + 1e-3 ? `≥ ${fmt.min(v)} (근사)` : fmt.min(v)),
   score: (v: number) => v.toFixed(1),
@@ -47,6 +48,10 @@ export function buildMetrics(regions: Region[], clusterLabels: Record<string, st
   }
   const near = qScale((r) => r.최근접_응급의료기관_km, fmt.km)
   const ctr = qScale((r) => r.최근접_권역지역센터_km, fmt.km)
+  // 2SFCA 는 클수록 좋아서 색을 뒤집는다 (적을수록 진하게 = 취약)
+  const sfca = qScale((r) => r['2SFCA'], fmt.beds)
+  const sfcaColor = (r: Region) => RAMP[RAMP.length - 1 - RAMP.indexOf(sfca.color(r['2SFCA']))]
+  const sfcaLegend = sfca.legend.map((l, i) => ({ ...l, color: RAMP[RAMP.length - 1 - i] }))
   const nearMin = qScale((r) => r.최근접_응급의료기관_분, fmt.min)
   const ctrMin = qScale((r) => r.최근접_권역지역센터_분, fmt.min)
 
@@ -83,6 +88,11 @@ export function buildMetrics(regions: Region[], clusterLabels: Record<string, st
       format: (r) => fmt.minAtLeast(r.최근접_권역지역센터_분, r.최근접_권역지역센터_분_원값), color: (r) => ctrMin.color(r.최근접_권역지역센터_분), legend: ctrMin.legend,
       note: '행정동 인구가중 자동차 주행시간(OSRM), 5분위',
     },
+    '2SFCA': {
+      key: '2SFCA', label: '2SFCA: 30분 안 응급실 병상 (보조)',
+      format: (r) => `${fmt.beds(r['2SFCA'])} / 10만 명`, color: sfcaColor, legend: sfcaLegend,
+      note: '인구 10만 명당, 5분위. 적을수록 진함(병상 대비 수요 큼). 판정과 별개',
+    },
     최근접_응급의료기관_km: {
       key: '최근접_응급의료기관_km', label: '최근접 응급의료기관 직선거리',
       format: (r) => fmt.km(r.최근접_응급의료기관_km), color: (r) => near.color(r.최근접_응급의료기관_km), legend: near.legend,
@@ -111,3 +121,11 @@ export function clusterDesc(regions: Region[], k: number): string {
     `권역·지역센터 ${fmt.min(med((r) => r.최근접_권역지역센터_분))}, 30분 내 기관 ${Math.round(med((r) => r['30분내_기관수']))}곳, ` +
     `고령인구 ${fmt.pct(med((r) => r.고령인구비율))} (${rs.length}곳)`
 }
+
+/** 2SFCA 사분위 경계 [25%, 50%, 75%] (pandas quantile 과 같은 보간, src/sfca.py 의 하위 25% 판정과 같음) */
+export const sfcaCuts = (regions: Region[]) => [0.25, 0.5, 0.75].map((q) => quantile(regions.map((r) => r['2SFCA']), q))
+/** 2SFCA 구간: 0 = 하위 25%(병상 적음) ... 3 = 상위 25% */
+export const sfcaBand = (v: number, cuts: number[]) => cuts.filter((c) => v > c + 1e-9).length
+export const SFCA_BANDS = ['하위 25%', '하위 25~50%', '상위 25~50%', '상위 25%']
+/** 거리·병상 모두 취약: 이중 취약이면서 2SFCA 하위 25% */
+export const isBothVulnerable = (r: Region, cuts: number[]) => r.등급 === '이중 취약' && sfcaBand(r['2SFCA'], cuts) === 0

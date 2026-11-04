@@ -31,6 +31,11 @@ export interface Region {
   복지순위: number
   합산점수: number | null
   기준점방식: string
+  // 2SFCA 보조 지표 (src/sfca.py, 판정·점수에는 쓰지 않음): 인구 10만 명당 30분 안 응급실 병상
+  '2SFCA': number
+  '2SFCA근사비율': number        // 도로로 닿지 않아 근사로 30분 안에 든 기관이 있는 주민 비율
+  '2SFCA하위25': boolean         // Python 판정 (웹은 sfcaCuts 로 다시 계산, vitest 로 같은지 확인)
+  병상대체기관: string[]          // 주민 30분 안 기관 중 응급실 병상 수가 없어 등급 중앙값을 쓴 기관
 }
 
 export interface Meta {
