@@ -2,6 +2,7 @@
  * 배치 시뮬레이터 계산 로직 (순수 함수). Python과 같은 정의:
  * - 주행시간: src/accessibility.py drive_minutes 와 같은 규칙. 기준점마다 OSRM 실주행시간(drive, 초)이 있는 기관은 그 값,
  *   없는 기관(가까운 10곳 밖, 도로로 닿지 않음, 시뮬레이터로 추가한 가상 기관)은 직선거리(하버사인) × 시군구 우회계수(분/직선km)
+ *   근사값은 baseline.근사상한분(도로로 잰 주행시간 99백분위)을 넘지 않게 자르고, 자르기 전 최근접 값은 *_원값으로 함께 계산
  * - 기준점별 지표를 인구로 가중평균 후 소수 3자리 반올림
  * - 점수: notebooks/sigungu_clustering.ipynb 의 백분위 순위 평균. 단 시뮬레이션에서는 baseline 분포에 대한 백분위로 환산
  * - 등급: 기준선(baseline 상위 25%·40%) 고정
@@ -18,6 +19,9 @@ export type Centers = Record<string, CenterPoint[]>
 export const ACCESS_KEYS = ['최근접_응급의료기관_분', '최근접_권역지역센터_분', '30분내_응급의료기관수'] as const
 export type AccessKey = typeof ACCESS_KEYS[number]
 export type AccessMetrics = Record<AccessKey, number>
+export const RAW_KEYS = ['최근접_응급의료기관_분_원값', '최근접_권역지역센터_분_원값'] as const
+/** 점수용 지표 + 근사 상한 전 최근접 값 (화면의 "≥ N분 (근사)" 판정용) */
+export type PointMetrics = AccessMetrics & Partial<Record<typeof RAW_KEYS[number], number>>
 
 export interface Baseline {
   지표: Record<AccessKey, number[]>
@@ -25,6 +29,7 @@ export interface Baseline {
   기준선: { 상위25: { 접근성: number; 복지: number }; 상위40: { 접근성: number; 복지: number } }
   기준분: number
   우회계수: Record<string, number>   // 시군구별 분/직선km
+  근사상한분: number                 // 근사값 상한
   코드: string[]
   접근성점수: number[]
   복지점수: number[]
@@ -44,63 +49,74 @@ export function haversine(lat1: number, lon1: number, lat2: number, lon2: number
 
 const round3 = (v: number) => Math.round(v * 1000) / 1000
 
-/** 기준점 -> 기관 주행시간(분). 실주행시간이 없으면 직선거리 × 우회계수 (approx = true) */
-export function driveMinutes(p: CenterPoint, f: Facility, factor: number): { min: number; approx: boolean } {
+/** 기준점 -> 기관 주행시간(분). 실주행시간이 없으면 직선거리 × 우회계수를 cap에서 자른 근사값 (approx, capped) */
+export function driveMinutes(p: CenterPoint, f: Facility, factor: number, cap = Infinity): { min: number; approx: boolean; capped: boolean } {
   const sec = p.drive?.[f.hpid]
-  return sec === undefined ? { min: haversine(p.lat, p.lon, f.위도, f.경도) * factor, approx: true } : { min: sec / 60, approx: false }
+  if (sec !== undefined) return { min: sec / 60, approx: false, capped: false }
+  const raw = haversine(p.lat, p.lon, f.위도, f.경도) * factor
+  return { min: Math.min(raw, cap), approx: true, capped: raw > cap }
 }
 
 /** 기준점 한 곳의 지표. index: 기관 hpid -> facilities 위치 (여러 기준점에 같은 목록을 쓸 때 한 번 만들어 넘김) */
-export function pointMetrics(p: CenterPoint, facilities: Facility[], factor: number, minutes: number,
-  index = new Map(facilities.map((f, i) => [f.hpid, i]))): AccessMetrics {
-  // driveMinutes 와 같은 식: 모두 직선거리 × 우회계수로 채우고, 실주행시간이 있는 기관(최대 20곳)만 덮어쓴다
-  const t = facilities.map((f) => haversine(p.lat, p.lon, f.위도, f.경도) * factor)
+export function pointMetrics(p: CenterPoint, facilities: Facility[], factor: number, minutes: number, cap = Infinity,
+  index = new Map(facilities.map((f, i) => [f.hpid, i]))): PointMetrics {
+  // driveMinutes 와 같은 식: 모두 직선거리 × 우회계수(raw)로 채우고, 실주행시간이 있는 기관(최대 20곳)만 덮어쓴다
+  const raw = facilities.map((f) => haversine(p.lat, p.lon, f.위도, f.경도) * factor)
+  const real = new Set<number>()
   for (const h in p.drive) {
     const i = index.get(h)
-    if (i !== undefined) t[i] = p.drive[h] / 60
+    if (i !== undefined) { raw[i] = p.drive[h] / 60; real.add(i) }
   }
-  let near = Infinity, ctr = Infinity, n = 0
+  let near = Infinity, ctr = Infinity, nearRaw = Infinity, ctrRaw = Infinity, n = 0
   facilities.forEach((f, i) => {
-    if (t[i] < near) near = t[i]
-    if (t[i] < ctr && CENTER_GRADES.includes(f.등급)) ctr = t[i]
-    if (t[i] <= minutes) n++
+    const t = real.has(i) ? raw[i] : Math.min(raw[i], cap)
+    const c = CENTER_GRADES.includes(f.등급)
+    if (t < near) near = t
+    if (c && t < ctr) ctr = t
+    if (raw[i] < nearRaw) nearRaw = raw[i]
+    if (c && raw[i] < ctrRaw) ctrRaw = raw[i]
+    if (t <= minutes) n++
   })
-  return { 최근접_응급의료기관_분: near, 최근접_권역지역센터_분: ctr, '30분내_응급의료기관수': n }
+  return { 최근접_응급의료기관_분: near, 최근접_권역지역센터_분: ctr, '30분내_응급의료기관수': n,
+    최근접_응급의료기관_분_원값: nearRaw, 최근접_권역지역센터_분_원값: ctrRaw }
 }
 
-export interface NearFacility { f: Facility; min: number; km: number; approx: boolean }
-/** 시군구 기준점(인구 가중치)에서 기관까지 주행시간의 가중평균이 짧은 순 n곳. approx: 근사값이 섞임 */
-export function nearestFacilities(points: CenterPoint[], facilities: Facility[], factor: number, n = 3): NearFacility[] {
+export interface NearFacility { f: Facility; min: number; km: number; approx: boolean; capped: boolean }
+/** 시군구 기준점(인구 가중치)에서 기관까지 주행시간의 가중평균이 짧은 순 n곳. approx: 근사값이 섞임, capped: 상한에 걸린 근사값이 섞임 */
+export function nearestFacilities(points: CenterPoint[], facilities: Facility[], factor: number, n = 3, cap = Infinity): NearFacility[] {
   const wsum = points.reduce((s, p) => s + p.weight, 0)
   return facilities
     .map((f) => {
-      let min = 0, km = 0, approx = false
+      let min = 0, km = 0, approx = false, capped = false
       for (const p of points) {
-        const t = driveMinutes(p, f, factor)
+        const t = driveMinutes(p, f, factor, cap)
         min += t.min * p.weight
         km += haversine(p.lat, p.lon, f.위도, f.경도) * p.weight
         approx ||= t.approx
+        capped ||= t.capped
       }
-      return { f, min: min / wsum, km: km / wsum, approx }
+      return { f, min: min / wsum, km: km / wsum, approx, capped }
     })
     .sort((a, b) => a.min - b.min)
     .slice(0, n)
 }
 
 /** 기준점 지표를 가중평균하고 소수 3자리로 반올림 (Python table.round(3)와 같게) */
-export function aggregate(points: CenterPoint[], perPoint: AccessMetrics[]): AccessMetrics {
+export function aggregate(points: CenterPoint[], perPoint: PointMetrics[]): PointMetrics {
   const wsum = points.reduce((s, p) => s + p.weight, 0)
-  const out = {} as AccessMetrics
-  for (const k of ACCESS_KEYS) out[k] = round3(perPoint.reduce((s, m, i) => s + m[k] * points[i].weight, 0) / wsum)
+  const out = {} as PointMetrics
+  for (const k of [...ACCESS_KEYS, ...RAW_KEYS]) {
+    if (perPoint[0]?.[k] !== undefined) out[k] = round3(perPoint.reduce((s, m, i) => s + m[k]! * points[i].weight, 0) / wsum)
+  }
   return out
 }
 
 /** 시군구별 접근성 지표 3개 */
-export function computeAccess(facilities: Facility[], centers: Centers, baseline: Pick<Baseline, '우회계수' | '기준분'>): Record<string, AccessMetrics> {
-  const out: Record<string, AccessMetrics> = {}
+export function computeAccess(facilities: Facility[], centers: Centers, baseline: Pick<Baseline, '우회계수' | '기준분' | '근사상한분'>): Record<string, PointMetrics> {
+  const out: Record<string, PointMetrics> = {}
   const index = new Map(facilities.map((f, i) => [f.hpid, i]))
   for (const [code, points] of Object.entries(centers)) {
-    out[code] = aggregate(points, points.map((p) => pointMetrics(p, facilities, baseline.우회계수[code], baseline.기준분, index)))
+    out[code] = aggregate(points, points.map((p) => pointMetrics(p, facilities, baseline.우회계수[code], baseline.기준분, baseline.근사상한분, index)))
   }
   return out
 }
@@ -146,7 +162,7 @@ export function classify(access: number, welfare: number, cuts: Baseline['기준
   return ''
 }
 
-export interface SimRegion { code: string; metrics: AccessMetrics; 접근성점수: number; 복지점수: number; 등급: SimGrade }
+export interface SimRegion { code: string; metrics: PointMetrics; 접근성점수: number; 복지점수: number; 등급: SimGrade }
 
 /** 기관 목록 -> 시군구별 지표·점수·등급 */
 export function simulate(facilities: Facility[], centers: Centers, baseline: Baseline): Record<string, SimRegion> {

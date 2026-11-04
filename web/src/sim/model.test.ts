@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import type { Region } from '../data'
-import { ACCESS_KEYS, driveMinutes, haversine, makeScorer, nearestFacilities, scoreAgainstBaseline, simulate, type Baseline, type Centers, type Facility } from './model'
+import { ACCESS_KEYS, RAW_KEYS, driveMinutes, haversine, makeScorer, nearestFacilities, scoreAgainstBaseline, simulate, type Baseline, type Centers, type Facility } from './model'
 import { recommend } from './recommend'
 import type { SigunguGeo } from '../data'
 import { locateSigungu } from './geo'
@@ -153,7 +153,7 @@ describe('가까운 응급의료기관 (지역 상세)', () => {
 
   it('주행시간 오름차순 3곳, 1위 시간 ≥ 최근접 응급의료기관 지표(점별 최소의 평균)', () => {
     for (const r of regions) {
-      const near = nearestFacilities(centers[r.코드], facilities, r.우회계수, 3)
+      const near = nearestFacilities(centers[r.코드], facilities, r.우회계수, 3, baseline.근사상한분)
       expect(near).toHaveLength(3)
       expect(near[0].min <= near[1].min && near[1].min <= near[2].min).toBe(true)
       expect(near[0].min).toBeGreaterThanOrEqual(r.최근접_응급의료기관_분 - 0.001)
@@ -162,8 +162,30 @@ describe('가까운 응급의료기관 (지역 상세)', () => {
 
   it('기준점이 1곳뿐이면 1위 시간 = 최근접 시간', () => {
     const c = centers[regions[0].코드][0]
-    const [top] = nearestFacilities([c], facilities, regions[0].우회계수, 1)
-    expect(top.min).toBeCloseTo(Math.min(...facilities.map((f) => driveMinutes(c, f, regions[0].우회계수).min)), 9)
+    const [top] = nearestFacilities([c], facilities, regions[0].우회계수, 1, baseline.근사상한분)
+    expect(top.min).toBeCloseTo(Math.min(...facilities.map((f) => driveMinutes(c, f, regions[0].우회계수, baseline.근사상한분).min)), 9)
+  })
+})
+
+describe('근사값 상한', () => {
+  for (const k of RAW_KEYS) {
+    it(`${k}: 229곳 Python 원값과 오차 0.01 이내`, () => {
+      const bad = regions.filter((r) => Math.abs(sim[r.코드].metrics[k]! - r[k]) >= 0.01)
+      expect(bad.map((r) => [r.시군구, sim[r.코드].metrics[k], r[k]])).toEqual([])
+    })
+  }
+
+  it('상한에 걸린 시군구는 지표 < 원값, 울릉 센터는 상한 그대로', () => {
+    const 울릉 = regions.find((r) => r.코드 === '47940')!
+    expect(울릉.최근접_권역지역센터_분).toBeCloseTo(baseline.근사상한분, 3)
+    expect(울릉.최근접_권역지역센터_분_원값).toBeGreaterThan(300)
+    for (const r of regions) expect(r.최근접_권역지역센터_분).toBeLessThanOrEqual(r.최근접_권역지역센터_분_원값 + 1e-3)
+  })
+
+  it('가상 기관 근사값도 상한에서 잘린다', () => {
+    const p = centers['47940'][0]
+    const far: Facility = { ...facilities[0], hpid: 'SIM-1', 위도: 37.5, 경도: 126.9 }
+    expect(driveMinutes(p, far, 2.4, baseline.근사상한분)).toMatchObject({ min: baseline.근사상한분, approx: true, capped: true })
   })
 })
 
@@ -176,9 +198,9 @@ describe('주행시간 (OSRM)', () => {
     const p = centers['47770'][0]
     const [hpid, sec] = Object.entries(p.drive!)[0]
     const f = facilities.find((x) => x.hpid === hpid)!
-    expect(driveMinutes(p, f, 1.5)).toEqual({ min: sec / 60, approx: false })
+    expect(driveMinutes(p, f, 1.5)).toEqual({ min: sec / 60, approx: false, capped: false })
     const v: Facility = { ...f, hpid: 'SIM-1' }
-    expect(driveMinutes(p, v, 1.5)).toEqual({ min: haversine(p.lat, p.lon, f.위도, f.경도) * 1.5, approx: true })
+    expect(driveMinutes(p, v, 1.5)).toEqual({ min: haversine(p.lat, p.lon, f.위도, f.경도) * 1.5, approx: true, capped: false })
   })
 
   it('주행시간은 직선거리보다 길다: 실주행 쌍의 평균 속도가 직선 기준 120km/h 이하', () => {

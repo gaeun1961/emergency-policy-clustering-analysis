@@ -22,6 +22,8 @@ const pct = (v: number) => `${(v * 100).toFixed(1)}%`
 export const fmt = {
   km: (v: number) => `${v < 10 ? v.toFixed(1) : v.toFixed(0)}km`,
   min: (v: number) => `${v < 10 ? v.toFixed(1) : v.toFixed(0)}분`,
+  /** 근사값 상한에 걸려 실제는 더 길 수 있는 값: "≥ N분 (근사)" */
+  minAtLeast: (v: number, raw: number) => (raw > v + 1e-3 ? `≥ ${fmt.min(v)} (근사)` : fmt.min(v)),
   score: (v: number) => v.toFixed(1),
   pct,
   int: (v: number) => Math.round(v).toLocaleString('ko-KR'),
@@ -73,12 +75,12 @@ export function buildMetrics(regions: Region[], clusterLabels: Record<string, st
     },
     최근접_응급의료기관_분: {
       key: '최근접_응급의료기관_분', label: '최근접 응급의료기관 주행시간',
-      format: (r) => fmt.min(r.최근접_응급의료기관_분), color: (r) => nearMin.color(r.최근접_응급의료기관_분), legend: nearMin.legend,
+      format: (r) => fmt.minAtLeast(r.최근접_응급의료기관_분, r.최근접_응급의료기관_분_원값), color: (r) => nearMin.color(r.최근접_응급의료기관_분), legend: nearMin.legend,
       note: '행정동 인구가중 자동차 주행시간(OSRM), 5분위',
     },
     최근접_권역지역센터_분: {
       key: '최근접_권역지역센터_분', label: '최근접 권역·지역응급의료센터 주행시간',
-      format: (r) => fmt.min(r.최근접_권역지역센터_분), color: (r) => ctrMin.color(r.최근접_권역지역센터_분), legend: ctrMin.legend,
+      format: (r) => fmt.minAtLeast(r.최근접_권역지역센터_분, r.최근접_권역지역센터_분_원값), color: (r) => ctrMin.color(r.최근접_권역지역센터_분), legend: ctrMin.legend,
       note: '행정동 인구가중 자동차 주행시간(OSRM), 5분위',
     },
     최근접_응급의료기관_km: {

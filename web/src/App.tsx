@@ -90,6 +90,7 @@ export default function App() {
         ...r, 접근성점수: s.접근성점수, 등급: s.등급,
         최근접_응급의료기관_분: s.metrics.최근접_응급의료기관_분, 최근접_권역지역센터_분: s.metrics.최근접_권역지역센터_분,
         '30분내_기관수': s.metrics['30분내_응급의료기관수'],
+        최근접_응급의료기관_분_원값: s.metrics.최근접_응급의료기관_분_원값!, 최근접_권역지역센터_분_원값: s.metrics.최근접_권역지역센터_분_원값!,
         접근성순위: 1 + scores.filter((v) => v > s.접근성점수).length,
         합산점수: s.등급 === '이중 취약' ? s.접근성점수 + r.복지점수 : null,
       }
@@ -152,8 +153,8 @@ export default function App() {
     const r = selected ? view?.byCode.get(selected) : null
     const pts = selected ? simData?.centers[selected] : null
     if (!r || !pts) return undefined
-    const [t] = nearestFacilities(pts, [f], r.우회계수, 1)
-    return t.km > 60 ? undefined : { region: regionName(r), min: t.min, km: t.km, approx: t.approx }
+    const [t] = nearestFacilities(pts, [f], r.우회계수, 1, simData?.baseline.근사상한분)
+    return t.km > 60 ? undefined : { region: regionName(r), min: t.min, km: t.km, approx: t.approx, capped: t.capped }
   }
   const toggleSim = () => {
     setSimOn(!simOn)
@@ -242,7 +243,7 @@ export default function App() {
           </nav>
           <div className="tab-body" role="tabpanel">
             {tab === 'detail' && <DetailPanel region={selected ? view.byCode.get(selected) ?? null : null} total={meta.시군구수} regions={view.regions}
-              facilities={applied ?? undefined} points={selected ? simData?.centers[selected] : undefined} sim={simOn} />}
+              facilities={applied ?? undefined} points={selected ? simData?.centers[selected] : undefined} cap={simData?.baseline.근사상한분} sim={simOn} />}
             {tab === 'dist' && (
               <>
                 <ul className="legend">
@@ -275,7 +276,8 @@ export default function App() {
                 </ul>
                 <h3>접근성 계산</h3>
                 <p className="small">시군구마다 전국 행정동의 행정복지센터(섬 읍·면은 리)에서 가장 가까운 응급의료기관·센터까지 <strong>자동차 주행시간</strong>을 재고, 행정동 주민 수로 가중평균합니다.
-                  주행시간은 OpenStreetMap 도로망으로 OSRM이 계산했습니다(페리 제외). 가까운 10곳 밖 기관, 도로로 닿지 않는 섬, 시뮬레이터로 추가한 가상 기관은 직선거리 × 시군구 우회계수(분/직선km) 근사값입니다.</p>
+                  주행시간은 OpenStreetMap 도로망으로 OSRM이 계산했습니다(페리 제외). 가까운 10곳 밖 기관, 도로로 닿지 않는 섬, 시뮬레이터로 추가한 가상 기관은 직선거리 × 시군구 우회계수(분/직선km) 근사값입니다.
+                  근사값은 도로로 잰 주행시간의 99백분위{simData ? `(${Math.round(simData.baseline.근사상한분)}분)` : ''}를 넘지 않게 잘라 점수·지도 색에 쓰고, 화면에는 "≥ N분 (근사)"로 표시합니다.</p>
                 <h3>데이터 한계</h3>
                 <ul className="small">
                   <li>주행시간은 자유 주행 기준이라 실시간 교통(정체)과 구급차 우선통행은 반영하지 않습니다.</li>

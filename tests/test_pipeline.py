@@ -3,6 +3,7 @@ import sys
 import tempfile
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -121,9 +122,11 @@ def test_end_to_end():
         accessibility.FACILITIES, accessibility.EMD_CENTERS, accessibility.POP_CSV = d / 'fac.csv', d / 'emd.csv', pop_file
         accessibility.MAPPING, accessibility.MOHW_CSV = mapping, d / 'none.csv'
         accessibility.LI_WEIGHTED = d / 'no_li.csv'  # 실제 섬 리 단위 목록을 읽지 않게
-        # 주행시간: 군위읍->4 15분(11.12km), 수원 A동->2 1분(0km라 계수 계산 제외), B동->2 20분(22.24km), 세종 c동->5 도달 불가
-        pd.DataFrame({'기준점ID': ['2772025000', '4111152000', '4111353000', '3611051000'], 'hpid': ['4', '2', '2', '5'],
-                      '직선km': 0, '주행시간초': [900, 60, 1200, None], '주행거리m': 0}).to_csv(d / 'drive.csv', index=False)
+        # 주행시간: 군위읍->4 15분(11.12km), 수원 A동->2 1분(0km라 계수 계산 제외), B동->2 20분(22.24km), 세종 c동->5 도달 불가,
+        #          종로 a동->1 1분(같은 자리), ->2 60분(근사 상한을 키우는 긴 실주행 값)
+        pd.DataFrame({'기준점ID': ['2772025000', '4111152000', '4111353000', '3611051000', '1111051500', '1111051500'],
+                      'hpid': ['4', '2', '2', '5', '1', '2'], '직선km': 0, '주행시간초': [900, 60, 1200, None, 60, 3600],
+                      '주행거리m': 0}).to_csv(d / 'drive.csv', index=False)
         accessibility.DRIVE_PAIRS = d / 'drive.csv'
         acc_file = d / 'acc.csv'
         a = accessibility.build(acc_file)
@@ -141,7 +144,14 @@ def test_end_to_end():
         assert a.loc['27720', '최근접_응급의료기관_분'] == 15
         assert a.loc['41110', '최근접_응급의료기관_분'] == (1 * 300 + 20 * 100) / 400   # 실주행 쌍이 근사(직선×계수)보다 우선
         assert a.loc['41110', '30분내_응급의료기관수'] == (2 * 300 + 1 * 100) / 400     # A동: 2(1분)·1(22km×계수=20분), B동: 2만
-        assert a.loc['36110', '직선거리대체_인구비율'] == 1 and a.loc['41110', '직선거리대체_인구비율'] == 0
+        # 근사값 상한: 실주행 분(15·1·20·1·60)의 99백분위. 세종 c동 -> 센터(종로 G001, 약 62km) 근사값이 상한에 걸림
+        cap = round(float(np.percentile([15, 1, 20, 1, 60], 99)), 1)
+        km_sj = accessibility.haversine([36.5], [127.3], [37.0], [127.0])[0, 0]
+        assert a.loc['36110', '근사상한_분'] == cap
+        assert abs(a.loc['36110', '최근접_권역지역센터_분_원값'] - km_sj * a.loc['36110', '우회계수_분per직선km']) < 1e-9
+        assert a.loc['36110', '최근접_권역지역센터_분'] == cap < a.loc['36110', '최근접_권역지역센터_분_원값']
+        # 근사 반영 인구 비율: 최근접 기관·센터 둘 중 하나라도 근사값이면 1. 종로 a동은 둘 다 실주행(G001 1분)
+        assert a.loc['11110', '근사반영_인구비율'] == 0 and a.loc['36110', '근사반영_인구비율'] == 1
 
         t = main(d / 'out', pop_file, sh_file, dis_file, acc_file)
 
