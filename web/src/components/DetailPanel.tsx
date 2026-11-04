@@ -1,5 +1,5 @@
 import { isIsland, quantile, regionName, type Region } from '../data'
-import { CLUSTER_COLOR, GRADE_COLOR, clusterDesc, fmt } from '../metrics'
+import { CLUSTER_COLOR, GRADE_COLOR, SFCA_BANDS, clusterDesc, fmt, isBothVulnerable, sfcaBand, sfcaCuts } from '../metrics'
 import type { RankedFacility } from '../sim/model'
 import { textOn } from '../theme'
 import { FacilityLines } from './FacilityInfo'
@@ -83,6 +83,34 @@ function Usages({ usage, cap, factor }: { usage: RegionUsage; cap?: number; fact
   )
 }
 
+/** 2SFCA 보조 지표 카드: 공급(응급실 병상) 대비 수요(30분 안 인구). 판정·점수와 별개, 시뮬레이터 미반영 */
+function SfcaCard({ r, regions, sim }: { r: Region; regions: Region[]; sim?: boolean }) {
+  const cuts = sfcaCuts(regions)
+  const band = sfcaBand(r['2SFCA'], cuts)
+  const rank = 1 + regions.filter((x) => x['2SFCA'] < r['2SFCA']).length // 1위 = 병상이 가장 적음
+  const subs = r.병상대체기관
+  return (
+    <div className="sfca">
+      <h3>2SFCA 응급실 병상 <span className="muted small">보조 지표</span></h3>
+      <div className="sfca-row">
+        <div className="score-value">{fmt.beds(r['2SFCA'])}<span> / 인구 10만 명</span></div>
+        <div className="small">전국 <strong>{SFCA_BANDS[band]}</strong> <span className="muted">({regions.length}곳 중 적은 순 {rank}위)</span></div>
+      </div>
+      <p className="small">30분 안 응급실 병상을 그 병상을 나눠 쓰는 30분 안 인구로 나눈 값(공급 대비 수요)입니다. 거리 지표·등급 판정과는 별개입니다.</p>
+      {subs.length > 0 && (
+        <details className="small muted"><summary>30분 안 기관 {subs.length}곳은 응급실 병상 수가 없어 등급별 중앙값으로 계산</summary>{subs.join(', ')}</details>
+      )}
+      {r['2SFCA근사비율'] > 0 && <p className="small muted">주민 {fmt.pct(r['2SFCA근사비율'])}은 도로로 닿지 않는 기관을 직선거리 근사로 포함해, 실제보다 좋게 나올 수 있습니다.</p>}
+      {sim && <p className="small muted">시뮬레이터에서 추가·제거한 기관은 2SFCA에 반영되지 않습니다(현재 기관 기준).</p>}
+    </div>
+  )
+}
+
+/** 이중 취약이면서 2SFCA 하위 25%: 가까운 응급실도 멀고 병상도 부족 */
+export function BothBadge() {
+  return <span className="badge both" title="이중 취약이면서 2SFCA(30분 안 응급실 병상) 하위 25%">거리·병상 모두 취약</span>
+}
+
 export function IslandBadge() {
   return (
     <span className="badge island" title="면사무소와 다른 섬에 사람이 사는 읍·면은 리(섬)별 좌표·인구로 거리를 가중평균했다">
@@ -109,6 +137,7 @@ export default function DetailPanel({ region: r, total, regions, usage, cap, sim
         <h2>{regionName(r)}</h2>
         <div className="badges">
           {r.등급 && <span className="badge" style={{ background: GRADE_COLOR[r.등급], color: textOn(GRADE_COLOR[r.등급]) }}>{r.등급}</span>}
+          {!sim && isBothVulnerable(r, sfcaCuts(regions)) && <BothBadge />}
           {isIsland(r) && <IslandBadge />}
           {r.근사반영비율 >= APPROX_BADGE && <span className="badge island" title="최근접 응급의료기관이나 센터까지 도로로 닿지 않는(연륙 안 된 섬 등) 주민 비율. 이 부분은 직선거리 × 우회계수 근사값이고 해상 이동은 반영하지 않았다">
             근사값 반영 {fmt.pct(r.근사반영비율)}</span>}
@@ -142,6 +171,8 @@ export default function DetailPanel({ region: r, total, regions, usage, cap, sim
       <dl className="cards">
         {cards.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
       </dl>
+
+      <SfcaCard r={r} regions={regions} sim={sim} />
 
       <div className="cluster">
         <span className="swatch" style={{ background: CLUSTER_COLOR[r.클러스터] }} />

@@ -8,14 +8,16 @@ import { emdRows, type EmdData } from './sim/emd'
 import ScatterPlot from './components/ScatterPlot'
 import SimPanel, { AddChooser, type RecKind } from './components/SimPanel'
 import { isIsland, loadData, loadSimData, quantile, regionName, type Data, type Region, type SimData } from './data'
-import { CLUSTER_COLOR, GRADE_COLOR, buildMetrics, clusterDesc, type MetricKey } from './metrics'
+import { CLUSTER_COLOR, GRADE_COLOR, buildMetrics, clusterDesc, isBothVulnerable, sfcaCuts, type MetricKey } from './metrics'
 import { LIST_TOP, facilityUsage, isCenter, nearestFacilities, rankFacilities, simulate, type Facility, type FacilityGrade } from './sim/model'
 import type { Effect } from './sim/recommend'
 import { locateSigungu } from './sim/geo'
 import { EMPTY, applyScenario, fromQuery, keepOnLand, toQuery, type Scenario } from './sim/scenario'
 
 const REPO = 'https://github.com/gaeun1961/emergency-policy-clustering-analysis'
-const METRIC_KEYS: MetricKey[] = ['등급', '접근성점수', '복지점수', '클러스터', '최근접_응급의료기관_분', '최근접_권역지역센터_분', '최근접_응급의료기관_km', '최근접_권역지역센터_km']
+const METRIC_KEYS: MetricKey[] = ['등급', '접근성점수', '복지점수', '클러스터', '최근접_응급의료기관_분', '최근접_권역지역센터_분', '2SFCA', '최근접_응급의료기관_km', '최근접_권역지역센터_km']
+/** 시뮬레이션이 다시 계산하지 않는 지표 (지도 선택에서 숨김) */
+const NOT_SIMULATED = (k: MetricKey) => k.endsWith('_km') || k === '2SFCA'
 type Tab = 'detail' | 'dist' | 'list' | 'sim' | 'about'
 const TABS: { id: Tab; label: string }[] = [
   { id: 'detail', label: '지역 상세' }, { id: 'dist', label: '분포' }, { id: 'list', label: '목록' },
@@ -217,7 +219,7 @@ export default function App() {
     setSimOn(!simOn)
     setPending(null)
     setFacPopup(null)
-    if (!simOn && metricKey.endsWith('_km')) setMetricKey('등급') // 시뮬레이션은 주행시간만 다시 계산
+    if (!simOn && NOT_SIMULATED(metricKey)) setMetricKey('등급') // 시뮬레이션은 주행시간만 다시 계산
     setTab(simOn ? 'detail' : 'sim')
   }
   const addAt = (grade: FacilityGrade) => {
@@ -272,7 +274,7 @@ export default function App() {
             facilities={markers} onFacilityClick={onFacilityClick} highlight={highlight} overlay={overlay} sim={mapSim}>
             <label className="select">
               <select value={metricKey} onChange={(e) => setMetricKey(e.target.value as MetricKey)} aria-label="지도 지표">
-                {METRIC_KEYS.filter((k) => !simOn || !k.endsWith('_km')).map((k) => <option key={k} value={k}>{metrics[k].label}</option>)}
+                {METRIC_KEYS.filter((k) => !simOn || !NOT_SIMULATED(k)).map((k) => <option key={k} value={k}>{metrics[k].label}</option>)}
               </select>
             </label>
             <ul className="legend" aria-label={`${metric.label} 범례`}>
@@ -325,7 +327,7 @@ export default function App() {
                 <ScatterPlot regions={view.regions} cuts={cuts} selected={selected} onSelect={select} onHover={onHover} />
               </>
             )}
-            {tab === 'list' && <DoubleTable regions={view.regions} selected={selected} onSelect={select} />}
+            {tab === 'list' && <DoubleTable regions={view.regions} selected={selected} onSelect={select} sim={simOn} />}
             {tab === 'sim' && simOn && (simData ? (
               <SimPanel base={data.regions} now={view.byCode} scenario={scenario} canUndo={history.length > 1}
                 onUndo={() => setHistory((h) => (h.length > 1 ? h.slice(0, -1) : h))} onReset={() => push(EMPTY)}
@@ -348,12 +350,17 @@ export default function App() {
                 <p className="small">시군구마다 전국 행정동의 행정복지센터(섬 읍·면은 리)에서 가장 가까운 응급의료기관·센터까지 <strong>자동차 주행시간</strong>을 재고, 행정동 주민 수로 가중평균합니다.
                   주행시간은 OpenStreetMap 도로망으로 OSRM이 계산했습니다(페리 제외). 가까운 10곳 밖 기관, 도로로 닿지 않는 섬, 시뮬레이터로 추가한 가상 기관은 직선거리 × 시군구 우회계수(분/직선km) 근사값입니다.
                   근사값은 도로로 잰 주행시간의 99백분위{simData ? `(${Math.round(simData.baseline.근사상한분)}분)` : ''}를 넘지 않게 잘라 점수·지도 색에 쓰고, 화면에는 "≥ N분 (근사)"로 표시합니다.</p>
+                <h3>2SFCA 응급실 병상 (보조 지표)</h3>
+                <p className="small">거리와 별개로, 30분 안 응급실 병상을 그 병상을 나눠 쓰는 30분 안 인구로 나눈 값(인구 10만 명당)입니다.
+                  가까운 응급실은 있어도 인구가 몰리는 수도권 외곽·위성도시에서 낮게 나옵니다. 등급 판정·점수에는 쓰지 않고, 이중 취약이면서 2SFCA 하위 25%인 곳을
+                  "거리·병상 모두 취약"으로 표시합니다({data.regions.filter((r) => isBothVulnerable(r, sfcaCuts(data.regions))).length}곳). 시뮬레이터에는 반영되지 않습니다.</p>
                 <h3>데이터 한계</h3>
                 <ul className="small">
                   <li>주행시간은 자유 주행 기준이라 실시간 교통(정체)과 구급차 우선통행은 반영하지 않습니다.</li>
                   <li>다리가 없는 섬은 배·헬기 이동(운항 시간, 기상)을 반영하지 못하고 직선거리 근사를 씁니다(옹진·완도·신안 등).</li>
                   <li>기준점은 행정동 행정복지센터 한 점이라, 넓은 읍·면 안의 마을별 거리 차이는 남아 있습니다(섬 읍·면은 리 단위).</li>
                   <li>독거노인은 주민등록상 65세 이상 1인세대로, 실제 단독 거주와 다를 수 있습니다.</li>
+                  <li>2SFCA는 신고된 응급실 병상 수만 쓰고(인력·가동률 미반영), 병상 수가 없는 일부 기관은 등급별 중앙값으로 대신합니다. 30분 경계에서 값이 계단처럼 바뀝니다.</li>
                   <li>읍면동 보기는 접근성과 고령 비율(10세 단위 인구로 추정)만 보여줍니다. 독거노인·장애인 비율은 시군구 단위로만 공개됩니다.</li>
                   <li>일반구는 상위 시로 합쳤고, 기초생활수급자는 시군구 단위 공개 통계가 없어 제외했습니다.</li>
                   <li>기준선 근처 지역은 기준이 조금만 바뀌어도 등급이 달라질 수 있습니다.</li>

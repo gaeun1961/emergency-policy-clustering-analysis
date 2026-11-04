@@ -70,9 +70,15 @@ def main():
         g = pts[['지수', '근사반영', '30분내기관수']].mul(w, axis=0).groupby(pts[group]).sum().div(w.groupby(pts[group]).sum(), axis=0)
         return g.rename(columns={'지수': '2SFCA_병상per10만', '근사반영': '근사반영_인구비율', '30분내기관수': '30분내_기관수'})
 
-    sgg = by('행정기관코드')
+    sgg = by('행정기관코드').round(4)
     sgg.index.name = '행정기관코드'
-    sgg.round(4).to_csv(acc.PROC / 'sfca_sigungu.csv', encoding='utf-8-sig')
+    # 하위 25%: 소수 4자리 값 기준 (웹이 같은 값으로 다시 판정, pandas quantile = 웹 quantile)
+    sgg['2SFCA_하위25'] = sgg['2SFCA_병상per10만'] <= sgg['2SFCA_병상per10만'].quantile(0.25)
+    # 주민 30분 안에 병상을 등급 중앙값으로 대체한 기관이 있으면 이름 (웹 안내용)
+    sub = np.flatnonzero(em['병상출처'].to_numpy() == '등급 중앙값')
+    reach = pd.DataFrame(t[:, sub] <= CATCHMENT, columns=em.loc[sub, 'dutyName']).groupby(pts['행정기관코드'].to_numpy()).any()
+    sgg['병상대체기관'] = reach.apply(lambda r: ';'.join(r.index[r]), axis=1).reindex(sgg.index).fillna('')
+    sgg.to_csv(acc.PROC / 'sfca_sigungu.csv', encoding='utf-8-sig')
     emd = by('행정동코드')
     emd.index.name = '행정동코드'
     emd.round(4).to_csv(acc.PROC / 'sfca_emd.csv', encoding='utf-8-sig')

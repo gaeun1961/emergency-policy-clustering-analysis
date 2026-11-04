@@ -7,6 +7,7 @@
       drivetime_pairs.csv (기준점 × 가까운 기관 주행시간, python -m src.drivetime)
 출력: web/public/data/sigungu_metrics.json, meta.json
       시뮬레이터용 facilities.json, centers.json, baseline.json
+      2SFCA 보조 지표: data/processed/sfca_sigungu.csv (python -m src.sfca) -> sigungu_metrics.json 의 2SFCA* 필드
       읍면동 드릴다운용 emd.json (data/processed/emd_metrics.csv·emd_li_metrics.csv, python -m src.emd_metrics)
 """
 import json
@@ -57,7 +58,15 @@ def main():
     assert len(df) == 229 and df['총인구'].notna().all(), '시군구 229개와 총인구가 모두 있어야 함'
 
     df = df[list(FIELDS.values())].set_axis(list(FIELDS), axis=1).round(4)
-    records = [{k: (None if pd.isna(v) else v) for k, v in r.items()} for r in df.to_dict('records')]
+    # 2SFCA 보조 지표 (판정·점수에는 쓰지 않음)
+    sf = pd.read_csv(ROOT / 'data' / 'processed' / 'sfca_sigungu.csv', dtype={'행정기관코드': str}).fillna({'병상대체기관': ''})
+    sf = sf.set_index('행정기관코드').reindex(df['코드'])
+    assert sf['2SFCA_병상per10만'].notna().all(), '2SFCA 값이 없는 시군구가 있음 (python -m src.sfca)'
+    df['2SFCA'] = sf['2SFCA_병상per10만'].to_numpy()
+    df['2SFCA근사비율'] = sf['근사반영_인구비율'].to_numpy()
+    df['2SFCA하위25'] = sf['2SFCA_하위25'].astype(bool).to_numpy()
+    df['병상대체기관'] = [[x for x in v.split(';') if x] for v in sf['병상대체기관']]
+    records = [{k: (v if isinstance(v, list) else None if pd.isna(v) else v) for k, v in r.items()} for r in df.to_dict('records')]
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / 'sigungu_metrics.json').write_text(json.dumps(records, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
 
