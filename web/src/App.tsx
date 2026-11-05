@@ -327,7 +327,7 @@ export default function App() {
                 <ScatterPlot regions={view.regions} cuts={cuts} selected={selected} onSelect={select} onHover={onHover} />
               </>
             )}
-            {tab === 'list' && <DoubleTable regions={view.regions} selected={selected} onSelect={select} sim={simOn} />}
+            {tab === 'list' && <DoubleTable regions={view.regions} selected={selected} onSelect={select} sim={simOn} districts={meta.일반구 ?? []} />}
             {tab === 'sim' && simOn && (simData ? (
               <SimPanel base={data.regions} now={view.byCode} scenario={scenario} canUndo={history.length > 1}
                 onUndo={() => setHistory((h) => (h.length > 1 ? h.slice(0, -1) : h))} onReset={() => push(EMPTY)}

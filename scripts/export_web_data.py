@@ -82,6 +82,7 @@ def main():
         '준이중취약수': int(counts.get('준 이중 취약', 0)),
         '클러스터': df.groupby('클러스터')['클러스터라벨'].first().to_dict(),
         '출처': SOURCES,
+        '일반구': general_districts(),
         '생성일시': datetime.now(timezone.utc).astimezone().isoformat(timespec='seconds'),
     }
     (OUT / 'meta.json').write_text(json.dumps(meta, ensure_ascii=False, indent=1), encoding='utf-8')
@@ -146,6 +147,18 @@ def export_simulation(scores):
     export_emd()
     print(f'시뮬레이터: 기관 {len(facilities)}곳, 기준점 {sum(map(len, centers.values()))}개({len(centers)}개 시군구), '
           f'기준선 상위25% 접근성 {cut[TOP][0]:.3f} / 복지 {cut[TOP][1]:.3f}, 등급 재현 일치')
+
+
+def general_districts():
+    """상위 시로 합친 일반구 목록 [[시도, '수원시 장안구', 상위 시 코드], ...] (검색 안내용, 행정동 기준점 이름에서)"""
+    import re
+    c = pd.read_csv(ROOT / 'data' / 'processed' / 'emd_centers.csv', dtype={'시군구코드': str})
+    out = set()
+    for name, code in zip(c['이름'], c['시군구코드']):
+        sido, sgg = name.split()[:2]
+        if hit := re.fullmatch(r'(.+?시)(.+구)', sgg):
+            out.add((sido, f'{hit.group(1)} {hit.group(2)}', code))
+    return [list(x) for x in sorted(out)]
 
 
 def export_emd():
