@@ -45,6 +45,7 @@ export interface Meta {
   준이중취약수: number
   클러스터: Record<string, string>
   출처: { 이름: string; url: string; 기준: string | null }[]
+  일반구: [string, string, string][]   // [시도, '수원시 장안구', 상위 시 코드]: 상위 시로 합친 일반구 (검색 안내)
   생성일시: string
 }
 

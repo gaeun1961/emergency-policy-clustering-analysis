@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import type { Region } from '../data'
+import { regionName, type Region } from '../data'
+import { districtHints, listRegions, type District } from '../search'
 import { isBothVulnerable, sfcaBand, sfcaCuts } from '../metrics'
 import { ACCESS_KEYS, RAW_KEYS, driveMinutes, facilityUsage, haversine, makeScorer, nearestFacilities, rankFacilities, scoreAgainstBaseline, simulate, LIST_MAX, LIST_TOP, type Baseline, type Centers, type Facility, type RankedFacility } from './model'
 import { recommend } from './recommend'
@@ -389,3 +390,32 @@ describe('2SFCA 보조 지표 (Python src.sfca 와 일치)', () => {
   })
 })
 
+
+describe('목록 필터·검색 (229곳 전체)', () => {
+  const meta = load<{ 일반구: District[] }>('meta.json')
+  const byCode = new Map(regions.map((r) => [r.코드, r]))
+  const none = { q: '', gradeOnly: false, bothOnly: false, both: () => false }
+  it('필터를 모두 끄면 229곳 전체', () => {
+    expect(listRegions(regions, none)).toHaveLength(229)
+  })
+  it('기본(이중·준 이중만)은 66곳', () => {
+    expect(listRegions(regions, { ...none, gradeOnly: true })).toHaveLength(66)
+  })
+  it('검색은 필터와 무관하게 전체에서 (등급 없는 지역·띄어쓰기 무시)', () => {
+    const f = { ...none, gradeOnly: true, bothOnly: true }
+    expect(listRegions(regions, { ...f, q: '종로' }).map((r) => r.시군구)).toEqual(['종로구'])
+    expect(listRegions(regions, { ...f, q: '서울 종로구' }).map((r) => r.시군구)).toEqual(['종로구'])
+    expect(listRegions(regions, { ...f, q: '세종' }).map((r) => r.시도)).toEqual(['세종'])
+    // 모든 지역이 자기 이름으로 검색된다
+    for (const r of regions) expect(listRegions(regions, { ...f, q: regionName(r) })).toContain(r)
+  })
+  it('일반구 이름으로 검색하면 상위 시 안내 (수원 장안구, 청주 상당구, 포항 남구)', () => {
+    expect(districtHints('장안구', meta.일반구, byCode).map((h) => h.parent.시군구)).toEqual(['수원시'])
+    expect(districtHints('상당구', meta.일반구, byCode).map((h) => h.parent.시군구)).toEqual(['청주시'])
+    expect(districtHints('포항시 남구', meta.일반구, byCode).map((h) => h.parent.시군구)).toEqual(['포항시'])
+    expect(districtHints('남구', meta.일반구, byCode).map((h) => h.parent.시군구)).toContain('포항시')
+    expect(districtHints('수원', meta.일반구, byCode)).toEqual([])   // 시 이름만 맞으면 목록에 수원시가 나오므로 안내 없음
+    const cities = new Set(meta.일반구.map((d) => d[2]))
+    expect([...cities].every((c) => byCode.has(c))).toBe(true)        // 상위 시 코드가 모두 229곳 안에 있음
+  })
+})
