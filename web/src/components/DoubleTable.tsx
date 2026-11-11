@@ -54,7 +54,7 @@ export default function DoubleTable({ regions, selected, onSelect, sim, district
       {hints.length > 0 && (
         <ul className="district-hints small">
           {hints.map((h) => (
-            <li key={h.name}>{h.name}는 <button className="link" onClick={() => onSelect(h.parent.코드)}>{regionName(h.parent)}</button>에 포함되어 함께 분석합니다(일반구는 상위 시 단위).</li>
+            <li key={h.name}>{h.name}는 <button type="button" className="link" onClick={() => onSelect(h.parent.코드)}>{regionName(h.parent)}</button>에 포함되어 함께 분석합니다(일반구는 상위 시 단위).</li>
           ))}
         </ul>
       )}
@@ -65,7 +65,7 @@ export default function DoubleTable({ regions, selected, onSelect, sim, district
               {COLS.map((c) => (
                 <th key={c.key} scope="col" className={c.num ? 'num' : ''}
                   aria-sort={sort.key === c.key ? (sort.desc ? 'descending' : 'ascending') : 'none'}>
-                  <button onClick={() => toggle(c.key)}>{c.label}{sort.key === c.key ? (sort.desc ? ' ▼' : ' ▲') : ''}</button>
+                  <button type="button" onClick={() => toggle(c.key)}>{c.label}{sort.key === c.key ? (sort.desc ? ' ▼' : ' ▲') : ''}</button>
                 </th>
               ))}
             </tr>
@@ -87,9 +87,13 @@ export default function DoubleTable({ regions, selected, onSelect, sim, district
         </table>
       </div>
       {!q && rows.length > PAGE && (
-        <button className="more" onClick={() => setAll(!all)}>{all ? '상위 10개만 보기' : `더보기 (${rows.length - PAGE}곳 더)`}</button>
+        <button type="button" className="more" onClick={() => setAll(!all)}>{all ? '상위 10개만 보기' : `더보기 (${rows.length - PAGE}곳 더)`}</button>
       )}
-      <p className="hint">◆ 섬 읍·면을 리(섬) 단위로 계산 · ● 거리·병상 모두 취약(이중 취약 + 2SFCA 하위 25%) · 행을 누르면 지도에서 선택됩니다</p>
+      <ul className="hint table-key">
+        <li>◆ 섬 읍·면을 리(섬) 단위로 계산</li>
+        <li><span className="both-mark">●</span> 거리·병상 모두 취약(이중 취약 + 2SFCA 하위 25%)</li>
+        <li>행을 누르면 지도에서 선택됩니다</li>
+      </ul>
     </div>
   )
 }

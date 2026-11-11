@@ -34,8 +34,8 @@ export function FacilityPopup({ f, x, y, time, onRemove, onClose }: { f: Facilit
       {time && <div className="small fac-time">{time.region} 전체 주민 평균 자동차 {time.use ? '' : <strong>{time.capped ? `≥ ${fmt.min(time.min)}` : fmt.min(time.min)}</strong>}
         {time.use && (time.capped ? `≥ ${fmt.min(time.min)}` : fmt.min(time.min))} · 직선 {fmt.km(time.km)}
         {time.approx && <span className="muted">{isVirtual(f) ? ' (근사값: 직선거리 × 우회계수)' : ' (일부 근사값)'}</span>}</div>}
-      {onRemove && <button onClick={onRemove}>이 기관 제거</button>}
-      <button className="link" onClick={onClose}>닫기</button>
+      {onRemove && <button type="button" onClick={onRemove}>이 기관 제거</button>}
+      <button type="button" className="link" onClick={onClose}>닫기</button>
     </div>
   )
 }

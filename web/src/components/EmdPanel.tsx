@@ -59,7 +59,7 @@ export default function EmdPanel({ region, rows, data, selected, onSelect, cap }
       <ol className="emd-list" ref={listRef}>
         {sorted.map((r) => (
           <li key={r.code} data-code={r.code} className={r.code === selected ? 'sel' : ''}>
-            <button className="emd-head" onClick={() => onSelect(r.code)}>
+            <button type="button" className="emd-head" onClick={() => onSelect(r.code)}>
               <span className="swatch" style={{ background: bandColor(r.구간) }} />
               <strong>{r.이름}</strong>
               <span className="muted small">{data.구간[r.구간]}</span>

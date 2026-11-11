@@ -57,9 +57,10 @@ function RankList({ title, items }: { title: string; items: RankedFacility[] }) 
             <div>
               <FacilityLines f={f} />
               {alt
-                ? <div className="small">전체 주민 평균 {capped ? `≥ ${fmt.min(min)} (근사)` : fmt.min(min)} · 직선 {fmt.km(km)}<span className="muted"> · 이 기관이 가장 가까운 주민 없음</span></div>
-                : <div className="small">이용 주민({fmt.pct(share)}) 기준 <strong>{useCapped ? `≥ ${fmt.min(useMin!)} (근사)` : fmt.min(useMin!)}</strong>
-                  <span className="muted"> · 전체 주민 평균 {capped ? `≥ ${fmt.min(min)}` : fmt.min(min)}{approx && !capped && ' (일부 근사)'} · 직선 {fmt.km(km)}</span></div>}
+                ? <div className="small fac-time">전체 주민 평균 {capped ? `≥ ${fmt.min(min)} (근사)` : fmt.min(min)}, 직선 {fmt.km(km)}
+                  <div className="muted">이 기관이 가장 가까운 주민 없음</div></div>
+                : <div className="small fac-time">이용 주민({fmt.pct(share)}) 기준 <strong>{useCapped ? `≥ ${fmt.min(useMin!)} (근사)` : fmt.min(useMin!)}</strong>
+                  <div className="muted">전체 주민 평균 {capped ? `≥ ${fmt.min(min)}` : fmt.min(min)}{approx && !capped && ' (일부 근사)'}, 직선 {fmt.km(km)}</div></div>}
             </div>
           </li>
         ))}
@@ -146,14 +147,14 @@ export default function DetailPanel({ region: r, total, regions, usage, cap, sim
   )
   if (section === 'facilities') {
     return (
-      <div className="detail" aria-live="polite">
+      <div className="detail">
         {head}
         {usage ? <Usages usage={usage} cap={cap} factor={r.우회계수} /> : <p className="muted small">기관 데이터를 불러오는 중…</p>}
       </div>
     )
   }
   return (
-    <div className="detail" aria-live="polite">
+    <div className="detail">
       {head}
 
       <div className="scores">
@@ -168,7 +169,7 @@ export default function DetailPanel({ region: r, total, regions, usage, cap, sim
       </div>
       <p className="hint">순위는 취약한 순서(1위가 가장 취약)</p>
 
-      <dl className="cards">
+      <dl className="facts">
         {cards.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
       </dl>
 

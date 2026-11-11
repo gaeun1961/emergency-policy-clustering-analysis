@@ -8,3 +8,5 @@ design-preview/
 *.osrm*
 # 데이터 감시 스크립트 출력 (scripts/check_data_updates.py)
 data-watch/
+# Hallmark 디자인 스킬 작업 기록 (로컬)
+.hallmark/
