@@ -162,6 +162,10 @@ function MapView({ data, byCode, metric, selected, onSelect, onHover, facilities
   const [picked, setPicked] = useState(false)
   useEffect(() => { if (selected && selected !== autoSel.current) setPicked(true) }, [selected])
   const focus = picked && !!selected && !sim
+  // 읍면동 보기: 행정동을 고르면 같은 시군구의 나머지 행정동을 75% 불투명도로. 같은 동을 다시 누르면 끄고 켬
+  const [emdDim, setEmdDim] = useState(true)
+  useEffect(() => setEmdDim(true), [overlay?.selected])
+  const emdFocus = !!overlay?.selected && emdDim
   const regions = useMemo(() => paths.map(({ code, d }) => (
     <path key={code} d={d} fill={metric.color(byCode.get(code)!)} className={code === selected ? 'region sel' : 'region'} data-code={code}
       style={intro === 'play' ? { transitionDelay: `${INTRO_DELAY[byCode.get(code)!.등급]}ms` } : undefined}
@@ -227,13 +231,13 @@ function MapView({ data, byCode, metric, selected, onSelect, onHover, facilities
   }, [paths, t, w, h, byCode, selected, overlay, overlayPaths])
   return (
     <div ref={boxRef} className="map-box">
-      <svg ref={svgRef} width={w} height={h} className={`map${sim ? ' sim' : ''}${intro === 'wait' ? ' intro-wait' : ''}${focus ? ' focus' : ''}`} role="img"
+      <svg ref={svgRef} width={w} height={h} className={`map${sim ? ' sim' : ''}${intro === 'wait' ? ' intro-wait' : ''}${focus ? ' focus' : ''}${emdFocus ? ' emd-focus' : ''}`} role="img"
         aria-label={`시군구 지도: ${metric.label}`} onClick={sim ? handleClick : undefined}>
         <g transform={t.toString()}>
           {regions}
           {overlay && overlayPaths.map(({ code, d }) => (
             <path key={code} d={d} fill={overlay.color(code)} className={`emd${code === overlay.selected ? ' sel' : ''}`}
-              onClick={(e) => { e.stopPropagation(); overlay.onClick(code) }}><title>{overlay.title(code)}</title></path>
+              onClick={(e) => { e.stopPropagation(); if (code === overlay.selected) setEmdDim((v) => !v); overlay.onClick(code) }}><title>{overlay.title(code)}</title></path>
           ))}
           <path d={sidoPath} className="sido-line" />
           {sim && paths.filter((p) => sim.changed.has(p.code)).map((p) => <path key={p.code} d={p.d} className={`region-changed${flashKey === changedKey ? ' flash' : ''}`} />)}
