@@ -155,7 +155,8 @@ function MapView({ data, byCode, metric, selected, onSelect, onHover, facilities
     const id = window.setTimeout(() => setIntro('done'), INTRO_MS)
     return () => clearTimeout(id)
   }, [intro])
-  // 직접 고른 지역이 있으면 나머지를 흐리게. 처음 자동 선택(합산 1위)과 시뮬레이션 중(전국 변화를 봐야 함)은 제외
+  // 직접 고른 지역이 있으면 나머지를 흐리게. 처음 자동 선택(합산 1위)과 시뮬레이션 중(전국 변화를 봐야 함)은 제외.
+  // 지도에서 선택된 지역을 한 번 더 누르면 흐림을 끄고 켠다
   const autoSel = useRef<string | null>(null)
   autoSel.current ??= selected
   const [picked, setPicked] = useState(false)
@@ -164,7 +165,7 @@ function MapView({ data, byCode, metric, selected, onSelect, onHover, facilities
   const regions = useMemo(() => paths.map(({ code, d }) => (
     <path key={code} d={d} fill={metric.color(byCode.get(code)!)} className={code === selected ? 'region sel' : 'region'} data-code={code}
       style={intro === 'play' ? { transitionDelay: `${INTRO_DELAY[byCode.get(code)!.등급]}ms` } : undefined}
-      onMouseMove={(e) => onHover(code, e)} onMouseLeave={() => onHover(null)} onClick={() => onSelect(code)} />
+      onMouseMove={(e) => onHover(code, e)} onMouseLeave={() => onHover(null)} onClick={() => { if (code === selected) setPicked((v) => !v); onSelect(code) }} />
   )), [paths, metric, byCode, onHover, onSelect, intro, selected])
 
   const sel = paths.find((p) => p.code === selected)
