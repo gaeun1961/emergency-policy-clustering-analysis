@@ -1,7 +1,7 @@
 import { geoMercator, geoPath } from 'd3-geo'
 import { select } from 'd3-selection'
 import { zoom, zoomIdentity, type ZoomBehavior, type ZoomTransform } from 'd3-zoom'
-import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { memo, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import type { FeatureCollection, Geometry } from 'geojson'
 import type { Data, Region } from '../data'
 import type { Metric } from '../metrics'
@@ -50,6 +50,17 @@ const EMD_LABEL_PX = 2.2 // 읍면동 이름표: 면의 화면 폭이 글자 폭
 /** 기관 클릭 히트 반경(px, 줌과 무관). 터치 기기는 더 크게. CSS .hit 의 r 과 같은 값 */
 const HIT_PX = () => (matchMedia('(pointer: coarse)').matches ? 22 : 12)
 const GRADE_RANK = { '이중 취약': 1, '준 이중 취약': 2, '': 3 } as const
+const INTRO_DELAY = { '': 0, '준 이중 취약': 200, '이중 취약': 550 } as const
+/** 메인 스레드가 한가해지면 실행 (무거운 계산 중에 애니메이션을 돌리면 프레임이 밀려 안 보인다). 정리 함수 반환 */
+function onIdle(fn: () => void) {
+  if ('requestIdleCallback' in window) {
+    const id = requestIdleCallback(fn, { timeout: 1500 })
+    return () => cancelIdleCallback(id)
+  }
+  const id = setTimeout(fn, 300) // Safari: requestIdleCallback 없음
+  return () => clearTimeout(id)
+}
+const INTRO_MS = 1200 // 가장 늦은 지연 + 전환 시간(--dur-long) 보다 길게
 /** 터치 기기: 한 손가락은 페이지 스크롤, 두 손가락(핀치)만 지도 확대·이동 */
 const zoomFilter = (e: Event) => {
   if (e.type.startsWith('touch')) return (e as TouchEvent).touches.length >= 2
@@ -130,10 +141,36 @@ function MapView({ data, byCode, metric, selected, onSelect, onHover, facilities
     if (lonlat) sim.onMapClick(lonlat[1], lonlat[0], e.clientX, e.clientY)
   }
 
+  // 첫 화면: 회색 지도에 준 이중 -> 이중 취약 순으로 색이 차오른다 (CSS fill 전환 + 등급별 지연).
+  // 기관 데이터까지 들어와 메인 스레드가 한가해진 뒤 시작: 로딩 중에 돌리면 프레임이 밀려 회색에서 바로 끝 색으로 튄다
+  const [intro, setIntro] = useState<'wait' | 'play' | 'done'>(() => (matchMedia('(prefers-reduced-motion: reduce)').matches ? 'done' : 'wait'))
+  const ready = facilities.length > 0
+  useEffect(() => (intro === 'wait' && ready ? onIdle(() => setIntro('play')) : undefined), [intro, ready])
+  // 시뮬레이션으로 등급이 바뀐 곳: 재계산(simulate, 1초 가까이)이 끝나 화면이 다시 그려질 때 테두리를 한 번 깜박인다
+  const changedKey = sim ? [...sim.changed].sort().join() : ''
+  const [flashKey, setFlashKey] = useState('')
+  useEffect(() => (changedKey ? onIdle(() => setFlashKey(changedKey)) : undefined), [changedKey])
+  useEffect(() => {
+    if (intro !== 'play') return
+    const id = window.setTimeout(() => setIntro('done'), INTRO_MS)
+    return () => clearTimeout(id)
+  }, [intro])
+  // 직접 고른 지역이 있으면 나머지를 흐리게. 처음 자동 선택(합산 1위)과 시뮬레이션 중(전국 변화를 봐야 함)은 제외.
+  // 지도에서 선택된 지역을 한 번 더 누르면 흐림을 끄고 켠다
+  const autoSel = useRef<string | null>(null)
+  autoSel.current ??= selected
+  const [picked, setPicked] = useState(false)
+  useEffect(() => { if (selected && selected !== autoSel.current) setPicked(true) }, [selected])
+  const focus = picked && !!selected && !sim
+  // 읍면동 보기: 행정동을 고르면 같은 시군구의 나머지 행정동을 종이색과 75:25로 섞어 흐리게 (불투명 채움, CSS --c). 같은 동을 다시 누르면 끄고 켬
+  const [emdDim, setEmdDim] = useState(true)
+  useEffect(() => setEmdDim(true), [overlay?.selected])
+  const emdFocus = !!overlay?.selected && emdDim
   const regions = useMemo(() => paths.map(({ code, d }) => (
-    <path key={code} d={d} fill={metric.color(byCode.get(code)!)} className="region" data-code={code}
-      onMouseMove={(e) => onHover(code, e)} onMouseLeave={() => onHover(null)} onClick={() => onSelect(code)} />
-  )), [paths, metric, byCode, onHover, onSelect])
+    <path key={code} d={d} fill={metric.color(byCode.get(code)!)} className={code === selected ? 'region sel' : 'region'} data-code={code}
+      style={intro === 'play' ? { transitionDelay: `${INTRO_DELAY[byCode.get(code)!.등급]}ms` } : undefined}
+      onMouseMove={(e) => onHover(code, e)} onMouseLeave={() => onHover(null)} onClick={() => { if (code === selected) setPicked((v) => !v); onSelect(code) }} />
+  )), [paths, metric, byCode, onHover, onSelect, intro, selected])
 
   const sel = paths.find((p) => p.code === selected)
 
@@ -194,17 +231,17 @@ function MapView({ data, byCode, metric, selected, onSelect, onHover, facilities
   }, [paths, t, w, h, byCode, selected, overlay, overlayPaths])
   return (
     <div ref={boxRef} className="map-box">
-      <svg ref={svgRef} width={w} height={h} className={sim ? 'map sim' : 'map'} role="img"
+      <svg ref={svgRef} width={w} height={h} className={`map${sim ? ' sim' : ''}${intro === 'wait' ? ' intro-wait' : ''}${focus ? ' focus' : ''}${emdFocus ? ' emd-focus' : ''}`} role="img"
         aria-label={`시군구 지도: ${metric.label}`} onClick={sim ? handleClick : undefined}>
         <g transform={t.toString()}>
           {regions}
           {overlay && overlayPaths.map(({ code, d }) => (
-            <path key={code} d={d} fill={overlay.color(code)} className={`emd${code === overlay.selected ? ' sel' : ''}`}
-              onClick={(e) => { e.stopPropagation(); overlay.onClick(code) }}><title>{overlay.title(code)}</title></path>
+            <path key={code} d={d} fill={overlay.color(code)} style={{ '--c': overlay.color(code) } as CSSProperties} className={`emd${code === overlay.selected ? ' sel' : ''}`}
+              onClick={(e) => { e.stopPropagation(); if (code === overlay.selected) setEmdDim((v) => !v); overlay.onClick(code) }}><title>{overlay.title(code)}</title></path>
           ))}
           <path d={sidoPath} className="sido-line" />
-          {sim && paths.filter((p) => sim.changed.has(p.code)).map((p) => <path key={p.code} d={p.d} className="region-changed" />)}
-          {sel && sel.code !== overlay?.key && <path d={sel.d} className="region-selected" />}{/* 읍면동 보기에서는 동 경계가 대신 보임 */}
+          {sim && paths.filter((p) => sim.changed.has(p.code)).map((p) => <path key={p.code} d={p.d} className={`region-changed${flashKey === changedKey ? ' flash' : ''}`} />)}
+          {sel && <path d={sel.d} className="region-selected" />}{/* 읍면동 보기에서도 행정동 위에 그려 보고 있는 시군구와 이웃 시군구를 가른다 */}
         </g>
         <g className="markers" style={{ opacity: markerOpacity(t.k) }}>
           {placed.map(({ f, x, y }) => {
@@ -228,13 +265,13 @@ function MapView({ data, byCode, metric, selected, onSelect, onHover, facilities
         </g>
       </svg>
       <div className={`map-overlay${legendOpen ? '' : ' collapsed'}`}>
-        <button className="legend-toggle" aria-expanded={legendOpen} onClick={() => setLegendOpen(!legendOpen)}>
+        <button type="button" className="legend-toggle" aria-expanded={legendOpen} onClick={() => setLegendOpen(!legendOpen)}>
           {legendOpen ? '범례 접기 ▲' : '☰ 범례·지표'}
         </button>
         <div className="overlay-body">{children}</div>
       </div>
       <div className="map-zoom">
-        <button onClick={reset} disabled={t.k === 1 && t.x === 0 && t.y === 0}>전국 보기</button>
+        <button type="button" onClick={reset} disabled={t.k === 1 && t.x === 0 && t.y === 0}>전국 보기</button>
         <span className="muted small zoom-hint desktop">휠로 확대·드래그로 이동</span>
         <span className="muted small zoom-hint mobile">두 손가락으로 확대·이동</span>
       </div>

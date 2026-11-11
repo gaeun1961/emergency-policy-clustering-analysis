@@ -248,9 +248,10 @@ export default function App() {
   const chip = (g: '이중 취약' | '준 이중 취약', base: number) => {
     const now = count(g)
     return (
-      <span className="chip"><span className="swatch" style={{ background: GRADE_COLOR[g] }} />
-        {g} <strong>{base}곳</strong>{simOn && now !== base && <> → <strong>{now}곳</strong></>}
-      </span>
+      <div className="stat">
+        <dt><span className="swatch" style={{ background: GRADE_COLOR[g] }} />{g}</dt>
+        <dd>{base}<span>곳</span>{simOn && now !== base && <> → {now}<span>곳</span></>}</dd>
+      </div>
     )
   }
 
@@ -258,12 +259,16 @@ export default function App() {
     <div className="app">
       <header className="topbar">
         <h1>응급의료 × 복지 이중 취약지역</h1>
-        <div className="chips">
+        <dl className="stats">
           {chip('이중 취약', meta.이중취약수)}
           {chip('준 이중 취약', meta.준이중취약수)}
-          <span className="chip muted">시군구 {meta.시군구수}곳 · 인구 {meta.기준시점['인구·복지']} · 기관 {meta.기준시점['응급의료기관']}</span>
-        </div>
-        <button className={`sim-toggle${simOn ? ' on' : ''}`} aria-pressed={simOn} onClick={toggleSim}>
+        </dl>
+        <dl className="meta">
+          <div><dt>시군구</dt><dd>{meta.시군구수}곳</dd></div>
+          <div><dt>인구</dt><dd>{meta.기준시점['인구·복지']}</dd></div>
+          <div><dt>기관</dt><dd>{meta.기준시점['응급의료기관']}</dd></div>
+        </dl>
+        <button type="button" className={`sim-toggle${simOn ? ' on' : ''}`} aria-pressed={simOn} onClick={toggleSim}>
           {simOn ? '시뮬레이션 끄기' : '시뮬레이션 모드'}
         </button>
       </header>
@@ -296,7 +301,7 @@ export default function App() {
         <aside className="side">
           <nav className="tabs" role="tablist" aria-label="패널">
             {TABS.filter((t) => t.id !== 'sim' || simOn).map((t) => (
-              <button key={t.id} role="tab" aria-selected={tab === t.id} className={tab === t.id ? 'on' : ''} onClick={() => setTab(t.id)}>
+              <button type="button" key={t.id} role="tab" aria-selected={tab === t.id} className={tab === t.id ? 'on' : ''} onClick={() => setTab(t.id)}>
                 {t.label}
               </button>
             ))}
@@ -305,7 +310,7 @@ export default function App() {
             {tab === 'detail' && selected && (
               <div className="subtabs" role="tablist" aria-label="지역 상세 보기">
                 {([['overview', '개요'], ['facilities', '이용 기관'], ['emd', '읍면동 보기']] as const).map(([v, label]) => (
-                  <button key={v} role="tab" aria-selected={detailView === v} className={detailView === v ? 'on' : ''} onClick={() => setDetailView(v)}>{label}</button>
+                  <button type="button" key={v} role="tab" aria-selected={detailView === v} className={detailView === v ? 'on' : ''} onClick={() => setDetailView(v)}>{label}</button>
                 ))}
               </div>
             )}
@@ -322,7 +327,8 @@ export default function App() {
                   {(['이중 취약', '준 이중 취약', ''] as const).map((g) => (
                     <li key={g}><span className="swatch" style={{ background: GRADE_COLOR[g] }} />{g || '해당 없음'}</li>
                   ))}
-                  <li className="muted">파선 상위 25% · 점선 상위 40%</li>
+                  <li className="muted"><span className="line-key dashed" />상위 25%</li>
+                  <li className="muted"><span className="line-key dotted" />상위 40%</li>
                 </ul>
                 <ScatterPlot regions={view.regions} cuts={cuts} selected={selected} onSelect={select} onHover={onHover} />
               </>
@@ -371,8 +377,14 @@ export default function App() {
                     <li key={s.이름}><a href={s.url} target="_blank" rel="noreferrer">{s.이름}</a>{s.기준 ? ` (${s.기준})` : ''}</li>
                   ))}
                 </ul>
-                <p className="small">기준 시점: 인구·복지 {meta.기준시점['인구·복지']} · 응급의료기관 {meta.기준시점['응급의료기관']} 수집 · 경계 {meta.기준시점['경계']}</p>
-                <p className="small"><a href={REPO} target="_blank" rel="noreferrer">GitHub 저장소</a> · 생성 {meta.생성일시.slice(0, 10)}</p>
+                <h3>기준 시점</h3>
+                <dl className="facts">
+                  <div><dt>인구·복지</dt><dd>{meta.기준시점['인구·복지']}</dd></div>
+                  <div><dt>응급의료기관 수집</dt><dd>{meta.기준시점['응급의료기관']}</dd></div>
+                  <div><dt>경계</dt><dd>{meta.기준시점['경계']}</dd></div>
+                  <div><dt>생성</dt><dd>{meta.생성일시.slice(0, 10)}</dd></div>
+                </dl>
+                <p className="small about-repo"><a href={REPO} target="_blank" rel="noreferrer">GitHub 저장소</a></p>
               </div>
             )}
           </div>
@@ -380,7 +392,7 @@ export default function App() {
       </main>
 
       {hovered && hover && (
-        <div className="tooltip" style={{ left: hover.x + 14, top: hover.y + 14 }} role="status">
+        <div className="tooltip" style={{ left: hover.x + 14, top: hover.y + 14 }}>
           <strong>{regionName(hovered)}</strong>
           <div>{metric.label}: {metric.format(hovered)}</div>
           {metricKey !== '등급' && hovered.등급 && <div>{hovered.등급}</div>}

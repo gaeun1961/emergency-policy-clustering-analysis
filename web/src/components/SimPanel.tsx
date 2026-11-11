@@ -40,13 +40,13 @@ export default function SimPanel(p: Props) {
   const copy = () => navigator.clipboard?.writeText(location.href).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500) })
 
   return (
-    <div className="sim-panel" aria-live="polite">
+    <div className="sim-panel">
       <div className="panel-head">
         <h2>배치 시뮬레이션</h2>
         <div className="sim-actions">
-          <button onClick={p.onUndo} disabled={!p.canUndo}>되돌리기</button>
-          <button onClick={p.onReset} disabled={!p.scenario.added.length && !p.scenario.removed.length}>전체 초기화</button>
-          <button onClick={copy}>{copied ? '복사됨' : '링크 복사'}</button>
+          <button type="button" onClick={p.onUndo} disabled={!p.canUndo}>되돌리기</button>
+          <button type="button" onClick={p.onReset} disabled={!p.scenario.added.length && !p.scenario.removed.length}>전체 초기화</button>
+          <button type="button" onClick={copy}>{copied ? '복사됨' : '링크 복사'}</button>
         </div>
       </div>
       <p className="notice">가상 시나리오이며, 전국 행정동(섬은 리) 기준점에서 잰 자동차 주행시간을 인구로 가중평균합니다. 새로 추가한 기관은 실제 도로 경로가 없어
@@ -55,7 +55,7 @@ export default function SimPanel(p: Props) {
       <p className="hint">지도를 누르면 그 위치에 기관을 추가하고, 기관 점을 누르면 정보와 제거 버튼이 뜹니다.
         추가 {p.scenario.added.length}곳 · 제거 {p.scenario.removed.length}곳</p>
 
-      <div className="sim-counts">
+      <div className="sim-counts" aria-live="polite">
         {(['이중 취약', '준 이중 취약'] as const).map((g) => {
           const before = count(p.base, g), after = count(p.now.values(), g)
           return (
@@ -73,7 +73,7 @@ export default function SimPanel(p: Props) {
           <h3>등급이 바뀐 시군구 {changed.length}곳 <span className="muted small">(65세 이상 {fmt.int(elderly)}명, 지도에 점선 테두리)</span></h3>
           <ul className="changed">
             {changed.map((r) => (
-              <li key={r.코드}><button onClick={() => p.onSelect(r.코드)}>{regionName(r)}</button>
+              <li key={r.코드}><button type="button" onClick={() => p.onSelect(r.코드)}>{regionName(r)}</button>
                 <span className="muted"> {gradeLabel(r.등급)} → </span><strong>{gradeLabel(p.now.get(r.코드)!.등급)}</strong></li>
             ))}
           </ul>
@@ -84,7 +84,7 @@ export default function SimPanel(p: Props) {
       <summary><h3>추천 위치: 1곳을 더한다면</h3></summary>
       <div className="tabs" role="tablist">
         {(['G007', 'G006'] as const).map((k) => (
-          <button key={k} role="tab" aria-selected={p.recKind === k} className={p.recKind === k ? 'on' : ''} onClick={() => p.onRecKind(k)}>
+          <button type="button" key={k} role="tab" aria-selected={p.recKind === k} className={p.recKind === k ? 'on' : ''} onClick={() => p.onRecKind(k)}>
             {k === 'G007' ? '지역응급의료기관 신설' : '지역응급의료센터 신설·승격'}
           </button>
         ))}
@@ -101,7 +101,7 @@ export default function SimPanel(p: Props) {
                 <div className="rec-head">
                   <strong>{regionName(region)}</strong>
                   <span className="muted small"> {c.kind === 'upgrade' ? `${c.label} → 지역센터 승격` : `${c.label} 자리에 ${GRADE_SHORT[c.kind]}`}</span>
-                  <button onClick={() => p.onApply(e)}>적용</button>
+                  <button type="button" onClick={() => p.onApply(e)}>적용</button>
                 </div>
                 <p className="small">{reason(e, p.now)}</p>
               </li>
@@ -119,8 +119,8 @@ export function AddChooser({ x, y, onPick, onCancel }: { x: number; y: number; o
   return (
     <div className="chooser" style={{ left: Math.min(x, window.innerWidth - 200), top: y + 8 }} role="dialog" aria-label="추가할 기관 등급">
       <div className="small muted">이 위치에 추가</div>
-      {(['G007', 'G006', 'G001'] as const).map((g) => <button key={g} onClick={() => onPick(g)}>{GRADE_SHORT[g]}</button>)}
-      <button className="link" onClick={onCancel}>취소</button>
+      {(['G007', 'G006', 'G001'] as const).map((g) => <button type="button" key={g} onClick={() => onPick(g)}>{GRADE_SHORT[g]}</button>)}
+      <button type="button" className="link" onClick={onCancel}>취소</button>
     </div>
   )
 }
