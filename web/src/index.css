@@ -96,11 +96,10 @@ input[type="checkbox"] { accent-color: var(--color-accent); width: 16px; height:
 /* 시뮬레이션으로 등급이 바뀐 곳: 테두리가 한 번 깜박이며 나타난다 */
 @keyframes changed-in { 0% { opacity: 0; } 30% { opacity: 1; } 55% { opacity: 0.25; } 100% { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .region-changed.flash { animation: none; } }
-.emd { stroke: var(--color-halo); stroke-width: 0.6; vector-effect: non-scaling-stroke; cursor: pointer; transition: opacity var(--dur-short) var(--ease-out); }
-.map.emd-focus .emd:not(.sel) { opacity: 0.75; }
-/* 행정동 아래 깔린 시군구 면은 종이색으로: 같은 남색이면 반투명이 티가 안 난다 */
-.map.emd-focus .region.sel { fill: var(--color-paper); }
-.map.emd-focus .emd:not(.sel):hover { opacity: 1; }
+.emd { stroke: var(--color-halo); stroke-width: 0.6; vector-effect: non-scaling-stroke; cursor: pointer; transition: fill var(--dur-short) var(--ease-out); }
+/* 고른 행정동 외에는 종이색과 섞어 흐리게. opacity 가 아니라 불투명 채움: 아래 시군구 면이 비치거나 경계 틈이 하얗게 뜨지 않게 */
+.map.emd-focus .emd:not(.sel) { fill: color-mix(in srgb, var(--c) 75%, var(--color-paper)); }
+.map.emd-focus .emd:not(.sel):hover { fill: var(--c); }
 .emd.sel { stroke: var(--color-ink); stroke-width: 2; }
 .marker { fill: var(--color-marker); fill-opacity: 0.28; stroke: var(--color-marker); stroke-opacity: 0.75; stroke-width: 0.8; pointer-events: none; }
 /* 기관 클릭 히트 영역: 투명, 줌과 무관한 고정 반경(MapView HIT_PX 와 같은 값) */

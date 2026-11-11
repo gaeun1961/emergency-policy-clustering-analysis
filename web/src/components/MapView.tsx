@@ -1,7 +1,7 @@
 import { geoMercator, geoPath } from 'd3-geo'
 import { select } from 'd3-selection'
 import { zoom, zoomIdentity, type ZoomBehavior, type ZoomTransform } from 'd3-zoom'
-import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { memo, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import type { FeatureCollection, Geometry } from 'geojson'
 import type { Data, Region } from '../data'
 import type { Metric } from '../metrics'
@@ -162,7 +162,7 @@ function MapView({ data, byCode, metric, selected, onSelect, onHover, facilities
   const [picked, setPicked] = useState(false)
   useEffect(() => { if (selected && selected !== autoSel.current) setPicked(true) }, [selected])
   const focus = picked && !!selected && !sim
-  // 읍면동 보기: 행정동을 고르면 같은 시군구의 나머지 행정동을 75% 불투명도로. 같은 동을 다시 누르면 끄고 켬
+  // 읍면동 보기: 행정동을 고르면 같은 시군구의 나머지 행정동을 종이색과 75:25로 섞어 흐리게 (불투명 채움, CSS --c). 같은 동을 다시 누르면 끄고 켬
   const [emdDim, setEmdDim] = useState(true)
   useEffect(() => setEmdDim(true), [overlay?.selected])
   const emdFocus = !!overlay?.selected && emdDim
@@ -236,12 +236,12 @@ function MapView({ data, byCode, metric, selected, onSelect, onHover, facilities
         <g transform={t.toString()}>
           {regions}
           {overlay && overlayPaths.map(({ code, d }) => (
-            <path key={code} d={d} fill={overlay.color(code)} className={`emd${code === overlay.selected ? ' sel' : ''}`}
+            <path key={code} d={d} fill={overlay.color(code)} style={{ '--c': overlay.color(code) } as CSSProperties} className={`emd${code === overlay.selected ? ' sel' : ''}`}
               onClick={(e) => { e.stopPropagation(); if (code === overlay.selected) setEmdDim((v) => !v); overlay.onClick(code) }}><title>{overlay.title(code)}</title></path>
           ))}
           <path d={sidoPath} className="sido-line" />
           {sim && paths.filter((p) => sim.changed.has(p.code)).map((p) => <path key={p.code} d={p.d} className={`region-changed${flashKey === changedKey ? ' flash' : ''}`} />)}
-          {sel && sel.code !== overlay?.key && <path d={sel.d} className="region-selected" />}{/* 읍면동 보기에서는 동 경계가 대신 보임 */}
+          {sel && <path d={sel.d} className="region-selected" />}{/* 읍면동 보기에서도 행정동 위에 그려 보고 있는 시군구와 이웃 시군구를 가른다 */}
         </g>
         <g className="markers" style={{ opacity: markerOpacity(t.k) }}>
           {placed.map(({ f, x, y }) => {
