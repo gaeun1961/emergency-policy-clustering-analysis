@@ -236,6 +236,10 @@ tbody tr:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 
 .sim-counts { display: grid; grid-template-columns: 1fr 1fr; border-block: 1px solid var(--color-rule); margin-top: var(--space-sm); }
 .sim-counts .score + .score { padding-left: var(--space-md); border-left: 1px solid var(--color-rule); }
 .sim-counts .score-value { font-size: var(--text-2xl); }
+/* 재계산 중: 직전 결과를 흐리게 보여 준다 */
+.sim-counts { transition: opacity var(--dur-short) var(--ease-out); }
+.sim-counts.busy { opacity: 0.5; }
+.sim-busy { min-height: 1lh; margin: var(--space-xs) 0 0; color: var(--color-accent); font-weight: 600; }
 .changed { list-style: none; padding: 0; margin: 0; font-size: var(--text-sm); max-height: 160px; overflow-y: auto; }
 .changed li { padding: var(--space-3xs) 0; }
 .changed button { background: none; border: 0; padding: 0; color: var(--color-accent); cursor: pointer; text-decoration: underline; text-underline-offset: 0.16em; }

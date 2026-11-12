@@ -357,7 +357,7 @@ describe('읍면동 드릴다운 (Python src.emd_metrics 와 일치)', () => {
       }
     }
     expect(bad).toEqual([])
-  })
+  }, 30_000) // 앱 계산(emdRows)은 위 describe 에서 끝남. 느린 건 이 비교: CSV 17,800줄 정규식 파싱 + 행정동 7,114번 x 전체 filter
 
   it('시뮬레이터 기관 추가가 읍면동 값에도 반영된다', () => {
     const 영덕 = regions.find((r) => r.코드 === '47770')!

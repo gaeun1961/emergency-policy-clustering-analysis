@@ -9,7 +9,7 @@ import ScatterPlot from './components/ScatterPlot'
 import SimPanel, { AddChooser, type RecKind } from './components/SimPanel'
 import { isIsland, loadData, loadSimData, quantile, regionName, type Data, type Region, type SimData } from './data'
 import { CLUSTER_COLOR, GRADE_COLOR, buildMetrics, clusterDesc, isBothVulnerable, sfcaCuts, type MetricKey } from './metrics'
-import { LIST_TOP, facilityUsage, isCenter, nearestFacilities, rankFacilities, simulate, type Facility, type FacilityGrade } from './sim/model'
+import { LIST_TOP, facilityUsage, isCenter, nearestFacilities, rankFacilities, type Facility, type FacilityGrade, type SimRegion } from './sim/model'
 import type { Effect } from './sim/recommend'
 import { locateSigungu } from './sim/geo'
 import { EMPTY, applyScenario, fromQuery, keepOnLand, toQuery, type Scenario } from './sim/scenario'
@@ -87,7 +87,31 @@ export default function App() {
   }, [data])
 
   const applied = useMemo(() => simData && (simOn ? applyScenario(simData.facilities, scenario) : simData.facilities), [simData, simOn, scenario])
-  const simResult = useMemo(() => (simOn && simData && applied ? simulate(applied, simData.centers, simData.baseline) : null), [simOn, simData, applied])
+  // 재계산(등급·점수)은 Web Worker 에서: 메인 스레드에서 돌리면 기관 추가·제거마다 1초 가까이 화면이 멈춘다.
+  // 결과는 요청한 기관 목록(for)과 함께 두고, 새 요청이 끝날 때까지는 직전 결과를 보여 주며 "재계산 중" 표시.
+  // 연속 조작은 워커가 마지막 요청만 계산하고, 늦게 온 이전 결과는 id 로 버린다
+  const [sim, setSim] = useState<{ for: Facility[]; result: Record<string, SimRegion> } | null>(null)
+  const simWorker = useRef<Worker | null>(null)
+  const simReq = useRef<{ id: number; for: Facility[] | null }>({ id: 0, for: null })
+  useEffect(() => {
+    if (!simData) return
+    const w = new Worker(new URL('./sim/sim.worker.ts', import.meta.url), { type: 'module' })
+    w.postMessage({ type: 'init', centers: simData.centers, baseline: simData.baseline })
+    w.onmessage = (e: MessageEvent<{ id: number; result: Record<string, SimRegion> }>) => {
+      const req = simReq.current
+      if (e.data.id === req.id && req.for) setSim({ for: req.for, result: e.data.result })
+    }
+    simWorker.current = w
+    return () => w.terminate()
+  }, [simData])
+  useEffect(() => {
+    if (!simOn) { setSim(null); return } // 다시 켰을 때 예전 시나리오 결과가 잠깐 보이지 않게
+    if (!applied || !simWorker.current) return
+    simReq.current = { id: simReq.current.id + 1, for: applied }
+    simWorker.current.postMessage({ type: 'run', id: simReq.current.id, facilities: applied })
+  }, [simOn, applied])
+  const simResult = simOn ? sim?.result ?? null : null
+  const simBusy = simOn && sim?.for !== applied
 
   /** 지금 화면에 보여줄 지역 데이터: 시뮬레이션이 꺼져 있으면 원래 데이터 그대로 */
   const view = useMemo(() => {
@@ -122,10 +146,10 @@ export default function App() {
     return () => w.terminate()
   }, [simData, data])
   useEffect(() => {
-    if (!simOn || !applied || !simResult || !worker.current) return
+    if (!simOn || !applied || !simResult || simBusy || !worker.current) return // 추천은 지금 기관 목록의 결과로만
     setRecs(null)
     worker.current.postMessage({ type: 'run', id: ++runId.current, facilities: applied, current: simResult, kind: recKind })
-  }, [simOn, applied, simResult, recKind])
+  }, [simOn, applied, simResult, simBusy, recKind])
 
   const onHover = useCallback((code: string | null, e?: React.MouseEvent) => {
     setHover(code && e ? { code, x: e.clientX, y: e.clientY } : null)
@@ -294,7 +318,7 @@ export default function App() {
               {simOn && <li><span className="mk added" />가상 추가</li>}
               {simOn && <li><span className="mk changed" />등급 변경</li>}
             </ul>
-            {simOn && <p className="hint sim-hint">지도를 누르면 기관 추가, 기관 점을 누르면 정보·제거</p>}
+            {simOn && <p className="hint sim-hint">{simBusy ? <span aria-hidden="true">재계산 중…</span> : '지도를 누르면 기관 추가, 기관 점을 누르면 정보·제거'}</p>}
           </MapView>
         </section>
 
@@ -337,7 +361,7 @@ export default function App() {
             {tab === 'sim' && simOn && (simData ? (
               <SimPanel base={data.regions} now={view.byCode} scenario={scenario} canUndo={history.length > 1}
                 onUndo={() => setHistory((h) => (h.length > 1 ? h.slice(0, -1) : h))} onReset={() => push(EMPTY)}
-                recKind={recKind} onRecKind={setRecKind} recs={recs} onApply={applyRec} onSelect={(c) => setSelected(c)} />
+                recKind={recKind} onRecKind={setRecKind} recs={recs} onApply={applyRec} onSelect={(c) => setSelected(c)} busy={simBusy} />
             ) : <p className="muted">시뮬레이션 데이터를 불러오는 중…</p>)}
             {tab === 'about' && (
               <div className="about">

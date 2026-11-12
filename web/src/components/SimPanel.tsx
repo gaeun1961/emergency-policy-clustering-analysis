@@ -18,6 +18,7 @@ interface Props {
   recs: Effect[] | null
   onApply: (e: Effect) => void
   onSelect: (code: string) => void
+  busy?: boolean // 재계산(워커) 중: 숫자는 직전 결과
 }
 
 const gradeLabel = (g: string) => g || '해당 없음'
@@ -55,7 +56,8 @@ export default function SimPanel(p: Props) {
       <p className="hint">지도를 누르면 그 위치에 기관을 추가하고, 기관 점을 누르면 정보와 제거 버튼이 뜹니다.
         추가 {p.scenario.added.length}곳 · 제거 {p.scenario.removed.length}곳</p>
 
-      <div className="sim-counts" aria-live="polite">
+      <p className="sim-busy small" role="status">{p.busy ? '재계산 중…' : ''}</p>
+      <div className={`sim-counts${p.busy ? ' busy' : ''}`} aria-live="polite" aria-busy={p.busy}>
         {(['이중 취약', '준 이중 취약'] as const).map((g) => {
           const before = count(p.base, g), after = count(p.now.values(), g)
           return (
