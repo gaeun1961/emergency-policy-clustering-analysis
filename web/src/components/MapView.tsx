@@ -6,6 +6,7 @@ import type { FeatureCollection, Geometry } from 'geojson'
 import type { Data, Region } from '../data'
 import type { Metric } from '../metrics'
 import type { Facility } from '../sim/model'
+import { ZOOM_STEP, canZoom, facilityTapEnabled, zoomFilter } from '../mapZoom'
 
 /** 읍면동 드릴다운: 선택 시군구의 행정동 면을 위에 덮어 그리고, 바뀌면 그 범위로 확대 */
 export interface MapOverlay {
@@ -61,12 +62,6 @@ function onIdle(fn: () => void) {
   return () => clearTimeout(id)
 }
 const INTRO_MS = 1200 // 가장 늦은 지연 + 전환 시간(--dur-long) 보다 길게
-/** 터치 기기: 한 손가락은 페이지 스크롤, 두 손가락(핀치)만 지도 확대·이동 */
-const zoomFilter = (e: Event) => {
-  if (e.type.startsWith('touch')) return (e as TouchEvent).touches.length >= 2
-  const m = e as MouseEvent
-  return (!m.ctrlKey || e.type === 'wheel') && !m.button
-}
 
 function useSize<T extends HTMLElement>() {
   const ref = useRef<T>(null)
@@ -89,6 +84,10 @@ function MapView({ data, byCode, metric, selected, onSelect, onHover, facilities
   const svgRef = useRef<SVGSVGElement>(null)
   const zoomRef = useRef<ZoomBehavior<SVGSVGElement, unknown> | null>(null)
   const [t, setT] = useState<ZoomTransform>(zoomIdentity)
+  const gRef = useRef<SVGGElement>(null)
+  const frame = useRef(0)
+  const latest = useRef<ZoomTransform>(zoomIdentity)
+  const coarse = useMemo(() => matchMedia('(pointer: coarse)').matches, [])
   const [legendOpen, setLegendOpen] = useState(false) // 390px 이하에서만 의미 있음 (CSS)
 
   const { projection, path, paths, sidoPath } = useMemo(() => {
@@ -105,13 +104,22 @@ function MapView({ data, byCode, metric, selected, onSelect, onHover, facilities
     if (!svgRef.current) return
     const z = zoom<SVGSVGElement, unknown>().scaleExtent([1, MAX_K]).filter(zoomFilter)
       .translateExtent([[-w * 0.2, -h * 0.2], [w * 1.2, h * 1.2]])
-      .on('zoom', (e) => setT(e.transform))
+      .on('zoom', (e) => {
+        // 지도 면은 바로 옮기고, 마커·이름표(React 상태)는 프레임당 한 번만 다시 그린다:
+        // 터치 이동마다 다시 그리면 휴대폰(CPU 1/4)에서 이동 한 번에 50~130ms 걸려 핀치가 끊겼다
+        latest.current = e.transform
+        gRef.current?.setAttribute('transform', e.transform.toString())
+        if (!frame.current) frame.current = requestAnimationFrame(() => { frame.current = 0; setT(latest.current) })
+      })
     zoomRef.current = z
     select(svgRef.current).call(z).on('dblclick.zoom', null)
-    return () => { select(svgRef.current!).on('.zoom', null) }
+    return () => { select(svgRef.current!).on('.zoom', null); cancelAnimationFrame(frame.current); frame.current = 0 }
   }, [w, h])
 
   const reset = () => svgRef.current && zoomRef.current && select(svgRef.current).call(zoomRef.current.transform, zoomIdentity)
+  const zoomBy = (f: number) => svgRef.current && zoomRef.current && select(svgRef.current).call(zoomRef.current.scaleBy, f)
+  const can = canZoom(t.k, zoomRef.current?.scaleExtent() ?? [1, MAX_K])
+  const facTap = facilityTapEnabled(coarse, t.k) // 터치는 확대해야 기관 점을 누를 수 있다 (mapZoom.ts)
 
   // 읍면동 면이 바뀌면(다른 시군구 선택) 그 범위로 확대
   const overlayPaths = useMemo(() => overlay?.fc.features.map((f) => ({
@@ -233,7 +241,7 @@ function MapView({ data, byCode, metric, selected, onSelect, onHover, facilities
     <div ref={boxRef} className="map-box">
       <svg ref={svgRef} width={w} height={h} className={`map${sim ? ' sim' : ''}${intro === 'wait' ? ' intro-wait' : ''}${focus ? ' focus' : ''}${emdFocus ? ' emd-focus' : ''}`} role="img"
         aria-label={`시군구 지도: ${metric.label}`} onClick={sim ? handleClick : undefined}>
-        <g transform={t.toString()}>
+        <g ref={gRef} transform={t.toString()}>
           {regions}
           {overlay && overlayPaths.map(({ code, d }) => (
             <path key={code} d={d} fill={overlay.color(code)} style={{ '--c': overlay.color(code) } as CSSProperties} className={`emd${code === overlay.selected ? ' sel' : ''}`}
@@ -257,7 +265,7 @@ function MapView({ data, byCode, metric, selected, onSelect, onHover, facilities
           {placed.filter(({ f }) => highlight?.has(f.hpid)).map(({ f, x, y }) => <circle key={f.hpid} cx={x} cy={y} r={7} className="marker-hl" />)}
         </g>
         {/* 투명 히트 영역: 겹치면 커서에 가장 가까운 기관 */}
-        <g className="hits" onClick={hitClick}>
+        <g className={facTap ? 'hits' : 'hits off'} onClick={hitClick}>
           {placed.map(({ f, x, y }) => <circle key={f.hpid} cx={x} cy={y} className="hit"><title>{f.hpid.startsWith('SIM-') ? `가상 기관 (${f.기관명})` : f.기관명}</title></circle>)}
         </g>
         <g className="labels">
@@ -271,9 +279,13 @@ function MapView({ data, byCode, metric, selected, onSelect, onHover, facilities
         <div className="overlay-body">{children}</div>
       </div>
       <div className="map-zoom">
+        <div className="zoom-buttons" role="group" aria-label="지도 확대">
+          <button type="button" onClick={() => zoomBy(ZOOM_STEP)} disabled={!can.in} aria-label="확대">+</button>
+          <button type="button" onClick={() => zoomBy(1 / ZOOM_STEP)} disabled={!can.out} aria-label="축소">−</button>
+        </div>
         <button type="button" onClick={reset} disabled={t.k === 1 && t.x === 0 && t.y === 0}>전국 보기</button>
         <span className="muted small zoom-hint desktop">휠로 확대·드래그로 이동</span>
-        <span className="muted small zoom-hint mobile">두 손가락으로 확대·이동</span>
+        <span className="muted small zoom-hint mobile">{facTap ? '두 손가락으로 확대·이동' : '두 손가락으로 확대, 확대하면 기관 선택'}</span>
       </div>
     </div>
   )
