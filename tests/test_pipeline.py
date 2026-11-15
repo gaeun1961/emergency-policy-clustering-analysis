@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from src import accessibility, disability, fetch_emergency, population, welfare  # noqa: E402
+from src import accessibility, briefing, disability, fetch_emergency, population, welfare  # noqa: E402
 from src.build_table import main  # noqa: E402
 from src.regions import age_start, region_key  # noqa: E402
 
@@ -197,6 +197,33 @@ def test_welfare():
         assert (d / 'out.csv').exists()
 
 
+def test_briefing_check():
+    """AI 브리핑 검증: 사실에 없는 숫자, 잘린 답, 마크다운이면 실패"""
+    facts = ['최근접 응급의료기관까지 자동차 주민 평균 44분 (전국 중앙값 6.9분)', '독거노인비율 41.6% (229곳 중 11위)']
+    good = '최근접 응급의료기관까지 주민 평균 44분이 걸려 전국 중앙값 6.9분보다 멀다. ' * 3 + '독거노인비율은 41.6%로 229곳 중 11위이며 응급안전안심서비스 확대를 우선 검토할 만하다.'
+    assert briefing.check(good, facts) == []
+    assert '45' in briefing.check(good.replace('44분', '45분'), facts)            # 지어낸 숫자
+    assert briefing.check(good.replace('41.6%', '41.60%'), facts) != []          # 다른 형식의 숫자도 거절
+    assert any('끝나지' in b for b in briefing.check(good[:-1], facts))           # 잘린 문장
+    assert any('길이' in b for b in briefing.check('44분이다.', facts))
+    assert any('마크다운' in b for b in briefing.check('**' + good, facts))
+
+
+def test_briefing_output():
+    """생성된 브리핑이 있으면: 전부 검증 통과, 사실이 지금 데이터와 같음 (데이터가 바뀌면 다시 생성해야 함)"""
+    import json
+    if not briefing.OUT.exists():
+        return
+    out = json.loads(briefing.OUT.read_text(encoding='utf-8'))
+    regions = json.loads((briefing.PUB / 'sigungu_metrics.json').read_text(encoding='utf-8'))
+    placement = json.loads((briefing.PUB / 'placement_greedy.json').read_text(encoding='utf-8'))
+    by_code = {r['코드']: r for r in regions}
+    for code, b in out['지역'].items():
+        assert briefing.check(b['브리핑'], b['사실']) == [], code
+        assert b['사실'] == briefing.facts_for(by_code[code], regions, placement)[0], f'{code}: 사실이 지금 데이터와 다름 -> python -m src.briefing'
+    assert out == json.loads((briefing.PUB / 'ai_briefing.json').read_text(encoding='utf-8'))
+
+
 def test_service_key():
     """공공데이터포털 키: DATA_GO_KR_SERVICE_KEY 우선, 없으면 KR_SERVICE_KEY, URL 인코딩은 풀어서"""
     saved = {n: os.environ.pop(n, None) for n in fetch_emergency.KEY_NAMES}
@@ -228,5 +255,7 @@ if __name__ == '__main__':
     test_end_to_end()
     test_sfca()
     test_welfare()
+    test_briefing_check()
+    test_briefing_output()
     test_service_key()
     print('OK')
