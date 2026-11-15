@@ -12,6 +12,7 @@ export type FacilityGrade = 'G001' | 'G006' | 'G007' // 권역센터 / 지역센
 export interface Facility {
   hpid: string; 기관명: string; 등급: FacilityGrade; 위도: number; 경도: number; 시군구코드: string | null
   주소?: string; 응급실전화?: string; 대표전화?: string  // 시뮬레이터로 추가한 가상 기관에는 없음
+  승격?: boolean  // 시뮬레이터에서 지역기관 -> 지역센터로 승격한 기존 기관 (hpid·도로 주행시간 그대로)
 }
 export interface CenterPoint { lat: number; lon: number; weight: number; 지점: string; emd?: string; drive?: Record<string, number> }  // emd: 행정동코드
 export type Centers = Record<string, CenterPoint[]>

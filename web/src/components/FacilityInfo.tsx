@@ -10,7 +10,7 @@ export function FacilityLines({ f }: { f: Facility }) {
   const tel = (n: string) => <a href={`tel:${n.replace(/[^\d]/g, '')}`}>{n}</a>
   return (
     <>
-      <div className="fac-name"><strong>{f.기관명}</strong>{isVirtual(f) && <span className="badge virtual">가상 기관</span>}</div>
+      <div className="fac-name"><strong>{f.기관명}</strong>{isVirtual(f) && <span className="badge virtual">가상 기관</span>}{f.승격 && <span className="badge virtual">가상 승격</span>}</div>
       <div className="small muted">{GRADE_NAME[f.등급]}</div>
       {isVirtual(f) ? <div className="small muted">시뮬레이터에서 추가한 가상 기관 (주소·전화 없음)</div> : (
         <>
