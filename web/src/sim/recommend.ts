@@ -26,6 +26,7 @@ export interface Effect {
   elderlyMin: number      // 65세 이상 인구 × 주행시간 감소(분) 합
   nearImproved: { elderly: number; minAvg: number }  // 최근접 응급의료기관 주행시간이 줄어든 시군구의 65세 이상 인구, 평균 감소
   ctrImproved: { elderly: number; minAvg: number }   // 최근접 센터 주행시간
+  popImproved: number    // 최근접 응급의료기관 또는 센터 주행시간이 줄어드는 기준점의 인구 합 (순차 배치의 동률 기준)
 }
 
 /** reachE/reachC(km): 이 직선거리 밖의 신설 후보는 이 기준점에 영향이 없음 (최근접 주행시간·기준분 중 큰 값 / 우회계수) */
@@ -37,6 +38,19 @@ const KM_PER_LON = 111.19 * Math.cos((38.7 * Math.PI) / 180)
 export function recommend(
   facilities: Facility[], centers: Centers, baseline: Baseline, current: Record<string, SimRegion>,
   elderly: Record<string, number>, kind: 'G007' | 'G006', top = 5,
+): Effect[] {
+  const effects = evaluateAll(facilities, centers, baseline, current, elderly, kind)
+    .filter((e) => e.escaped.length || e.elderlyMin > 0)
+    .sort((a, b) => b.escaped.length - a.escaped.length || b.elderlyMin - a.elderlyMin)
+  // 같은 시군구의 비슷한 후보(군청 신설, 그 군 병원 승격)가 목록을 채우지 않도록 시군구당 최고 1개
+  const seen = new Set<string>()
+  return effects.filter((e) => !seen.has(e.candidate.code) && seen.add(e.candidate.code)).slice(0, top)
+}
+
+/** 모든 후보(기준점 위치 신설 + G006 이면 지역기관 승격)의 효과. 정렬·거르기 없음 (recommend, placement.greedyPlacement 공용) */
+export function evaluateAll(
+  facilities: Facility[], centers: Centers, baseline: Baseline, current: Record<string, SimRegion>,
+  elderly: Record<string, number>, kind: 'G007' | 'G006',
 ): Effect[] {
   const score = makeScorer(baseline)
   const welfare = Object.fromEntries(baseline.코드.map((c, i) => [c, baseline.복지점수[i]]))
@@ -59,12 +73,7 @@ export function recommend(
     }
   }
 
-  const effects = candidates.map((c) => evaluate(c, points, byCode, centers, baseline, current, welfare, elderly, score))
-    .filter((e) => e.escaped.length || e.elderlyMin > 0)
-    .sort((a, b) => b.escaped.length - a.escaped.length || b.elderlyMin - a.elderlyMin)
-  // 같은 시군구의 비슷한 후보(군청 신설, 그 군 병원 승격)가 목록을 채우지 않도록 시군구당 최고 1개
-  const seen = new Set<string>()
-  return effects.filter((e) => !seen.has(e.candidate.code) && seen.add(e.candidate.code)).slice(0, top)
+  return candidates.map((c) => evaluate(c, points, byCode, centers, baseline, current, welfare, elderly, score))
 }
 
 function evaluate(
@@ -75,6 +84,7 @@ function evaluate(
   const addsEmergency = c.kind !== 'upgrade'          // 승격은 이미 응급의료기관이라 최근접·반경 개수는 그대로
   const addsCenter = c.kind !== 'G007'
   const changed = new Map<string, Map<number, AccessMetrics>>()
+  let popImproved = 0
   for (const p of points) {
     const cp = centers[p.code][p.idx]
     const real = c.hpid !== undefined && cp.drive?.[c.hpid] !== undefined // 승격 대상 기존 기관의 실주행시간
@@ -87,6 +97,7 @@ function evaluate(
     const ctr = addsCenter && t < p.m.최근접_권역지역센터_분
     const inR = addsEmergency && t <= baseline.기준분
     if (!near && !ctr && !inR) continue
+    if (near || ctr) popImproved += cp.weight
     const m = { ...p.m }
     if (near) m.최근접_응급의료기관_분 = t
     if (ctr) m.최근접_권역지역센터_분 = t
@@ -114,7 +125,7 @@ function evaluate(
     elderlyMin += e * (Math.max(dNear, 0) + Math.max(dCtr, 0))
   }
   return {
-    candidate: c, escaped, newGrades, elderlyMin,
+    candidate: c, escaped, newGrades, elderlyMin, popImproved,
     nearImproved: { elderly: near.elderly, minAvg: near.elderly ? near.min / near.elderly : 0 },
     ctrImproved: { elderly: ctr.elderly, minAvg: ctr.elderly ? ctr.min / ctr.elderly : 0 },
   }
