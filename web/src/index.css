@@ -105,6 +105,8 @@ input[type="checkbox"] { accent-color: var(--color-accent); width: 16px; height:
 /* 기관 클릭 히트 영역: 투명, 줌과 무관한 고정 반경(MapView HIT_PX 와 같은 값) */
 .hit { r: 12px; fill: transparent; pointer-events: all; cursor: pointer; }
 @media (pointer: coarse) { .hit { r: 22px; } }
+/* 터치 기기 전국 화면: 기관 히트 영역이 육지 대부분을 덮어 지역 탭을 가로챘다. 확대하면 다시 켠다 (mapZoom.ts) */
+.hits.off .hit { pointer-events: none; }
 .marker-hl { fill: none; stroke: var(--color-accent); stroke-width: 2.4; pointer-events: none; }
 .marker.g-G001 { fill-opacity: 0.45; }
 .marker.g-G007 { fill-opacity: 0.18; stroke-opacity: 0.5; stroke-width: 0.6; }
@@ -131,6 +133,11 @@ input[type="checkbox"] { accent-color: var(--color-accent); width: 16px; height:
 .zoom-hint.mobile { display: none; }
 .legend-toggle { display: none; }
 .map-zoom { position: absolute; left: var(--space-md); bottom: var(--space-md); display: flex; align-items: center; gap: var(--space-sm); }
+.map-zoom button { white-space: nowrap; }
+.map-zoom .zoom-hint { line-height: 1.35; }
+.zoom-buttons { display: flex; gap: var(--space-2xs); }
+.zoom-buttons button { min-width: 36px; padding: 0; font-size: var(--text-lg); font-weight: 600; line-height: 1; }
+@media (pointer: coarse) { .zoom-buttons button { min-width: 44px; } }
 .toast {
   position: fixed; z-index: var(--z-toast); left: 50%; bottom: var(--space-lg); transform: translateX(-50%); max-width: calc(100% - 32px);
   background: var(--color-ink); color: var(--color-paper); padding: var(--space-xs) var(--space-md); border-radius: var(--radius-input); font-size: var(--text-sm); box-shadow: var(--shadow-float);
