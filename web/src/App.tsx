@@ -25,6 +25,8 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'sim', label: '시뮬레이터' }, { id: 'about', label: '소개' },
 ]
 const initial = fromQuery(location.search)
+/** 'gemini-3.5-flash' -> 'Gemini 3.5 Flash' */
+const modelLabel = (m: string) => m.split('-').map((w) => w[0].toUpperCase() + w.slice(1)).join(' ')
 const initialView = readView(location.search, initial.on) // 공유 링크로 들어온 시군구(r)·탭(tab)
 
 export default function App() {
@@ -58,6 +60,11 @@ export default function App() {
   const [recKind, setRecKind] = useState<RecKind>('G006')
   // 순차 배치 추천: 오프라인 계산 결과(web/scripts/placement.mjs)를 시뮬레이션을 처음 켤 때 불러온다
   const [plans, setPlans] = useState<Record<RecKind, Placement> | null | undefined>(undefined)
+  // AI 브리핑 (src/briefing.py 가 오프라인 생성). 없으면 지역 상세에서 빼고 보여 준다
+  const [briefs, setBriefs] = useState<{ 모델: string; 지역: Record<string, { 브리핑: string }> } | null>(null)
+  useEffect(() => {
+    fetch(`${import.meta.env.BASE_URL}data/ai_briefing.json`).then((r) => (r.ok ? r.json() : null)).then(setBriefs).catch(() => setBriefs(null))
+  }, [])
   const scenario = history[history.length - 1]
   const push = useCallback((s: Scenario) => setHistory((h) => [...h, s]), [])
 
@@ -359,7 +366,8 @@ export default function App() {
               </div>
             ) : tab === 'detail' && <DetailPanel region={selected ? view.byCode.get(selected) ?? null : null} total={meta.시군구수} regions={view.regions}
               usage={usage} cap={simData?.baseline.근사상한분} sim={simOn} section={detailView === 'facilities' ? 'facilities' : 'overview'}
-              welfareYm={meta.출처.find((s) => s.이름.startsWith('복지로'))?.기준} deptYm={meta.기준시점['진료과목']} />}
+              welfareYm={meta.출처.find((s) => s.이름.startsWith('복지로'))?.기준} deptYm={meta.기준시점['진료과목']}
+              briefing={selected && briefs?.지역[selected] ? { text: briefs.지역[selected].브리핑, model: modelLabel(briefs.모델) } : null} />}
             {tab === 'dist' && (
               <>
                 <ul className="legend">

@@ -194,6 +194,11 @@ input[type="checkbox"] { accent-color: var(--color-accent); width: 16px; height:
 .facts dt { font-size: var(--text-sm); color: var(--color-muted); }
 .facts dd { margin: 0; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
 .facts .ref dt small { display: block; font-size: var(--text-xs); }
+/* AI 브리핑 */
+.ai-brief { margin: 0 0 var(--space-md); padding: var(--space-sm) var(--space-md); background: var(--color-paper-2); border-radius: var(--radius-input); }
+.ai-brief h3 { margin: 0 0 var(--space-2xs); }
+.ai-brief p { max-width: none; font-size: var(--text-sm); line-height: 1.65; margin: 0; }
+.ai-brief .hint { margin-top: var(--space-xs); font-size: var(--text-xs); }
 .facts .ref dd .muted { font-weight: 400; }
 .cluster { display: flex; gap: var(--space-sm); align-items: flex-start; font-size: var(--text-sm); margin-top: var(--space-sm); }
 .cluster .swatch { margin-top: var(--space-2xs); }

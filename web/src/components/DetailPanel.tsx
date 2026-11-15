@@ -5,7 +5,7 @@ import { textOn } from '../theme'
 import { FacilityLines } from './FacilityInfo'
 import { DEPT_NOTE } from '../departments'
 
-interface Props { region: Region | null; total: number; regions: Region[]; usage?: RegionUsage | null; cap?: number; sim?: boolean; section: 'overview' | 'facilities'; welfareYm?: string | null; deptYm?: string }
+interface Props { region: Region | null; total: number; regions: Region[]; usage?: RegionUsage | null; cap?: number; sim?: boolean; section: 'overview' | 'facilities'; welfareYm?: string | null; deptYm?: string; briefing?: { text: string; model: string } | null }
 
 /** 근사값 반영 인구 비율이 이 이상이면 배지 */
 const APPROX_BADGE = 0.05
@@ -122,7 +122,7 @@ export function IslandBadge() {
 }
 
 /** 지역 상세: 개요(판정·점수·지표·군집) 또는 이용 기관(응급의료기관·센터 목록). 읍면동 보기는 EmdPanel */
-export default function DetailPanel({ region: r, total, regions, usage, cap, sim, section, welfareYm, deptYm }: Props) {
+export default function DetailPanel({ region: r, total, regions, usage, cap, sim, section, welfareYm, deptYm, briefing }: Props) {
   if (!r) return <div className="detail"><p className="muted">지도, 산점도, 표에서 시군구를 선택하세요.</p></div>
 
   const cards: [string, string][] = [
@@ -157,6 +157,13 @@ export default function DetailPanel({ region: r, total, regions, usage, cap, sim
   return (
     <div className="detail">
       {head}
+      {briefing && (
+        <section className="ai-brief" aria-label="AI 브리핑">
+          <h3>AI 브리핑 <span className="muted small">{briefing.model} 생성</span></h3>
+          <p>{briefing.text}</p>
+          <p className="hint">생성형 AI가 아래 지표만 보고 쓴 요약입니다. 숫자는 데이터와 자동으로 대조했고, 판정·점수에는 쓰지 않습니다.{sim ? ' 시뮬레이션 전 현재 기준입니다.' : ''}</p>
+        </section>
+      )}
 
       <div className="scores">
         {([['응급의료 접근성 취약', r.접근성점수, r.접근성순위], ['복지 취약', r.복지점수, r.복지순위]] as const).map(([label, score, rank]) => (
