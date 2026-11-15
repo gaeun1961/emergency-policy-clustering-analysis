@@ -3,8 +3,9 @@ import { CLUSTER_COLOR, GRADE_COLOR, SFCA_BANDS, clusterDesc, fmt, isBothVulnera
 import type { RankedFacility } from '../sim/model'
 import { textOn } from '../theme'
 import { FacilityLines } from './FacilityInfo'
+import { DEPT_NOTE } from '../departments'
 
-interface Props { region: Region | null; total: number; regions: Region[]; usage?: RegionUsage | null; cap?: number; sim?: boolean; section: 'overview' | 'facilities'; welfareYm?: string | null; briefing?: { text: string; model: string } | null }
+interface Props { region: Region | null; total: number; regions: Region[]; usage?: RegionUsage | null; cap?: number; sim?: boolean; section: 'overview' | 'facilities'; welfareYm?: string | null; deptYm?: string; briefing?: { text: string; model: string } | null }
 
 /** 근사값 반영 인구 비율이 이 이상이면 배지 */
 const APPROX_BADGE = 0.05
@@ -70,7 +71,7 @@ function RankList({ title, items }: { title: string; items: RankedFacility[] }) 
 }
 
 export interface RegionUsage { em: RankedFacility[]; ctr: RankedFacility[] }
-function Usages({ usage, cap, factor }: { usage: RegionUsage; cap?: number; factor: number }) {
+function Usages({ usage, cap, factor, deptYm }: { usage: RegionUsage; cap?: number; factor: number; deptYm?: string }) {
   return (
     <div className="nearest">
       <RankList title="가까운 응급의료기관" items={usage.em} />
@@ -78,7 +79,7 @@ function Usages({ usage, cap, factor }: { usage: RegionUsage; cap?: number; fact
       <p className="hint">시군구 행정동 기준점(섬 읍·면은 리)에서 잰 OSRM <strong>자동차 주행시간</strong>을 주민 수로 평균해 가까운 순으로 보여줍니다(시군구 밖 기관 포함, 지도에 테두리로 강조).
         큰 숫자(전체 평균)는 순서를 정하는 값입니다. "주민 %"는 그 기관이 가장 가까운 주민의 비율이고, "이용 주민 기준"은 그 주민들만의 평균 시간입니다.
         0%인 기관은 대안으로 흐리게 표시하고 1위보다 몇 분 더 걸리는지 적었습니다.
-        실시간 교통·구급차 우선통행은 반영하지 않습니다. 도로로 닿지 않거나 가까운 10곳 밖이면 직선거리 × 우회계수({factor.toFixed(2)}분/km) 근사값이고,
+        실시간 교통·구급차 우선통행은 반영하지 않습니다. {DEPT_NOTE(deptYm)} 도로로 닿지 않거나 가까운 10곳 밖이면 직선거리 × 우회계수({factor.toFixed(2)}분/km) 근사값이고,
         {cap !== undefined && <> 근사값은 {fmt.min(cap)}에서 잘라 "≥"로 표시합니다.</>}</p>
     </div>
   )
@@ -121,7 +122,7 @@ export function IslandBadge() {
 }
 
 /** 지역 상세: 개요(판정·점수·지표·군집) 또는 이용 기관(응급의료기관·센터 목록). 읍면동 보기는 EmdPanel */
-export default function DetailPanel({ region: r, total, regions, usage, cap, sim, section, welfareYm, briefing }: Props) {
+export default function DetailPanel({ region: r, total, regions, usage, cap, sim, section, welfareYm, deptYm, briefing }: Props) {
   if (!r) return <div className="detail"><p className="muted">지도, 산점도, 표에서 시군구를 선택하세요.</p></div>
 
   const cards: [string, string][] = [
@@ -149,7 +150,7 @@ export default function DetailPanel({ region: r, total, regions, usage, cap, sim
     return (
       <div className="detail">
         {head}
-        {usage ? <Usages usage={usage} cap={cap} factor={r.우회계수} /> : <p className="muted small">기관 데이터를 불러오는 중…</p>}
+        {usage ? <Usages usage={usage} cap={cap} factor={r.우회계수} deptYm={deptYm} /> : <p className="muted small">기관 데이터를 불러오는 중…</p>}
       </div>
     )
   }

@@ -47,6 +47,7 @@ python -m src.emd_islands 202512          # 섬 읍·면 리(섬) 좌표·인구
 python -m src.drivetime                   # 기준점 × 가까운 기관 자동차 주행시간 (OSRM table API)
 python -m src.accessibility               # 접근성 지표 (행정동 인구가중, 주행시간 + 직선거리)
 python -m src.fetch_emergency --capacity  # (2SFCA) 응급실 병상 수, 기본정보 API (초당 요청 제한으로 약 7분)
+python -m src.fetch_emergency --departments  # 응급의료기관 진료과목 (같은 기본정보 API, 416곳 약 8분, 이어서 수집)
 python -m src.drivetime --radius 40       # (2SFCA) 직선 40km 이내 모든 기관 주행시간 (OSRM)
 python -m src.sfca                        # (2SFCA) 추가 지표·기존 점수 비교
 python -m src.welfare                     # 기초생활수급자 비율 (참고·검증 지표, 판정 미사용)
@@ -58,7 +59,7 @@ python -m nbconvert --to notebook --execute --inplace notebooks/sigungu_clusteri
 # 대시보드 데이터 -> web/public/data/
 python scripts/export_web_data.py
 cd web && npm run placement && cd ..   # 기관 N곳 순차 배치 추천 (오프라인, 약 1분)
-python -m src.briefing                    # 생성형 AI 지역 브리핑 (.env GEMINI_API_KEY, 229곳 약 1시간, 이어서 생성)
+python -m src.briefing                    # 생성형 AI 지역 브리핑 (.env GEMINI_API_KEY, 229곳 약 30분, 이어서 생성)
 # 대시보드 (web/, node 22)
 cd web && npm ci && npm run dev
 ```
@@ -199,7 +200,7 @@ K=2가 실루엣 최대지만 도시/농촌 이분만 보여서, 지방 중소�
 
 ### 생성형 AI 지역 브리핑 (#66)
 
-시군구마다 취약 원인과 우선 검토할 서비스를 담당자용 한 문단으로 Gemini(gemini-3.5-flash)가 작성하고, 대시보드 지역 상세 맨 위에 보여준다(`src/briefing.py` → `data/processed/ai_briefing.json`). 오프라인에서 한 번 생성하고 웹은 결과만 읽는다.
+시군구마다 취약 원인과 우선 검토할 서비스를 담당자용 한 문단으로 Gemini(gemini-3.5-flash-lite, 무료 등급)가 작성하고, 대시보드 지역 상세 맨 위에 보여준다(`src/briefing.py` → `data/processed/ai_briefing.json`). 오프라인에서 한 번 생성하고 웹은 결과만 읽는다.
 
 - **환각 방지**: AI에는 그 지역의 지표를 미리 문장으로 만든 "사실"과 지표 조건으로 고른 서비스 후보(응급안전안심서비스 확대, 응급의료기관 지정·지원·이송 체계 점검 등)만 준다. 결과의 모든 숫자가 사실에 그대로 있는지, 문장이 잘리지 않았는지 자동으로 대조하고, 어긋나면 다시 생성(최대 3번)하며 끝내 어긋나면 싣지 않는다. 데이터가 바뀌면 테스트가 실패해 다시 생성하게 한다.
 - **한계**: 생성 문장은 판정·점수에 쓰지 않는 요약이고, 서비스 후보는 지표 조건으로 정한 일반 방향이라 지역 사정(기존 사업, 예산)은 담지 않는다.
@@ -318,6 +319,7 @@ K=2가 실루엣 최대지만 도시/농촌 이분만 보여서, 지방 중소�
 - 등록장애인: 보건복지부 장애인현황, KOSIS DT_11761_N009 (2025년 연말)
 - 기초생활수급자(참고 지표): 복지로 기초생활보장 수급자구분별·연령구간별·성별 수급자수 (2025년 12월)
 - 응급의료기관: 국립중앙의료원 응급의료정보조회 서비스 OpenAPI (공공데이터포털, 2026-11-04 수집)
+- 진료과목(#67): 같은 서비스의 기본정보(dgidIdName, 2026-11 수집). 기관 팝업·이용 기관 목록에 주요 과(응급의학과·소아청소년과·산부인과·신경외과·신경과·심장혈관흉부외과) 보유 여부를 참고로 보여 주며, 보유 정보일 뿐 실시간 진료 가능 여부가 아니고 판정·점수·시뮬레이터에는 쓰지 않는다.
 - 행정동 기준점(행정복지센터)·리 좌표: 카카오 로컬 API
 - 도로망·주행시간: © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors ([ODbL](https://opendatacommons.org/licenses/odbl/)), Geofabrik south-korea 추출본(2026-11-03), [OSRM](https://project-osrm.org) 자동차 프로필로 계산
 - 지도 경계: [vuski/admdongkor](https://github.com/vuski/admdongkor) ver20251231 행정동 경계 (CC BY 4.0). 원자료는 통계청 [SGIS](https://sgis.kostat.go.kr) 행정구역 경계다. 시군구로 합치고 단순화해서 사용했다.

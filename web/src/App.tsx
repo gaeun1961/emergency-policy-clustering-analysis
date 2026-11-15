@@ -366,7 +366,7 @@ export default function App() {
               </div>
             ) : tab === 'detail' && <DetailPanel region={selected ? view.byCode.get(selected) ?? null : null} total={meta.시군구수} regions={view.regions}
               usage={usage} cap={simData?.baseline.근사상한분} sim={simOn} section={detailView === 'facilities' ? 'facilities' : 'overview'}
-              welfareYm={meta.출처.find((s) => s.이름.startsWith('복지로'))?.기준}
+              welfareYm={meta.출처.find((s) => s.이름.startsWith('복지로'))?.기준} deptYm={meta.기준시점['진료과목']}
               briefing={selected && briefs?.지역[selected] ? { text: briefs.지역[selected].브리핑, model: modelLabel(briefs.모델) } : null} />}
             {tab === 'dist' && (
               <>
@@ -450,7 +450,7 @@ export default function App() {
       )}
       {toast && <div className="toast" role="status">{toast}</div>}
       {facPopup && <FacilityPopup f={facPopup.f} x={facPopup.x} y={facPopup.y} onClose={() => setFacPopup(null)} time={popupTime(facPopup.f)}
-        onRemove={simOn ? () => removeFacility(facPopup.f) : undefined} />}
+        onRemove={simOn ? () => removeFacility(facPopup.f) : undefined} deptYm={data.meta.기준시점['진료과목']} />}
       {simOn && pending && <AddChooser x={pending.x} y={pending.y} onPick={addAt} onCancel={() => setPending(null)} />}
     </div>
   )
