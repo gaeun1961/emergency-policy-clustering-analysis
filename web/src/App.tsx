@@ -14,17 +14,18 @@ import type { Placement } from './sim/placement'
 import type { Effect } from './sim/recommend'
 import { locateSigungu } from './sim/geo'
 import { EMPTY, applyScenario, fromQuery, keepOnLand, toQuery, type Scenario } from './sim/scenario'
+import { pickRegion, readView, withView, type Tab } from './view'
 
 const REPO = 'https://github.com/gaeun1961/emergency-policy-clustering-analysis'
 const METRIC_KEYS: MetricKey[] = ['등급', '접근성점수', '복지점수', '클러스터', '최근접_응급의료기관_분', '최근접_권역지역센터_분', '2SFCA', '최근접_응급의료기관_km', '최근접_권역지역센터_km']
 /** 시뮬레이션이 다시 계산하지 않는 지표 (지도 선택에서 숨김) */
 const NOT_SIMULATED = (k: MetricKey) => k.endsWith('_km') || k === '2SFCA'
-type Tab = 'detail' | 'dist' | 'list' | 'sim' | 'about'
 const TABS: { id: Tab; label: string }[] = [
   { id: 'detail', label: '지역 상세' }, { id: 'dist', label: '분포' }, { id: 'list', label: '목록' },
   { id: 'sim', label: '시뮬레이터' }, { id: 'about', label: '소개' },
 ]
 const initial = fromQuery(location.search)
+const initialView = readView(location.search, initial.on) // 공유 링크로 들어온 시군구(r)·탭(tab)
 
 export default function App() {
   const [data, setData] = useState<Data | null>(null)
@@ -33,7 +34,7 @@ export default function App() {
   const [metricKey, setMetricKey] = useState<MetricKey>('등급')
   const [selected, setSelected] = useState<string | null>(null)
   const [hover, setHover] = useState<{ code: string; x: number; y: number } | null>(null)
-  const [tab, setTab] = useState<Tab>(initial.on ? 'sim' : 'detail')
+  const [tab, setTab] = useState<Tab>(initialView.tab)
   const [showLocal, setShowLocal] = useState(false) // 지역응급의료기관(G007) 마커
   // 읍면동 드릴다운: emd.json(전국 고정값·분포)은 처음 열 때, 행정동 경계는 시군구별로 선택할 때 불러온다
   const [detailView, setDetailView] = useState<'overview' | 'facilities' | 'emd'>('overview') // 지역을 바꿔도 유지
@@ -63,8 +64,9 @@ export default function App() {
   useEffect(() => {
     loadData().then((d) => {
       setData(d)
-      // 처음에는 합산점수가 가장 높은 이중 취약지역을 선택해 둔다
-      setSelected([...d.regions].sort((a, b) => (b.합산점수 ?? -1) - (a.합산점수 ?? -1))[0].코드)
+      // 링크의 시군구(r)가 있으면 그곳, 없거나 잘못됐으면 합산점수가 가장 높은 이중 취약지역
+      const top = [...d.regions].sort((a, b) => (b.합산점수 ?? -1) - (a.합산점수 ?? -1))[0].코드
+      setSelected(pickRegion(initialView.r, (c) => d.byCode.has(c), top))
     }).catch((e) => setError(String(e)))
     loadSimData().then(setSimData).catch((e) => setError(String(e))) // 마커에도 쓰므로 항상 불러온다
   }, [])
@@ -84,9 +86,11 @@ export default function App() {
       .then((d: { plans: Record<RecKind, Placement> }) => setPlans(d.plans))
       .catch(() => setPlans(null)) // 없으면 추천 배치만 숨긴다
   }, [simOn, plans])
+  // URL = 시뮬레이션 시나리오 + 보던 시군구·탭. 기록을 쌓지 않고 바꿔 쓴다(replaceState): 뒤로가기는 이 페이지 전으로 간다
   useEffect(() => {
-    window.history.replaceState(null, '', `${location.pathname}${toQuery(simOn, scenario)}${location.hash}`)
-  }, [simOn, scenario])
+    if (!selected) return // 데이터를 불러오기 전에는 링크의 r 을 지우지 않게
+    window.history.replaceState(null, '', `${location.pathname}${withView(toQuery(simOn, scenario), selected, tab, simOn)}${location.hash}`)
+  }, [simOn, scenario, selected, tab])
 
   const metrics = useMemo(() => data && buildMetrics(data.regions, data.meta.클러스터), [data])
   const baseCuts = useMemo(() => {
