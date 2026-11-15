@@ -3,7 +3,7 @@ import { regionName, type Region } from '../data'
 import { GRADE_COLOR, fmt } from '../metrics'
 import { planScenario, type Placement } from '../sim/placement'
 import type { Effect } from '../sim/recommend'
-import { GRADE_SHORT, toQuery, type Scenario } from '../sim/scenario'
+import { GRADE_SHORT, isEmpty, toQuery, type Scenario } from '../sim/scenario'
 
 export type RecKind = 'G007' | 'G006'
 
@@ -50,7 +50,7 @@ export default function SimPanel(p: Props) {
         <h2>배치 시뮬레이션</h2>
         <div className="sim-actions">
           <button type="button" onClick={p.onUndo} disabled={!p.canUndo}>되돌리기</button>
-          <button type="button" onClick={p.onReset} disabled={!p.scenario.added.length && !p.scenario.removed.length}>전체 초기화</button>
+          <button type="button" onClick={p.onReset} disabled={isEmpty(p.scenario)}>전체 초기화</button>
           <button type="button" onClick={copy}>{copied ? '복사됨' : '링크 복사'}</button>
         </div>
       </div>
@@ -58,7 +58,7 @@ export default function SimPanel(p: Props) {
         <strong> 직선거리 × 시군구 우회계수로 계산한 근사값</strong>입니다. 판정 기준선은 현재 분포로 고정합니다.
         2SFCA(30분 안 응급실 병상) 보조 지표는 시뮬레이션에 반영되지 않습니다.</p>
       <p className="hint">지도를 누르면 그 위치에 기관을 추가하고, 기관 점을 누르면 정보와 제거 버튼이 뜹니다.
-        추가 {p.scenario.added.length}곳 · 제거 {p.scenario.removed.length}곳</p>
+        추가 {p.scenario.added.length}곳 · 제거 {p.scenario.removed.length}곳{p.scenario.upgraded?.length ? ` · 승격 ${p.scenario.upgraded.length}곳` : ''}</p>
 
       <p className="sim-busy small" role="status">{p.busy ? '재계산 중…' : ''}</p>
       <div className={`sim-counts${p.busy ? ' busy' : ''}`} aria-live="polite" aria-busy={p.busy}>
@@ -117,7 +117,7 @@ export default function SimPanel(p: Props) {
       )}
       <PlanView plan={p.plan} n={planN} onN={setPlanN} now={p.now} onApply={p.onApplyPlan} />
       </details>
-      <p className="hint">후보지는 행정동 행정복지센터(섬은 리) 위치입니다. 신설 후보의 주행시간은 직선거리 × 시군구 우회계수(분/직선km) 근사값이고, 승격 후보는 기존 기관의 실주행시간을 씁니다.</p>
+      <p className="hint">후보지는 행정동 행정복지센터(섬은 리) 위치입니다. 신설 후보의 주행시간은 직선거리 × 시군구 우회계수(분/직선km) 근사값이고, 승격은 기존 기관의 등급만 바꿔 그 기관의 실주행시간을 그대로 씁니다(적용해도 같은 값).</p>
     </div>
   )
 }

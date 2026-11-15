@@ -263,7 +263,7 @@ export default function App() {
   const applyRec = (e: Effect) => {
     const c = e.candidate
     push(c.kind === 'upgrade'
-      ? { added: [...scenario.added, { grade: 'G006', lat: c.lat, lon: c.lon, code: c.code }], removed: [...scenario.removed, c.hpid!] }
+      ? { ...scenario, upgraded: [...(scenario.upgraded ?? []), c.hpid!] } // 등급만 바꿔 도로 주행시간 유지 (추천과 같은 계산)
       : { ...scenario, added: [...scenario.added, { grade: c.kind, lat: c.lat, lon: c.lon, code: c.code }] })
     setSelected(c.code)
   }

@@ -26,12 +26,11 @@ export interface Placement { kind: 'G007' | 'G006'; base: number; steps: Placeme
 const round5 = (v: number) => Number(v.toFixed(5))
 export const countDouble = (r: Record<string, SimRegion>) => Object.values(r).filter((x) => x.등급 === '이중 취약').length
 
-/** 앞의 k 단계를 담은 시나리오: 신설은 추가, 승격은 그 위치에 지역센터 추가 + 기존 기관 제거 (시뮬레이터 추천 적용과 같다) */
+/** 앞의 k 단계를 담은 시나리오: 신설은 추가, 승격은 기존 기관의 등급만 지역센터로 (시뮬레이터 추천 적용과 같다) */
 export function planScenario(steps: Pick<PlacementStep, 'kind' | 'lat' | 'lon' | 'code' | 'hpid'>[]): Scenario {
-  return steps.reduce<Scenario>((s, st) => ({
-    added: [...s.added, { grade: st.kind === 'upgrade' ? 'G006' : st.kind, lat: st.lat, lon: st.lon, code: st.code }],
-    removed: st.kind === 'upgrade' ? [...s.removed, st.hpid!] : s.removed,
-  }), EMPTY)
+  return steps.reduce<Scenario>((s, st) => (st.kind === 'upgrade'
+    ? { ...s, upgraded: [...(s.upgraded ?? []), st.hpid!] }
+    : { ...s, added: [...s.added, { grade: st.kind, lat: st.lat, lon: st.lon, code: st.code }] }), EMPTY)
 }
 
 export function greedyPlacement(
