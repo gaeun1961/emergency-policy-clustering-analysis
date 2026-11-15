@@ -57,6 +57,7 @@ python scripts/build_emd_boundaries.py    # 행정동 경계를 시군구별 파
 python -m nbconvert --to notebook --execute --inplace notebooks/sigungu_clustering.ipynb
 # 대시보드 데이터 -> web/public/data/
 python scripts/export_web_data.py
+cd web && npm run placement && cd ..   # 기관 N곳 순차 배치 추천 (오프라인, 약 1분)
 # 대시보드 (web/, node 22)
 cd web && npm ci && npm run dev
 ```
@@ -267,6 +268,8 @@ K=2가 실루엣 최대지만 도시/농촌 이분만 보여서, 지방 중소�
   - 순위: ① 이중 취약에서 벗어나는 시군구 수, ② 65세 이상 인구 가중 주행시간 감소량(최근접 응급의료기관 + 최근접 센터, 인·분)
   - 새로 놓는 기관은 실제 도로 경로가 없어 **직선거리 × 그 시군구 우회계수로 근사**하고, 화면에 "근사값"이라고 표시한다. 승격 후보는 기존 기관의 실주행시간을 쓴다.
   - 비슷한 후보가 목록을 채우지 않도록 시군구당 1곳만 보여준다. 각 후보에는 "왜 이 위치인가"를 한 줄로 붙이고, 누르면 그 시나리오를 바로 적용한다.
+  - **추천 배치 보기(N곳, #58)**: 같은 후보에서 1곳씩 더하며 매번 다시 계산하는 탐욕 배치(이중 취약 감소 수 → 동률이면 주행시간이 줄어드는 인구)를 오프라인으로 계산한다(`web/scripts/placement.mjs` → `data/processed/placement_greedy.json`). 5곳이면 이중 취약 36곳이 지역기관 신설로 29곳, 지역센터 신설·승격으로 25곳이 된다.
+  - 기관 추가 없는 상태에서 시작한 고정 결과이고 공유 링크(`?sim=1&add=…`)로 같은 결과가 열린다. 후보는 가정 위치이며 병상 공급·실제 인허가·재정 제약은 반영하지 않은 의사결정 지원용이다.
   - 계산은 Web Worker에서 한다. 영향 범위 밖 기준점을 먼저 걸러 종류별 1.5~2초 걸리고, 그동안 화면은 멈추지 않는다.
 - **계산**
   - 브라우저에서 Python(`src/accessibility.py`, 노트북)과 같은 정의로 다시 계산한다. 백엔드는 없다.

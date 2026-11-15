@@ -256,6 +256,12 @@ tbody tr:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 
 .recs p { margin: var(--space-3xs) 0 0; color: var(--color-muted); }
 .rec-head { display: flex; align-items: center; gap: var(--space-xs); flex-wrap: wrap; }
 .rec-head button { margin-left: auto; min-height: 32px; }
+/* 순차 배치 추천 */
+.plan { margin-top: var(--space-md); padding-top: var(--space-sm); border-top: 1px solid var(--color-rule); }
+.plan h3 { margin-top: 0; }
+.plan .subtabs { margin-bottom: var(--space-xs); }
+.plan-total { margin: var(--space-xs) 0; }
+.plan .sim-actions { align-items: center; margin-top: var(--space-xs); }
 
 /* 떠 있는 것: 추가 선택, 기관 팝업, 툴팁 */
 .chooser {

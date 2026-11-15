@@ -10,6 +10,7 @@ import SimPanel, { AddChooser, type RecKind } from './components/SimPanel'
 import { isIsland, loadData, loadSimData, quantile, regionName, type Data, type Region, type SimData } from './data'
 import { CLUSTER_COLOR, GRADE_COLOR, buildMetrics, clusterDesc, isBothVulnerable, sfcaCuts, type MetricKey } from './metrics'
 import { LIST_TOP, facilityUsage, isCenter, nearestFacilities, rankFacilities, type Facility, type FacilityGrade, type SimRegion } from './sim/model'
+import type { Placement } from './sim/placement'
 import type { Effect } from './sim/recommend'
 import { locateSigungu } from './sim/geo'
 import { EMPTY, applyScenario, fromQuery, keepOnLand, toQuery, type Scenario } from './sim/scenario'
@@ -54,6 +55,8 @@ export default function App() {
     toastTimer.current = window.setTimeout(() => setToast(null), ms)
   }, [])
   const [recKind, setRecKind] = useState<RecKind>('G006')
+  // 순차 배치 추천: 오프라인 계산 결과(web/scripts/placement.mjs)를 시뮬레이션을 처음 켤 때 불러온다
+  const [plans, setPlans] = useState<Record<RecKind, Placement> | null | undefined>(undefined)
   const scenario = history[history.length - 1]
   const push = useCallback((s: Scenario) => setHistory((h) => [...h, s]), [])
 
@@ -74,6 +77,13 @@ export default function App() {
     setHistory((h) => (h.length === 1 ? [s] : h))
     if (dropped) flash(`공유 링크의 ${dropped}곳은 바다·경계 밖이라 제외했어요`, 6000)
   }, [data, flash])
+  useEffect(() => {
+    if (!simOn || plans !== undefined) return
+    fetch(`${import.meta.env.BASE_URL}data/placement_greedy.json`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((d: { plans: Record<RecKind, Placement> }) => setPlans(d.plans))
+      .catch(() => setPlans(null)) // 없으면 추천 배치만 숨긴다
+  }, [simOn, plans])
   useEffect(() => {
     window.history.replaceState(null, '', `${location.pathname}${toQuery(simOn, scenario)}${location.hash}`)
   }, [simOn, scenario])
@@ -362,7 +372,9 @@ export default function App() {
             {tab === 'sim' && simOn && (simData ? (
               <SimPanel base={data.regions} now={view.byCode} scenario={scenario} canUndo={history.length > 1}
                 onUndo={() => setHistory((h) => (h.length > 1 ? h.slice(0, -1) : h))} onReset={() => push(EMPTY)}
-                recKind={recKind} onRecKind={setRecKind} recs={recs} onApply={applyRec} onSelect={(c) => setSelected(c)} busy={simBusy} />
+                recKind={recKind} onRecKind={setRecKind} recs={recs} onApply={applyRec} onSelect={(c) => setSelected(c)} busy={simBusy}
+                plan={plans === undefined ? undefined : plans?.[recKind] ?? null}
+                onApplyPlan={(s) => { push(s); setSelected(s.added.at(-1)?.code ?? selected) }} />
             ) : <p className="muted">시뮬레이션 데이터를 불러오는 중…</p>)}
             {tab === 'about' && (
               <div className="about">
