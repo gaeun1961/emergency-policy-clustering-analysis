@@ -344,7 +344,8 @@ export default function App() {
                 <EmdPanel region={view.byCode.get(selected)!} rows={emd} data={emdData} selected={selEmd} onSelect={setSelEmd} cap={simData?.baseline.근사상한분} />
               </div>
             ) : tab === 'detail' && <DetailPanel region={selected ? view.byCode.get(selected) ?? null : null} total={meta.시군구수} regions={view.regions}
-              usage={usage} cap={simData?.baseline.근사상한분} sim={simOn} section={detailView === 'facilities' ? 'facilities' : 'overview'} />}
+              usage={usage} cap={simData?.baseline.근사상한분} sim={simOn} section={detailView === 'facilities' ? 'facilities' : 'overview'}
+              welfareYm={meta.출처.find((s) => s.이름.startsWith('복지로'))?.기준} />}
             {tab === 'dist' && (
               <>
                 <ul className="legend">
@@ -392,7 +393,7 @@ export default function App() {
                   <li>독거노인은 주민등록상 65세 이상 1인세대로, 실제 단독 거주와 다를 수 있습니다.</li>
                   <li>2SFCA는 신고된 응급실 병상 수만 쓰고(인력·가동률 미반영), 병상 수가 없는 일부 기관은 등급별 중앙값으로 대신합니다. 30분 경계에서 값이 계단처럼 바뀝니다.</li>
                   <li>읍면동 보기는 접근성과 고령 비율(10세 단위 인구로 추정)만 보여줍니다. 독거노인·장애인 비율은 시군구 단위로만 공개됩니다.</li>
-                  <li>일반구는 상위 시로 합쳤고, 기초생활수급자는 시군구 단위 공개 통계가 없어 제외했습니다.</li>
+                  <li>일반구는 상위 시로 합쳤습니다. 기초생활수급자 비율(복지로)은 지역 상세에 참고로만 보여 주고 등급 판정·점수에는 쓰지 않습니다.</li>
                   <li>기준선 근처 지역은 기준이 조금만 바뀌어도 등급이 달라질 수 있습니다.</li>
                 </ul>
                 <h3>출처</h3>

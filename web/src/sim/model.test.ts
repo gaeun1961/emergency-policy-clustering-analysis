@@ -373,6 +373,26 @@ describe('읍면동 드릴다운 (Python src.emd_metrics 와 일치)', () => {
   })
 })
 
+describe('수급자 비율 참고 지표 (Python src.welfare 와 일치)', () => {
+  const [head, ...lines] = readFileSync(new URL('../../../data/processed/welfare_rate.csv', import.meta.url), 'utf-8').replace(/^\uFEFF/, '').trim().split(/\r?\n/)
+  const cols = head.split(',')
+  const py = new Map(lines.map((l) => Object.fromEntries(l.split(',').map((v, i) => [cols[i], v]))).map((r) => [r.행정기관코드, r]))
+  it('229곳 모두 있고 비율·순위가 welfare_rate.csv 와 같다', () => {
+    expect(regions.filter((r) => !py.has(r.코드))).toEqual([])
+    const bad = regions.filter((r) => Math.abs(r.수급자비율 - Number(py.get(r.코드)!.수급자비율)) > 5e-5 || r.수급자비율순위 !== Number(py.get(r.코드)!.수급자비율_순위))
+    expect(bad.map((r) => r.시군구)).toEqual([])
+  })
+  it('순위 1위가 비율이 가장 높고, 비율이 높을수록 순위가 앞선다', () => {
+    const sorted = [...regions].sort((a, b) => a.수급자비율순위 - b.수급자비율순위)
+    expect(sorted[0].수급자비율).toBe(Math.max(...regions.map((r) => r.수급자비율)))
+    expect(sorted.every((r, i) => i === 0 || sorted[i - 1].수급자비율 >= r.수급자비율)).toBe(true)
+  })
+  it('판정에 쓰지 않는다: 이중 36·준 이중 30 그대로', () => {
+    expect(regions.filter((r) => r.등급 === '이중 취약').length).toBe(36)
+    expect(regions.filter((r) => r.등급 === '준 이중 취약').length).toBe(30)
+  })
+})
+
 describe('2SFCA 보조 지표 (Python src.sfca 와 일치)', () => {
   const cuts = sfcaCuts(regions)
   it('하위 25% 판정이 Python 2SFCA하위25 와 같다 (229곳)', () => {

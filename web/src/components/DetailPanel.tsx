@@ -4,7 +4,7 @@ import type { RankedFacility } from '../sim/model'
 import { textOn } from '../theme'
 import { FacilityLines } from './FacilityInfo'
 
-interface Props { region: Region | null; total: number; regions: Region[]; usage?: RegionUsage | null; cap?: number; sim?: boolean; section: 'overview' | 'facilities' }
+interface Props { region: Region | null; total: number; regions: Region[]; usage?: RegionUsage | null; cap?: number; sim?: boolean; section: 'overview' | 'facilities'; welfareYm?: string | null }
 
 /** 근사값 반영 인구 비율이 이 이상이면 배지 */
 const APPROX_BADGE = 0.05
@@ -121,7 +121,7 @@ export function IslandBadge() {
 }
 
 /** 지역 상세: 개요(판정·점수·지표·군집) 또는 이용 기관(응급의료기관·센터 목록). 읍면동 보기는 EmdPanel */
-export default function DetailPanel({ region: r, total, regions, usage, cap, sim, section }: Props) {
+export default function DetailPanel({ region: r, total, regions, usage, cap, sim, section, welfareYm }: Props) {
   if (!r) return <div className="detail"><p className="muted">지도, 산점도, 표에서 시군구를 선택하세요.</p></div>
 
   const cards: [string, string][] = [
@@ -171,6 +171,9 @@ export default function DetailPanel({ region: r, total, regions, usage, cap, sim
 
       <dl className="facts">
         {cards.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
+        {/* 참고 지표: 이중 취약 판정·점수에는 쓰지 않는다 */}
+        <div className="ref"><dt>기초생활수급자 비율<small>복지로{welfareYm ? ` ${welfareYm}` : ''} 기준, 참고 지표(판정 미사용)</small></dt>
+          <dd>{fmt.pct(r.수급자비율)} <span className="muted">(전국 {total}곳 중 {r.수급자비율순위}위)</span></dd></div>
       </dl>
 
       <SfcaCard r={r} regions={regions} sim={sim} />
