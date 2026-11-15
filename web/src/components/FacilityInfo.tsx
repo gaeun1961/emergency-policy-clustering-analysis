@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { fmt } from '../metrics'
 import type { Facility } from '../sim/model'
 import { GRADE_NAME } from '../sim/scenario'
+import { DEPT_NOTE, keyDepartments } from '../departments'
 
 export const isVirtual = (f: Facility) => f.hpid.startsWith('SIM-')
 
@@ -17,15 +18,32 @@ export function FacilityLines({ f }: { f: Facility }) {
           {f.주소 && <div className="small">{f.주소}</div>}
           {f.응급실전화 && <div className="small">응급실 {tel(f.응급실전화)}
             {f.대표전화 && f.대표전화 !== f.응급실전화 && <> · 대표 {tel(f.대표전화)}</>}</div>}
+          <Departments list={f.진료과목} />
         </>
       )}
     </>
   )
 }
 
+/** 진료과목 줄: 주요 과 보유 여부 + 전체 목록(접힘). 정보가 없으면 그리지 않는다 */
+function Departments({ list }: { list?: string[] }) {
+  const keys = keyDepartments(list)
+  if (!list || !keys) return null
+  return (
+    <div className="dept">
+      <div className="dept-keys" aria-label="주요 진료과목 보유 여부">
+        {keys.map((d) => <span key={d.name} className={d.has ? 'dept-key on' : 'dept-key off'}>{d.name}{d.has ? '' : ' 없음'}</span>)}
+      </div>
+      {list.length > 0
+        ? <details className="small"><summary>진료과목 {list.length}개</summary>{list.join(', ')}</details>
+        : <div className="small muted">진료과목 정보 없음</div>}
+    </div>
+  )
+}
+
 /** 지도 기관 마커를 눌렀을 때 뜨는 팝업. 시뮬레이션 중에는 제거 버튼 */
 interface PopupTime { region: string; min: number; km: number; approx: boolean; capped: boolean; use?: { share: number; min: number; capped: boolean; center: boolean } }
-export function FacilityPopup({ f, x, y, time, onRemove, onClose }: { f: Facility; x: number; y: number; time?: PopupTime; onRemove?: () => void; onClose: () => void }) {
+export function FacilityPopup({ f, x, y, time, onRemove, onClose, deptYm }: { f: Facility; x: number; y: number; time?: PopupTime; onRemove?: () => void; onClose: () => void; deptYm?: string }) {
   // 팝업 밖을 누르거나 Esc 면 닫힘. 다른 기관 점을 누르면 닫힌 뒤 그 기관 팝업이 새로 열린다
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -36,7 +54,7 @@ export function FacilityPopup({ f, x, y, time, onRemove, onClose }: { f: Facilit
     return () => { document.removeEventListener('pointerdown', down); document.removeEventListener('keydown', key) }
   }, [onClose])
   return (
-    <div ref={ref} className="chooser fac-popup" style={{ left: Math.max(8, Math.min(x, window.innerWidth - 268)), top: Math.min(y + 8, window.innerHeight - 170) }}
+    <div ref={ref} className="chooser fac-popup" style={{ left: Math.max(8, Math.min(x, window.innerWidth - 268)), top: Math.max(8, Math.min(y + 8, window.innerHeight - 340)) }}
       role="dialog" aria-label={`${f.기관명} 정보`}>
       <FacilityLines f={f} />
       {time?.use && <div className="small fac-time">{time.region} 주민 {fmt.pct(time.use.share)}의 가장 가까운 {time.use.center ? '센터' : '응급의료기관'} ·
@@ -44,6 +62,7 @@ export function FacilityPopup({ f, x, y, time, onRemove, onClose }: { f: Facilit
       {time && <div className="small fac-time">{time.region} 전체 주민 평균 자동차 {time.use ? '' : <strong>{time.capped ? `≥ ${fmt.min(time.min)}` : fmt.min(time.min)}</strong>}
         {time.use && (time.capped ? `≥ ${fmt.min(time.min)}` : fmt.min(time.min))} · 직선 {fmt.km(time.km)}
         {time.approx && <span className="muted">{isVirtual(f) ? ' (근사값: 직선거리 × 우회계수)' : ' (일부 근사값)'}</span>}</div>}
+      {f.진료과목 && <div className="hint">{DEPT_NOTE(deptYm)}</div>}
       {onRemove && <button type="button" onClick={onRemove}>이 기관 제거</button>}
       <button type="button" className="link" onClick={onClose}>닫기</button>
     </div>

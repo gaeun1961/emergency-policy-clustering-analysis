@@ -10,6 +10,7 @@
       2SFCA 보조 지표: data/processed/sfca_sigungu.csv (python -m src.sfca) -> sigungu_metrics.json 의 2SFCA* 필드
       읍면동 드릴다운용 emd.json (data/processed/emd_metrics.csv·emd_li_metrics.csv, python -m src.emd_metrics)
       수급자 비율 참고 지표: data/processed/welfare_rate.csv (python -m src.welfare) -> sigungu_metrics.json 의 수급자비율* 필드
+      진료과목 참고 표시: data/processed/emergency_departments.csv (python -m src.fetch_emergency --departments) -> facilities.json 의 진료과목
 """
 import json
 import sys
@@ -90,7 +91,8 @@ def main():
     source('© OpenStreetMap')['기준'] = stamp.read_text(encoding='utf-8').strip()[:10] if stamp.exists() else None
     counts = df['등급'].value_counts()
     meta = {
-        '기준시점': {'인구·복지': YM_LABEL, '응급의료기관': collected, '경계': f'{BOUNDARY_DATE} ({BOUNDARY_NOTE})'},
+        '기준시점': {'인구·복지': YM_LABEL, '응급의료기관': collected, '경계': f'{BOUNDARY_DATE} ({BOUNDARY_NOTE})',
+                 **({'진료과목': load_departments()[1]} if load_departments()[1] else {})},
         '시군구수': len(df),
         '이중취약수': int(counts.get('이중 취약', 0)),
         '준이중취약수': int(counts.get('준 이중 취약', 0)),
@@ -119,6 +121,11 @@ def export_simulation(scores):
     facilities = [{'hpid': r.hpid, '기관명': r.dutyName, '등급': r.dutyEmcls, '위도': r.wgs84Lat, '경도': r.wgs84Lon,
                    '시군구코드': r.행정기관코드, '주소': r.dutyAddr, '응급실전화': r.dutyTel3, '대표전화': r.dutyTel1}
                   for r in fac.itertuples()]
+    # 진료과목 (참고 표시, 계산에는 안 씀): 받은 기관만 목록으로, 진료과목이 비어 있으면 빈 목록
+    dept, _ = load_departments()
+    for f in facilities:
+        if f['hpid'] in dept:
+            f['진료과목'] = dept[f['hpid']]
 
     # 행정동 기준점(섬 읍·면은 리)과 인구 가중치. Python 접근성 계산(src.accessibility.load_centers)과 같은 점·같은 순서
     # drive: 도로로 닿는 가까운 기관의 주행시간(초). 없는 기관은 직선거리 × 시군구 우회계수 (src.accessibility.drive_minutes)
@@ -161,6 +168,15 @@ def export_simulation(scores):
     export_emd()
     print(f'시뮬레이터: 기관 {len(facilities)}곳, 기준점 {sum(map(len, centers.values()))}개({len(centers)}개 시군구), '
           f'기준선 상위25% 접근성 {cut[TOP][0]:.3f} / 복지 {cut[TOP][1]:.3f}, 등급 재현 일치')
+
+
+def load_departments():
+    """({hpid: [진료과목, ...]}, 기준 'YYYY-MM'). 파일이 없으면 ({}, None)"""
+    p = ROOT / 'data' / 'processed' / 'emergency_departments.csv'
+    if not p.exists():
+        return {}, None
+    d = pd.read_csv(p, dtype={'hpid': str, '진료과목': str}, keep_default_na=False)
+    return {h: [x for x in v.split(';') if x] for h, v in zip(d['hpid'], d['진료과목'])}, d['수집일자'].max()[:7]
 
 
 def general_districts():

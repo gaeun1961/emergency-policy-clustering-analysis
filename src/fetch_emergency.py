@@ -2,9 +2,11 @@
 
 실행: 레포 루트에서 python -m src.fetch_emergency            (기관 목록)
       python -m src.fetch_emergency --capacity (응급의료기관 G001·G006·G007 병상 수, 2SFCA 공급량)
+      python -m src.fetch_emergency --departments (응급의료기관 진료과목, 대시보드 참고 표시)
 필요: .env 또는 환경변수의 DATA_GO_KR_SERVICE_KEY (없으면 KR_SERVICE_KEY). 공공데이터포털 일반 인증키, Encoding/Decoding 어느 쪽이든 됨
 출력: data/processed/emergency_facilities.csv
       data/processed/emergency_capacity.csv: hpid, 응급실병상수(hperyn), 총병상수(hpbdn), 수집일자 (기본정보 API, 기관당 1회 호출)
+      data/processed/emergency_departments.csv: hpid, 진료과목(';' 로 구분, 가나다순), 수집일자 (같은 기본정보 API 의 dgidIdName)
 """
 import os
 import sys
@@ -86,7 +88,20 @@ def fetch_all(key, q0=None):
 
 
 CAPACITY = ROOT / 'data' / 'processed' / 'emergency_capacity.csv'
+DEPARTMENTS = ROOT / 'data' / 'processed' / 'emergency_departments.csv'
 BASS_URL = 'http://apis.data.go.kr/B552657/ErmctInfoInqireService/getEgytBassInfoInqire'
+
+
+def bass_item(key, h):
+    """기본정보 API 로 기관 하나의 item. 초당 요청 제한(429·LIMITED_NUMBER)에 걸리면 기다렸다 다시 (get 이 오류 메시지에서 키·URL 을 뺀다)"""
+    import time
+    for attempt in range(6):
+        r = get(BASS_URL, {'serviceKey': key, 'HPID': h})
+        if r.status_code == 429 or b'LIMITED_NUMBER' in r.content:
+            time.sleep(10 * (attempt + 1))  # 제한에 걸리면 한동안 풀리지 않아 길게 기다림
+            continue
+        return ET.fromstring(r.content).find('.//item')
+    raise RuntimeError(f'{h}: 요청 제한이 계속됨')
 
 
 def fetch_capacity(out=CAPACITY):
@@ -102,15 +117,9 @@ def fetch_capacity(out=CAPACITY):
     done = dict(zip(have['hpid'], have.to_dict('records'))) if len(have) else {}
 
     def one(h):
-        for attempt in range(6):
-            r = get(BASS_URL, {'serviceKey': key, 'HPID': h})
-            if r.status_code == 429 or b'LIMITED_NUMBER' in r.content:
-                time.sleep(10 * (attempt + 1))  # 제한에 걸리면 한동안 풀리지 않아 길게 기다림
-                continue
-            it = ET.fromstring(r.content).find('.//item')
-            num = lambda tag: pd.to_numeric(it.findtext(tag) if it is not None else None, errors='coerce')  # noqa: E731
-            return {'hpid': h, '응급실병상수': num('hperyn'), '총병상수': num('hpbdn')}
-        raise RuntimeError(f'{h}: 요청 제한이 계속됨')
+        it = bass_item(key, h)
+        num = lambda tag: pd.to_numeric(it.findtext(tag) if it is not None else None, errors='coerce')  # noqa: E731
+        return {'hpid': h, '응급실병상수': num('hperyn'), '총병상수': num('hpbdn')}
 
     rows = []
     save = lambda: pd.DataFrame(rows).assign(수집일자=date.today().isoformat()).to_csv(out, index=False, encoding='utf-8-sig')  # noqa: E731
@@ -126,6 +135,41 @@ def fetch_capacity(out=CAPACITY):
     df = pd.read_csv(out, dtype={'hpid': str})
     bad = df['응급실병상수'].isna() | (df['응급실병상수'] <= 0)
     print(f'{len(df)}개 기관 병상 -> {out}. 응급실 병상 없음·0: {bad.sum()}곳, 응급실 병상 합 {int(df["응급실병상수"].sum()):,}')
+    return df
+
+
+def parse_departments(text):
+    """dgidIdName('가정의학과,내과, 내과,') -> 중복·빈칸 뺀 가나다순 목록"""
+    return sorted({d.strip() for d in (text or '').split(',') if d.strip()})
+
+
+def fetch_departments(out=DEPARTMENTS, limit_min=30):
+    """응급의료기관(G001·G006·G007)마다 기본정보 API 의 진료과목(dgidIdName). 이미 받은 기관은 다시 호출하지 않고(캐시),
+    limit_min 분을 넘기면 받은 만큼 저장하고 멈춘다 (다시 실행하면 이어서). 진료과목이 없는 기관은 빈 값"""
+    import time
+    key = service_key()
+    fac = pd.read_csv(OUT, dtype={'hpid': str})
+    hp = fac.loc[fac['dutyEmcls'].isin(['G001', 'G006', 'G007']), 'hpid'].tolist()
+    have = pd.read_csv(out, dtype={'hpid': str, '진료과목': str}, keep_default_na=False) if out.exists() else pd.DataFrame(columns=['hpid', '진료과목', '수집일자'])
+    done = {r.hpid: (r.진료과목, r.수집일자) for r in have.itertuples()}
+    rows, calls, t0 = [], 0, time.time()
+    save = lambda: pd.DataFrame(rows, columns=['hpid', '진료과목', '수집일자']).to_csv(out, index=False, encoding='utf-8-sig')  # noqa: E731
+    for n, h in enumerate(hp, 1):
+        if h in done:
+            rows.append((h, *done[h]))
+            continue
+        if time.time() - t0 > limit_min * 60:
+            save()
+            sys.exit(f'{limit_min}분을 넘겨 멈춤: {len(rows)}/{len(hp)}곳 저장 (다시 실행하면 이어서)')
+        it = bass_item(key, h)
+        rows.append((h, ';'.join(parse_departments(it.findtext('dgidIdName') if it is not None else '')), date.today().isoformat()))
+        calls += 1
+        if n % 25 == 0:
+            save()
+        time.sleep(1.0)  # 초당 요청 제한
+    save()
+    df = pd.read_csv(out, dtype={'hpid': str, '진료과목': str}, keep_default_na=False)
+    print(f'{len(df)}개 기관 진료과목 -> {out}. 이번 호출 {calls}회, {(time.time() - t0) / 60:.1f}분, 진료과목 없음 {(df["진료과목"] == "").sum()}곳')
     return df
 
 
@@ -150,4 +194,4 @@ def main(out=OUT):
 
 
 if __name__ == '__main__':
-    fetch_capacity() if '--capacity' in sys.argv else main()
+    fetch_capacity() if '--capacity' in sys.argv else fetch_departments() if '--departments' in sys.argv else main()

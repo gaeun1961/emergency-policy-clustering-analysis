@@ -197,6 +197,12 @@ def test_welfare():
         assert (d / 'out.csv').exists()
 
 
+def test_departments_parse():
+    """진료과목(dgidIdName): 쉼표로 나누고 공백·빈칸·중복을 빼 가나다순"""
+    assert fetch_emergency.parse_departments('정형외과,내과, 내과,,가정의학과 ') == ['가정의학과', '내과', '정형외과']
+    assert fetch_emergency.parse_departments(None) == [] and fetch_emergency.parse_departments('') == []
+
+
 def test_service_key():
     """공공데이터포털 키: DATA_GO_KR_SERVICE_KEY 우선, 없으면 KR_SERVICE_KEY, URL 인코딩은 풀어서"""
     saved = {n: os.environ.pop(n, None) for n in fetch_emergency.KEY_NAMES}
@@ -228,5 +234,6 @@ if __name__ == '__main__':
     test_end_to_end()
     test_sfca()
     test_welfare()
+    test_departments_parse()
     test_service_key()
     print('OK')
