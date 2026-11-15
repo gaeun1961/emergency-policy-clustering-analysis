@@ -186,6 +186,8 @@ input[type="checkbox"] { accent-color: var(--color-accent); width: 16px; height:
 .facts div { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-sm); padding: var(--space-xs) 0; border-bottom: 1px solid var(--color-rule); }
 .facts dt { font-size: var(--text-sm); color: var(--color-muted); }
 .facts dd { margin: 0; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+.facts .ref dt small { display: block; font-size: var(--text-xs); }
+.facts .ref dd .muted { font-weight: 400; }
 .cluster { display: flex; gap: var(--space-sm); align-items: flex-start; font-size: var(--text-sm); margin-top: var(--space-sm); }
 .cluster .swatch { margin-top: var(--space-2xs); }
 .cluster p { color: var(--color-muted); margin: var(--space-3xs) 0 0; }

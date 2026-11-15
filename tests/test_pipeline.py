@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from src import accessibility, disability, fetch_emergency, population  # noqa: E402
+from src import accessibility, disability, fetch_emergency, population, welfare  # noqa: E402
 from src.build_table import main  # noqa: E402
 from src.regions import age_start, region_key  # noqa: E402
 
@@ -176,6 +176,27 @@ def test_sfca():
     assert a[0] == 0 and r[0] == 0
 
 
+def test_welfare():
+    """수급자 비율: 연령·성별·구분 행 합산, 일반구는 상위 시로, 미매칭은 보고, 순위 1 = 비율 가장 높음"""
+    with tempfile.TemporaryDirectory() as d:
+        d = Path(d)
+        pop = d / 'pop.csv'
+        pd.DataFrame({'행정기관코드': ['11110', '41110', '36110'], '시도': ['서울', '경기', '세종'], '시군구': ['종로구', '수원시', ''],
+                      '총인구': [1000, 2000, 500]}).to_csv(pop, index=False, encoding='utf-8-sig')
+        rows = [('서울특별시', '종로구', '일반수급자', 30), ('서울특별시', '종로구', '일반수급자', 10), ('서울특별시', '종로구', '시설수급자', 10),
+                ('경기도', '수원시장안구', '일반수급자', 40), ('경기도', '수원시권선구', '일반수급자', 50), ('경기도', '수원시권선구', '시설수급자', 10),
+                ('세종특별자치시', '세종특별자치시', '일반수급자', 5), ('없는도', '없는군', '일반수급자', 7)]
+        write(d / 'raw' / '수급자.csv', pd.DataFrame([['202512', s, g, k, '65~69세', '남성', n] for s, g, k, n in rows],
+                                                  columns=['통계연월', '통계시도명', '통계시군구명', '수급자구분', '연령구간', '성별', '수급자수']))
+        u, ok = welfare.build(raw=d / 'raw', out=d / 'out.csv', pop_csv=pop)
+        assert not ok  # 미매칭 '없는도 없는군' 이 있으면 실패로 보고
+        assert u.loc['11110', ['일반수급자', '시설수급자', '수급자수']].tolist() == [40, 10, 50]
+        assert u.loc['41110', '수급자수'] == 100 and u.loc['36110', '수급자수'] == 5   # 장안구 + 권선구 -> 수원시
+        assert u['수급자비율'].round(3).tolist() == [0.05, 0.05, 0.01]
+        assert u['수급자비율_순위'].tolist() == [1, 1, 3]
+        assert (d / 'out.csv').exists()
+
+
 def test_service_key():
     """공공데이터포털 키: DATA_GO_KR_SERVICE_KEY 우선, 없으면 KR_SERVICE_KEY, URL 인코딩은 풀어서"""
     saved = {n: os.environ.pop(n, None) for n in fetch_emergency.KEY_NAMES}
@@ -206,5 +227,6 @@ if __name__ == '__main__':
     test_units()
     test_end_to_end()
     test_sfca()
+    test_welfare()
     test_service_key()
     print('OK')

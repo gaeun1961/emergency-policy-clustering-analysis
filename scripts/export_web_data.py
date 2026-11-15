@@ -9,6 +9,7 @@
       시뮬레이터용 facilities.json, centers.json, baseline.json
       2SFCA 보조 지표: data/processed/sfca_sigungu.csv (python -m src.sfca) -> sigungu_metrics.json 의 2SFCA* 필드
       읍면동 드릴다운용 emd.json (data/processed/emd_metrics.csv·emd_li_metrics.csv, python -m src.emd_metrics)
+      수급자 비율 참고 지표: data/processed/welfare_rate.csv (python -m src.welfare) -> sigungu_metrics.json 의 수급자비율* 필드
 """
 import json
 import sys
@@ -39,6 +40,7 @@ FIELDS = {  # 내보낼 이름: 원래 컬럼
 SOURCES = [
     {'이름': '행정안전부 주민등록 인구통계 (연령별 인구현황, 성/연령별 1인세대수)', 'url': 'https://jumin.mois.go.kr', '기준': YM_LABEL},
     {'이름': '보건복지부 장애인현황 (KOSIS DT_11761_N009)', 'url': 'https://kosis.kr/statHtml/statHtml.do?orgId=117&tblId=DT_11761_N009', '기준': f'{DISABILITY_YEAR} 연말'},
+    {'이름': '복지로 기초생활보장 수급자 통계 (수급자구분·연령·성별, 참고 지표)', 'url': 'https://www.bokjiro.go.kr', '기준': None},
     {'이름': '국립중앙의료원 응급의료정보조회 서비스 (공공데이터포털 OpenAPI)', 'url': 'https://www.data.go.kr', '기준': None},
     {'이름': '카카오 로컬 API (행정복지센터·리 좌표)', 'url': 'https://developers.kakao.com', '기준': None},
     {'이름': '© OpenStreetMap contributors (ODbL), Geofabrik south-korea 추출본', 'url': 'https://www.openstreetmap.org/copyright', '기준': None},
@@ -46,6 +48,11 @@ SOURCES = [
     {'이름': f'행정동 경계 vuski/admdongkor {BOUNDARY_VERSION} (CC BY 4.0)', 'url': 'https://github.com/vuski/admdongkor', '기준': BOUNDARY_DATE},
     {'이름': '통계청 SGIS 행정구역 경계 (admdongkor 원자료)', 'url': 'https://sgis.kostat.go.kr', '기준': None},
 ]
+
+
+def source(prefix):
+    """SOURCES 에서 이름이 prefix 로 시작하는 항목 (순서가 바뀌어도 기준 시점이 엉뚱한 출처에 붙지 않게)"""
+    return next(x for x in SOURCES if x['이름'].startswith(prefix))
 
 
 def main():
@@ -66,14 +73,21 @@ def main():
     df['2SFCA근사비율'] = sf['근사반영_인구비율'].to_numpy()
     df['2SFCA하위25'] = sf['2SFCA_하위25'].astype(bool).to_numpy()
     df['병상대체기관'] = [[x for x in v.split(';') if x] for v in sf['병상대체기관']]
+    # 수급자 비율 참고 지표 (판정·점수에는 쓰지 않음)
+    wr = pd.read_csv(ROOT / 'data' / 'processed' / 'welfare_rate.csv', dtype={'행정기관코드': str, '기준연월': str}).set_index('행정기관코드').reindex(df['코드'])
+    assert wr['수급자비율'].notna().all(), '수급자 비율이 없는 시군구가 있음 (python -m src.welfare)'
+    df['수급자비율'] = wr['수급자비율'].round(4).to_numpy()
+    df['수급자비율순위'] = wr['수급자비율_순위'].astype(int).to_numpy()
+    welfare_ym = wr['기준연월'].iloc[0]
+    source('복지로')['기준'] = f'{welfare_ym[:4]}-{welfare_ym[4:]}'
     records = [{k: (v if isinstance(v, list) else None if pd.isna(v) else v) for k, v in r.items()} for r in df.to_dict('records')]
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / 'sigungu_metrics.json').write_text(json.dumps(records, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
 
     collected = pd.read_csv(ROOT / 'data' / 'processed' / 'emergency_facilities.csv', usecols=['수집일자'])['수집일자'].iloc[0]
-    SOURCES[2]['기준'] = collected
+    source('국립중앙의료원')['기준'] = collected
     stamp = ROOT / 'data' / 'processed' / 'osm_timestamp.txt'  # scripts/osrm_setup.sh 가 OSM 추출본 시점을 기록
-    SOURCES[6]['기준'] = stamp.read_text(encoding='utf-8').strip()[:10] if stamp.exists() else None
+    source('© OpenStreetMap')['기준'] = stamp.read_text(encoding='utf-8').strip()[:10] if stamp.exists() else None
     counts = df['등급'].value_counts()
     meta = {
         '기준시점': {'인구·복지': YM_LABEL, '응급의료기관': collected, '경계': f'{BOUNDARY_DATE} ({BOUNDARY_NOTE})'},
