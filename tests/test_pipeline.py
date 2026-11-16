@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from src import accessibility, basic_pension, briefing, disability, emergency_safety, fetch_emergency, population, welfare  # noqa: E402
+from src import accessibility, basic_pension, briefing, disability, emergency_safety, fetch_emergency, population, sensitivity, welfare  # noqa: E402
 from src.build_table import main  # noqa: E402
 from src.regions import age_start, region_key  # noqa: E402
 
@@ -307,6 +307,17 @@ def test_emergency_safety():
         assert r['서비스공백'].sum() > 0 and r.loc[r['서비스공백'], '이용률'].notna().all()  # 공백은 자료가 있는 곳만
 
 
+
+def test_sensitivity():
+    """민감도: 기본 설정이 기존 이중 취약을 그대로 재현, 기준선을 좁히면 기존의 부분집합, 가중치는 반영됨"""
+    pct = sensitivity.load()
+    s = pd.read_csv(sensitivity.ROOT / 'outputs' / 'sigungu_scores.csv', dtype={'code': str}).set_index('code').fillna({'등급': ''})
+    base = set(s.index[s['등급'] == '이중 취약'])
+    assert sensitivity.double(pct) == base
+    assert sensitivity.double(pct, top=0.20) <= base <= sensitivity.double(pct, top=0.30)
+    assert sensitivity.double(pct, weights={'독거노인비율': 1}) == base
+
+
 if __name__ == '__main__':
     test_units()
     test_end_to_end()
@@ -318,5 +329,6 @@ if __name__ == '__main__':
     test_departments_parse()
     test_basic_pension()
     test_emergency_safety()
+    test_sensitivity()
     test_service_key()
     print('OK')
