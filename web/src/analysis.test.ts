@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { GROUPS, groupMedians } from './analysis'
+import { strip } from './report'
 import { quantile, type Region } from './data'
 
 const regions: Region[] = JSON.parse(readFileSync(new URL('../public/data/sigungu_metrics.json', import.meta.url), 'utf-8'))
@@ -14,6 +15,12 @@ describe('분포 탭 그룹 비교 (#83)', () => {
   it('중앙값은 그 그룹만의 분위수', () => {
     const dbl = regions.filter((r) => r.등급 === GROUPS[0]).map((r) => r.독거노인비율)
     expect(row('독거노인비율').medians[0]).toBeCloseTo(quantile(dbl, 0.5))
+  })
+  it('판정에 쓴 지표는 모두 차트에서 이중 취약이 해당 없음보다 오른쪽(취약 쪽)', () => {
+    for (const r of rows.filter((x) => x.used)) {
+      const all = regions.map((x) => x[r.key] as number)
+      expect(strip(all, r.medians[0], r.worse).pos, r.label).toBeGreaterThan(strip(all, r.medians[2], r.worse).pos)
+    }
   })
   it('판정에 쓰지 않은 기초연금 수급률도 이중 취약이 해당 없음보다 높다', () => {
     expect(row('기초연금수급률').used).toBe(false)

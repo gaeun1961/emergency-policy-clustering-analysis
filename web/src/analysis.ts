@@ -4,17 +4,18 @@ import { fmt } from './metrics'
 
 export const GROUPS: Grade[] = ['이중 취약', '준 이중 취약', '']
 
-export interface Indicator { key: keyof Region; label: string; used: boolean; text: (v: number) => string }
+/** worse: 값이 클수록('high') / 작을수록('low') 취약. 차트는 항상 오른쪽이 취약 */
+export interface Indicator { key: keyof Region; label: string; used: boolean; worse: 'high' | 'low'; text: (v: number) => string }
 
 export const INDICATORS: Indicator[] = [
-  { key: '최근접_응급의료기관_분', label: '최근접 응급의료기관 (분)', used: true, text: fmt.min },
-  { key: '30분내_기관수', label: '30분 내 응급의료기관 (곳)', used: true, text: (v) => `${v.toFixed(1)}곳` },
-  { key: '고령인구비율', label: '고령인구비율', used: true, text: fmt.pct },
-  { key: '독거노인비율', label: '독거노인비율', used: true, text: fmt.pct },
-  { key: '장애인비율', label: '장애인비율', used: true, text: fmt.pct },
-  { key: '기초연금수급률', label: '기초연금 수급률', used: false, text: fmt.pct },
-  { key: '수급자비율', label: '기초생활수급자 비율', used: false, text: fmt.pct },
-  { key: '2SFCA', label: '응급실 병상 (10만 명당)', used: false, text: fmt.beds },
+  { key: '최근접_응급의료기관_분', label: '최근접 응급의료기관 (분)', used: true, worse: 'high', text: fmt.min },
+  { key: '30분내_기관수', label: '30분 내 응급의료기관 (곳)', used: true, worse: 'low', text: (v) => `${v.toFixed(1)}곳` },
+  { key: '고령인구비율', label: '고령인구비율', used: true, worse: 'high', text: fmt.pct },
+  { key: '독거노인비율', label: '독거노인비율', used: true, worse: 'high', text: fmt.pct },
+  { key: '장애인비율', label: '장애인비율', used: true, worse: 'high', text: fmt.pct },
+  { key: '기초연금수급률', label: '기초연금 수급률', used: false, worse: 'high', text: fmt.pct },
+  { key: '수급자비율', label: '기초생활수급자 비율', used: false, worse: 'high', text: fmt.pct },
+  { key: '2SFCA', label: '응급실 병상 (10만 명당)', used: false, worse: 'low', text: fmt.beds },
 ]
 
 /** 지표별 등급 그룹 중앙값과 그룹 크기 */
