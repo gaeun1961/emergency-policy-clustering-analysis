@@ -13,7 +13,8 @@ describe('보던 지역·탭 링크 (?r=&tab=)', () => {
     expect(withView('', '47770', 'detail', false)).toBe('?r=47770')
     expect(withView('?sim=1', '47770', 'sim', true)).toBe('?sim=1&r=47770')
     expect(withView('', null, 'detail', false)).toBe('')
-    expect(readView('', false)).toEqual({ r: null, tab: 'detail' })
+    expect(readView('', false)).toEqual({ r: null, tab: 'dist' })          // 처음 열면(지역 미선택) 분포 탭
+    expect(readView('?r=47770', false)).toEqual({ r: '47770', tab: 'detail' }) // 지역 링크는 지역 상세
     expect(readView('?sim=1', true)).toEqual({ r: null, tab: 'sim' })
   })
 
