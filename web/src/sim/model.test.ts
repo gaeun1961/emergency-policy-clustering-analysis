@@ -393,6 +393,17 @@ describe('수급자 비율 참고 지표 (Python src.welfare 와 일치)', () =>
   })
 })
 
+describe('기초연금 수급률 참고 지표 (Python src.basic_pension 와 일치, #72)', () => {
+  const [head, ...lines] = readFileSync(new URL('../../../data/processed/basic_pension_rate.csv', import.meta.url), 'utf-8').replace(/^\uFEFF/, '').trim().split(/\r?\n/)
+  const cols = head.split(',')
+  const py = new Map(lines.map((l) => Object.fromEntries(l.split(',').map((v, i) => [cols[i], v]))).map((r) => [r.행정기관코드, r]))
+  it('229곳 모두 수급률·순위가 basic_pension_rate.csv 와 같고 0~1 사이', () => {
+    const bad = regions.filter((r) => !py.has(r.코드) || Math.abs(r.기초연금수급률 - Number(py.get(r.코드)!.기초연금수급률)) > 5e-5
+      || r.기초연금순위 !== Number(py.get(r.코드)!.기초연금수급률_순위) || !(r.기초연금수급률 > 0 && r.기초연금수급률 < 1))
+    expect(bad.map((r) => r.시군구)).toEqual([])
+  })
+})
+
 describe('2SFCA 보조 지표 (Python src.sfca 와 일치)', () => {
   const cuts = sfcaCuts(regions)
   it('하위 25% 판정이 Python 2SFCA하위25 와 같다 (229곳)', () => {

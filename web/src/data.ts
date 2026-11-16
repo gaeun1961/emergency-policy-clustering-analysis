@@ -38,6 +38,8 @@ export interface Region {
   병상대체기관: string[]          // 주민 30분 안 기관 중 응급실 병상 수가 없어 등급 중앙값을 쓴 기관
   수급자비율: number             // 기초생활보장 수급자(일반+시설) / 주민등록인구. 참고 지표: 판정·점수에 안 씀 (src.welfare)
   수급자비율순위: number         // 229곳 중 비율 높은 순 (1위 = 가장 높음)
+  기초연금수급률: number         // 기초연금 수급자 / 65세 이상 인구 (보건복지부). 참고 지표: 판정·점수에 안 씀 (src.basic_pension)
+  기초연금순위: number           // 229곳 중 수급률 높은 순 (1위 = 가장 높음)
 }
 
 export interface Meta {

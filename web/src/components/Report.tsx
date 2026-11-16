@@ -83,6 +83,7 @@ export default function Report({ r, regions, meta, sigungu, byCode, usage, place
     ['독거노인비율', `${fmt.pct(r.독거노인비율)} (${rank('독거노인비율')}위)`],
     ['장애인비율', `${fmt.pct(r.장애인비율)} (${rank('장애인비율')}위)`],
     ['기초생활수급자 비율 (참고)', `${fmt.pct(r.수급자비율)} (${r.수급자비율순위}위)`],
+    ['기초연금 수급률 (참고, 65세 이상)', `${fmt.pct(r.기초연금수급률)} (${r.기초연금순위}위)`],
   ]
   const g006 = placement?.시군구별.G006[r.코드], g007 = placement?.시군구별.G007[r.코드]
   const step6 = planStep(placement?.plans.G006, r.코드), step7 = planStep(placement?.plans.G007, r.코드)
@@ -147,7 +148,7 @@ export default function Report({ r, regions, meta, sigungu, byCode, usage, place
       <footer className="report-foot">
         <p>판정: 응급의료 접근성 취약 점수(최근접 응급의료기관·센터 주행시간, 30분 내 기관 수)와 복지 취약 점수(고령·독거·장애 비율)가 모두 상위 25%면 이중 취약, 한쪽 25% + 다른 쪽 40%면 준 이중 취약.
           배치 후보는 가정 위치이며 병상·인력·재정·인허가는 반영하지 않은 의사결정 지원용이다. {DEPT_NOTE(meta.기준시점['진료과목'])} 섬은 해상 이동을 반영하지 못한 근사값이다.</p>
-        <p>출처: 행정안전부 주민등록 인구통계, 보건복지부 장애인현황, 복지로 기초생활보장 수급자, 국립중앙의료원 응급의료정보, OpenStreetMap(ODbL)·OSRM 주행시간, 행정동 경계 vuski/admdongkor(CC BY 4.0).</p>
+        <p>출처: 행정안전부 주민등록 인구통계, 보건복지부 장애인현황·기초연금 수급 현황, 복지로 기초생활보장 수급자, 국립중앙의료원 응급의료정보, OpenStreetMap(ODbL)·OSRM 주행시간, 행정동 경계 vuski/admdongkor(CC BY 4.0).</p>
         <p className="report-url">대시보드에서 보기: {url}</p>
       </footer>
     </article>
