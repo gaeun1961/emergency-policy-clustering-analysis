@@ -125,6 +125,7 @@ export default function Report({ r, regions, meta, sigungu, byCode, usage, place
         </div>
         <div className="report-grade">
           <span className="badge" style={{ background: GRADE_COLOR[r.등급], color: r.등급 === '이중 취약' ? 'var(--color-accent-ink)' : 'var(--color-ink)' }}>{r.등급 || '해당 없음'}</span>
+          {!sim && r.서비스공백 && <> <span className="badge gap">서비스 공백</span></>}
           <p>인구·복지 {meta.기준시점['인구·복지']}, 응급의료기관 {meta.기준시점['응급의료기관']} 기준<br />출력 {today}{sim ? ', 시뮬레이션 반영 화면' : ''}</p>
         </div>
       </header>

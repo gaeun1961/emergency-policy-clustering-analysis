@@ -76,6 +76,7 @@ export default function DoubleTable({ regions, selected, onSelect, sim, district
                 onClick={() => onSelect(r.코드)} onKeyDown={(e) => e.key === 'Enter' && onSelect(r.코드)}>
                 <td><span className="grade-pill" style={{ background: GRADE_COLOR[r.등급], color: textOn(GRADE_COLOR[r.등급]) }}>{r.등급 === '이중 취약' ? '이중' : r.등급 ? '준' : '-'}</span></td>
                 <td>{regionName(r)}{isIsland(r) && <span className="island-mark" title="섬 읍·면을 리(섬) 단위로 계산"> ◆</span>}
+                  {!sim && r.서비스공백 && <span className="badge gap sm" title="이중 취약인데 응급안전안심서비스 이용률이 이중 취약 중 하위 25%">서비스 공백</span>}
                   {both(r) && <span className="both-mark" title="거리·병상 모두 취약: 이중 취약이면서 2SFCA(30분 안 응급실 병상) 하위 25%"> ●</span>}</td>
                 <td className="num">{fmt.score(r.접근성점수)}</td>
                 <td className="num">{fmt.score(r.복지점수)}</td>

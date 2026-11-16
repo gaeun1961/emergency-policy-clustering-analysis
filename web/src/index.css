@@ -337,6 +337,8 @@ tbody tr:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 
 .sfca .score-value { font-size: var(--text-2xl); }
 .sfca details { margin-top: var(--space-2xs); }
 .badge.both { background: var(--data-both); color: var(--color-accent-ink); }
+.badge.gap { background: var(--color-flag); color: var(--color-flag-edge); }
+.badge.gap.sm { margin-left: var(--space-2xs); padding: 0 var(--space-2xs); }
 .both-mark { color: var(--data-both); }
 .both-filter { display: inline-flex; align-items: center; gap: var(--space-2xs); cursor: pointer; }
 .list-count { margin: var(--space-2xs) 0 var(--space-xs); }

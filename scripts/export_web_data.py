@@ -11,6 +11,7 @@
       읍면동 드릴다운용 emd.json (data/processed/emd_metrics.csv·emd_li_metrics.csv, python -m src.emd_metrics)
       수급자 비율 참고 지표: data/processed/welfare_rate.csv (python -m src.welfare) -> sigungu_metrics.json 의 수급자비율* 필드
       기초연금 수급률 참고 지표: data/processed/basic_pension_rate.csv (python -m src.basic_pension) -> sigungu_metrics.json 의 기초연금*
+      응급안전안심서비스 이용률: data/processed/emergency_safety_rate.csv (python -m src.emergency_safety) -> 응급안전이용률·응급안전순위·서비스공백 (서울 등 자료 없으면 null)
       진료과목 참고 표시: data/processed/emergency_departments.csv (python -m src.fetch_emergency --departments) -> facilities.json 의 진료과목
 """
 import json
@@ -44,6 +45,7 @@ SOURCES = [
     {'이름': '보건복지부 장애인현황 (KOSIS DT_11761_N009)', 'url': 'https://kosis.kr/statHtml/statHtml.do?orgId=117&tblId=DT_11761_N009', '기준': f'{DISABILITY_YEAR} 연말'},
     {'이름': '복지로 기초생활보장 수급자 통계 (수급자구분·연령·성별, 참고 지표)', 'url': 'https://www.bokjiro.go.kr', '기준': None},
     {'이름': '보건복지부 기초연금 수급 현황 (공공데이터포털 15161618, 참고 지표)', 'url': 'https://www.data.go.kr/data/15161618/fileData.do', '기준': None},
+    {'이름': '보건복지부 응급안전안심서비스 대상자 기본정보 (공공데이터포털 15128127, 참고 지표)', 'url': 'https://www.data.go.kr/data/15128127/fileData.do', '기준': None},
     {'이름': '국립중앙의료원 응급의료정보조회 서비스 (공공데이터포털 OpenAPI)', 'url': 'https://www.data.go.kr', '기준': None},
     {'이름': '카카오 로컬 API (행정복지센터·리 좌표)', 'url': 'https://developers.kakao.com', '기준': None},
     {'이름': '© OpenStreetMap contributors (ODbL), Geofabrik south-korea 추출본', 'url': 'https://www.openstreetmap.org/copyright', '기준': None},
@@ -88,6 +90,13 @@ def main():
     df['기초연금수급률'] = bp['기초연금수급률'].round(4).to_numpy()
     df['기초연금순위'] = bp['기초연금수급률_순위'].astype(int).to_numpy()
     source('보건복지부 기초연금')['기준'] = bp['기준연월'].iloc[0]
+    # 응급안전안심서비스 이용률 참고 지표 (판정·점수에는 쓰지 않음). 서울·인천 일부는 원본에 없어 null
+    es = pd.read_csv(ROOT / 'data' / 'processed' / 'emergency_safety_rate.csv', dtype={'행정기관코드': str}).set_index('행정기관코드').reindex(df['코드'])
+    assert es['서비스공백'].notna().all(), '응급안전안심서비스 이용률 파일에 없는 시군구가 있음 (python -m src.emergency_safety)'
+    df['응급안전이용률'] = es['이용률'].round(4).to_numpy()
+    df['응급안전순위'] = pd.Series([int(v) if pd.notna(v) else None for v in es['이용률_순위']], index=df.index, dtype=object)  # 1위 = 가장 낮음, 정수 유지
+    df['서비스공백'] = es['서비스공백'].astype(bool).to_numpy()
+    source('보건복지부 응급안전안심서비스')['기준'] = es['기준일'].iloc[0]
     records = [{k: (v if isinstance(v, list) else None if pd.isna(v) else v) for k, v in r.items()} for r in df.to_dict('records')]
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / 'sigungu_metrics.json').write_text(json.dumps(records, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')

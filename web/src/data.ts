@@ -40,6 +40,9 @@ export interface Region {
   수급자비율순위: number         // 229곳 중 비율 높은 순 (1위 = 가장 높음)
   기초연금수급률: number         // 기초연금 수급자 / 65세 이상 인구 (보건복지부). 참고 지표: 판정·점수에 안 씀 (src.basic_pension)
   기초연금순위: number           // 229곳 중 수급률 높은 순 (1위 = 가장 높음)
+  응급안전이용률: number | null   // 65세 이상 응급안전안심서비스 이용자 / 65세 이상 1인세대 (보건복지부 2024-05). 서울·인천 일부 원본 없음 -> null (src.emergency_safety)
+  응급안전순위: number | null     // 자료 있는 시군구 중 이용률 낮은 순 (1위 = 가장 낮음)
+  서비스공백: boolean             // 이중 취약이면서 이용률이 이중 취약 중 하위 25%
 }
 
 export interface Meta {

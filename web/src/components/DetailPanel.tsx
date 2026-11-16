@@ -5,7 +5,7 @@ import { textOn } from '../theme'
 import { FacilityLines } from './FacilityInfo'
 import { DEPT_NOTE } from '../departments'
 
-interface Props { region: Region | null; total: number; regions: Region[]; usage?: RegionUsage | null; cap?: number; sim?: boolean; section: 'overview' | 'facilities'; welfareYm?: string | null; pensionYm?: string | null; deptYm?: string; briefing?: { text: string; model: string } | null; onPrint?: () => void }
+interface Props { region: Region | null; total: number; regions: Region[]; usage?: RegionUsage | null; cap?: number; sim?: boolean; section: 'overview' | 'facilities'; welfareYm?: string | null; pensionYm?: string | null; safetyYm?: string | null; deptYm?: string; briefing?: { text: string; model: string } | null; onPrint?: () => void }
 
 /** 근사값 반영 인구 비율이 이 이상이면 배지 */
 const APPROX_BADGE = 0.05
@@ -122,7 +122,7 @@ export function IslandBadge() {
 }
 
 /** 지역 상세: 개요(판정·점수·지표·군집) 또는 이용 기관(응급의료기관·센터 목록). 읍면동 보기는 EmdPanel */
-export default function DetailPanel({ region: r, total, regions, usage, cap, sim, section, welfareYm, pensionYm, deptYm, briefing, onPrint }: Props) {
+export default function DetailPanel({ region: r, total, regions, usage, cap, sim, section, welfareYm, pensionYm, safetyYm, deptYm, briefing, onPrint }: Props) {
   if (!r) return <div className="detail"><p className="muted">지도, 산점도, 표에서 시군구를 선택하세요.</p></div>
 
   const cards: [string, string][] = [
@@ -140,6 +140,7 @@ export default function DetailPanel({ region: r, total, regions, usage, cap, sim
         <div className="badges">
           {r.등급 && <span className="badge" style={{ background: GRADE_COLOR[r.등급], color: textOn(GRADE_COLOR[r.등급]) }}>{r.등급}</span>}
           {!sim && isBothVulnerable(r, sfcaCuts(regions)) && <BothBadge />}
+          {!sim && r.서비스공백 && <span className="badge gap" title="이중 취약인데 응급안전안심서비스 이용률(65세 이상 1인세대 대비)이 이중 취약 시군구 중 하위 25%">서비스 공백</span>}
           {isIsland(r) && <IslandBadge />}
           {r.근사반영비율 >= APPROX_BADGE && <span className="badge island" title="최근접 응급의료기관이나 센터까지 도로로 닿지 않는(연륙 안 된 섬 등) 주민 비율. 이 부분은 직선거리 × 우회계수 근사값이고 해상 이동은 반영하지 않았다">
             근사값 반영 {fmt.pct(r.근사반영비율)}</span>}
@@ -190,6 +191,10 @@ export default function DetailPanel({ region: r, total, regions, usage, cap, sim
           <dd>{fmt.pct(r.수급자비율)}<span className="muted rank">전국 {total}곳 중 {r.수급자비율순위}위</span></dd></div>
         <div className="ref"><dt>기초연금 수급률 (65세 이상)<small>보건복지부{pensionYm ? ` ${pensionYm}` : ''} 기준, 참고 지표(판정 미사용)</small></dt>
           <dd>{fmt.pct(r.기초연금수급률)}<span className="muted rank">전국 {total}곳 중 {r.기초연금순위}위</span></dd></div>
+        <div className="ref"><dt>응급안전안심서비스 이용률<small>65세 이상 이용자 / 65세 이상 1인세대, 보건복지부{safetyYm ? ` ${safetyYm}` : ''} 기준, 참고 지표(판정 미사용)</small></dt>
+          {r.응급안전이용률 === null
+            ? <dd className="muted">자료 없음<span className="rank">원본에 이 지역 이용자 자료가 없음</span></dd>
+            : <dd>{fmt.pct(r.응급안전이용률)}<span className="muted rank">{regions.filter((x) => x.응급안전이용률 !== null).length}곳 중 낮은 순 {r.응급안전순위}위</span></dd>}</div>
       </dl>
 
       <SfcaCard r={r} regions={regions} sim={sim} />
