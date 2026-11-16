@@ -34,7 +34,7 @@ INSTRUCTION = """너는 지자체 복지·보건 정책 담당자가 10초 안�
 3. 세 항목을 JSON 으로 쓴다. 항목마다 한 문장, 40~100자, "~다."로 끝나는 보고서 문체. 마크다운·줄바꿈 없음.
    - core: 판정(등급)과 가장 두드러진 취약 원인 지표 1~2개를 숫자와 함께. 순위(몇 곳 중 몇 위)는 쓰지 않는다.
    - service: [검토 후보]에서 1~2개를 고르고 근거 숫자 1개를 붙인다. core 에 쓴 숫자는 다시 쓰지 않는다. 후보가 없으면 "현재 지표로는 우선 검토할 서비스가 두드러지지 않는다."
-   - placement: [사실]의 "배치 효과(시뮬레이션)" 중 이중 취약에서 벗어나는 시군구가 더 많은 것 하나의 위치와 효과. 벗어나는 시군구가 1곳이면 "OO군이 이중 취약에서 벗어난다", 여러 곳이면 "OO군, OO군 N곳이 이중 취약에서 벗어난다"처럼 이름과 함께, 0곳이면 주행시간이 줄어드는 인구를 쓴다. 배치 효과가 없으면 "시군구 안 1곳 배치로 나아지는 후보는 없다." "이상(근사)"이 붙은 시간과 기관 종류 이름(예: 응급의료기관·센터)은 [사실]의 표기 그대로 쓴다."""
+   - placement: [사실]의 "배치 효과(시뮬레이션)" 중 이중 취약에서 벗어나는 시군구가 더 많은 것 하나의 위치와 효과. 벗어나는 시군구가 1곳이면 "OO군이 이중 취약에서 벗어난다", 여러 곳이면 "OO군, OO군 N곳이 이중 취약에서 벗어난다"처럼 이름과 함께, 0곳이면 주행시간이 줄어드는 인구를 쓴다. [사실]에 배치 효과가 있으면 반드시 그 위치와 숫자를 쓰고 "후보가 없다"고 쓰지 않는다. 배치 효과가 없을 때만 "시군구 안 1곳 배치로 나아지는 후보는 없다." 퍼센트는 "%" 기호로, "이상(근사)"이 붙은 시간과 기관 종류 이름(예: 응급의료기관·센터)은 [사실]의 표기 그대로 쓴다."""
 SCHEMA = {'type': 'OBJECT', 'properties': {k: {'type': 'STRING'} for k in PARTS.values()}, 'required': list(PARTS.values())}
 
 pct = lambda v: f'{v * 100:.1f}%'
@@ -132,7 +132,14 @@ def check_parts(parts, facts):
     """세 줄 브리핑 검증: 항목이 모두 있고 줄마다 check 통과"""
     if not isinstance(parts, dict) or list(parts) != list(PARTS):
         return ['항목 누락']
-    return [f'{k}: {b}' for k, v in parts.items() for b in check(v, facts)]
+    bad = [f'{k}: {b}' for k, v in parts.items() for b in check(v, facts)]
+    bad += [f'{k}: 퍼센트 표기' for k, v in parts.items() if '퍼센트' in v]
+    effect = [l for l in facts if l.startswith('배치 효과')]
+    # 배치 위치 이름(시군구 안 OO면에 / OO병원을(를) 승격하면)이 하나라도 들어가야 사실을 쓴 것
+    places = [g for l in effect for m in [re.search(r'시군구 안 (\S+)에 |: (\S.*?)을\(를\)', l)] if m for g in m.groups() if g]
+    if effect and not any(p in parts['배치 제안'] for p in places):
+        bad.append('배치 제안: 배치 효과 사실을 쓰지 않음')
+    return bad
 
 
 def generate(key, lines, cands, session):
@@ -189,7 +196,8 @@ def main():
     failed = []
     for i, r in enumerate(targets):
         lines, cands = facts_for(r, regions, placement)
-        if r['코드'] in done and done[r['코드']]['사실'] == lines and done[r['코드']].get('버전') == PROMPT_VERSION and not a.only:
+        old = done.get(r['코드'])
+        if old and old['사실'] == lines and old.get('버전') == PROMPT_VERSION and not check_parts(old['브리핑'], lines) and not a.only:
             continue
         text, bad = None, ['-']
         for _ in range(3):

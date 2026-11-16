@@ -212,6 +212,10 @@ def test_briefing_check():
     assert briefing.check_parts(parts, facts) == []
     assert briefing.check_parts({**parts, '우선 서비스': '45분이다.'}, facts) != []
     assert briefing.check_parts({'핵심': good}, facts) == ['항목 누락']
+    assert briefing.check_parts({**parts, '핵심': good.replace('44분', '44퍼센트')}, facts) != []  # % 를 풀어 씀
+    eff = facts + ['배치 효과(시뮬레이션): 시군구 안 지품면에 지역응급의료센터 1곳을 두면 이중 취약에서 벗어나는 시군구 0곳, 주행시간이 줄어드는 인구 81,468명']
+    assert briefing.check_parts({**parts, '배치 제안': '시군구 안 1곳 배치로 나아지는 후보는 없다.'}, eff) != []  # 배치 효과가 있는데 없다고 씀
+    assert briefing.check_parts({**parts, '배치 제안': '시군구 안 지품면에 지역응급의료센터 1곳을 두면 81,468명의 주행시간이 줄어든다.'}, eff) == []
 
 
 def test_briefing_facts():
