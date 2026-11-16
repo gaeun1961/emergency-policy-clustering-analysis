@@ -209,6 +209,20 @@ def test_briefing_check():
     assert any('마크다운' in b for b in briefing.check('**' + good, facts))
 
 
+def test_briefing_facts():
+    """브리핑 사실(v2): 근사값 주행시간은 '이상(근사)', 기초연금 수급률, 시군구별 1곳 배치 효과(벗어나는 시군구 이름·인구)"""
+    import json
+    assert briefing.mins_at(38.2, 120.0) == '38분 이상(근사)' and briefing.mins_at(38.2, 38.2) == '38분' and briefing.mins_at(6.9, None) == '6.9분'
+    regions = json.loads((briefing.PUB / 'sigungu_metrics.json').read_text(encoding='utf-8'))
+    placement = json.loads((briefing.PUB / 'placement_greedy.json').read_text(encoding='utf-8'))
+    by = {r['코드']: r for r in regions}
+    lines, cands = briefing.facts_for(by['46860'], regions, placement)  # 함평: 시군구 안 1곳으로 이중 취약이 줄어듦
+    text = '\n'.join(lines)
+    assert '기초연금 수급률' in text and '배치 효과(시뮬레이션)' in text and '(함평군, 영광군)' in text
+    assert any('배치 효과' in c for c in cands)
+    assert '38분 이상(근사)' in '\n'.join(briefing.facts_for(by['46910'], regions, placement)[0])  # 신안: 섬 근사값
+
+
 def test_briefing_output():
     """생성된 브리핑이 있으면: 전부 검증 통과, 사실이 지금 데이터와 같음 (데이터가 바뀌면 다시 생성해야 함)"""
     import json
@@ -282,6 +296,7 @@ if __name__ == '__main__':
     test_sfca()
     test_welfare()
     test_briefing_check()
+    test_briefing_facts()
     test_briefing_output()
     test_departments_parse()
     test_basic_pension()

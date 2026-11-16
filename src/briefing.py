@@ -22,19 +22,25 @@ ROOT = Path(__file__).resolve().parents[1]
 PUB = ROOT / 'web' / 'public' / 'data'
 OUT = ROOT / 'data' / 'processed' / 'ai_briefing.json'
 MODEL = 'gemini-3.5-flash-lite'  # 무료 등급: 3.5-flash 는 하루 20회라 229곳 불가, 3.8·3.7 은 혼잡(2026-11). lite 도 같은 검증을 통과
-PROMPT_VERSION = 1
+PROMPT_VERSION = 2  # 2: 배치 효과(시군구별 1곳)·기초연금 사실, 근사 주행시간 표시
 URL = f'https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent'
 
 INSTRUCTION = """너는 지자체 복지·보건 정책 담당자에게 시군구 상황을 알려 주는 브리핑을 쓴다.
 규칙:
 1. 아래 [사실]에 있는 숫자만, 적힌 그대로 쓴다. 계산·반올림·추정·새 통계·비교 배수를 만들지 않는다.
 2. 사실에 없는 기관명, 사업명, 정책, 원인을 지어내지 않는다.
-3. 3~4문장, 250~400자, "~다"로 끝나는 보고서 문체. 제목·목록·마크다운 없이 한 문단.
-4. 순서: 판정과 가장 두드러진 취약 원인 -> 복지 측면 -> 우선 검토할 서비스 1~2개.
-5. 우선 검토할 서비스는 [검토 후보]에서만 고르고, 그 후보의 근거가 된 사실을 함께 쓴다. 후보가 없으면 "현재 지표로는 우선 검토 대상이 두드러지지 않는다"고 쓴다."""
+3. 4~5문장, 300~550자, "~다"로 끝나는 보고서 문체. 제목·목록·마크다운 없이 한 문단.
+4. 순서: 판정과 가장 두드러진 취약 원인 -> 복지 측면 -> 우선 검토할 서비스 1~2개 -> 배치 효과.
+5. 우선 검토할 서비스는 [검토 후보]에서만 고르고, 그 후보의 근거가 된 사실을 함께 쓴다. 후보가 없으면 "현재 지표로는 우선 검토 대상이 두드러지지 않는다"고 쓴다.
+6. [사실]에 "배치 효과(시뮬레이션)"가 있으면 마지막 문장에서 그 위치와 효과를 근거로 배치 검토를 제안한다. 벗어나는 시군구가 0곳이면 주행시간이 줄어드는 인구만 쓴다. "이상(근사)"이 붙은 시간은 그 표현을 그대로 쓴다."""
 
 pct = lambda v: f'{v * 100:.1f}%'
 mins = lambda v: f'{v:.0f}분' if v >= 10 else f'{v:.1f}분'
+
+
+def mins_at(v, raw):
+    """근사값 상한에 걸린 주행시간은 '38분 이상(근사)' (대시보드의 '≥ 38분 (근사)'와 같은 뜻)"""
+    return f'{mins(v)} 이상(근사)' if raw is not None and raw > v + 1e-3 else mins(v)
 
 
 def rank(values, v):
@@ -53,13 +59,14 @@ def facts_for(r, regions, placement):
         f"지역: {name} (전국 시군구 {n}곳, 기준 2025년 12월)",
         f"판정: {grade} (응급의료 접근성 취약 {n}곳 중 {r['접근성순위']}위, 복지 취약 {n}곳 중 {r['복지순위']}위, 1위가 가장 취약)",
         f"유형: {r['클러스터라벨']}",
-        f"최근접 응급의료기관까지 자동차 주민 평균 {mins(r['최근접_응급의료기관_분'])} (전국 중앙값 {mins(med('최근접_응급의료기관_분'))})",
-        f"최근접 권역·지역응급의료센터까지 {mins(r['최근접_권역지역센터_분'])} (전국 중앙값 {mins(med('최근접_권역지역센터_분'))})",
+        f"최근접 응급의료기관까지 자동차 주민 평균 {mins_at(r['최근접_응급의료기관_분'], r.get('최근접_응급의료기관_분_원값'))} (전국 중앙값 {mins(med('최근접_응급의료기관_분'))})",
+        f"최근접 권역·지역응급의료센터까지 {mins_at(r['최근접_권역지역센터_분'], r.get('최근접_권역지역센터_분_원값'))} (전국 중앙값 {mins(med('최근접_권역지역센터_분'))})",
         f"30분 내 응급의료기관 주민 평균 {r['30분내_기관수']:.1f}곳",
         f"고령인구비율 {pct(r['고령인구비율'])} ({n}곳 중 {rank(col('고령인구비율'), r['고령인구비율'])}위)",
         f"독거노인비율 {pct(r['독거노인비율'])} ({n}곳 중 {rank(col('독거노인비율'), r['독거노인비율'])}위)",
         f"장애인비율 {pct(r['장애인비율'])} ({n}곳 중 {rank(col('장애인비율'), r['장애인비율'])}위)",
         f"기초생활수급자 비율 {pct(r['수급자비율'])} ({n}곳 중 {r['수급자비율순위']}위)",
+        f"기초연금 수급률(65세 이상 중 수급자) {pct(r['기초연금수급률'])} ({n}곳 중 {r['기초연금순위']}위)",
         f"응급실 병상(2SFCA) 인구 10만 명당 {r['2SFCA']:.1f}병상 (적은 순 {n}곳 중 {1 + sum(x < r['2SFCA'] for x in col('2SFCA'))}위)",
     ]
     if r['근사반영비율'] >= 0.05:
@@ -67,8 +74,20 @@ def facts_for(r, regions, placement):
     for kind, label in (('G006', '지역응급의료센터'), ('G007', '지역응급의료기관')):
         for i, s in enumerate(placement['plans'][kind]['steps']):
             if r['코드'] in s['escaped']:
-                lines.append(f"순차 배치 추천: {label}를 {i + 1}곳째 추가하면 이중 취약에서 벗어남")
+                lines.append(f"순차 배치 추천: {label}{'을' if label.endswith('관') else '를'} {i + 1}곳째 추가하면 이중 취약에서 벗어남")
                 break
+    # 시군구별 최적 1곳 (그 시군구 안 후보, simulate 로 확인한 값, placement_greedy.json 의 시군구별)
+    names = {x['코드']: (x['시군구'] or x['시도']) for x in regions}
+    effect = False
+    for kind, label in (('G006', '지역응급의료센터'), ('G007', '지역응급의료기관')):
+        b = placement.get('시군구별', {}).get(kind, {}).get(r['코드'])
+        if not b:
+            continue
+        where = f"{b['label']}을(를) 지역응급의료센터로 승격하면" if b['kind'] == 'upgrade' else f"시군구 안 {b['label']}에 {label} 1곳을 두면"
+        esc = f" ({', '.join(names[c] for c in b['escaped'])})" if b['escaped'] else ''
+        lines.append(f"배치 효과(시뮬레이션): {where} 이중 취약에서 벗어나는 시군구 {len(b['escaped'])}곳{esc}, "
+                     f"주변 포함 최근접 응급의료기관·센터 주행시간이 줄어드는 인구 {b['popImproved']:,}명")
+        effect = effect or bool(b['escaped'])
 
     top = lambda k, v=None: rank(col(k), r[k] if v is None else v) <= n // 4  # 상위 25%
     cands = []
@@ -82,6 +101,8 @@ def facts_for(r, regions, placement):
         cands.append('기초생활수급 가구 사례관리 연계 (수급자 비율이 높음)')
     if 1 + sum(x < r['2SFCA'] for x in col('2SFCA')) <= n // 4:
         cands.append('응급실 병상 확충 검토 (30분 내 병상이 적음)')
+    if effect:
+        cands.append('시군구 안 응급의료기관 신설·지정 검토 (배치 효과: 이중 취약 시군구가 줄어듦)')
     return lines, cands
 
 
@@ -95,7 +116,7 @@ def numbers(text):
 def check(text, facts):
     """검증 실패 사유 목록 (비면 통과): 사실에 없는 숫자, 잘렸거나 형식이 다른 답"""
     bad = sorted(numbers(text) - numbers('\n'.join(facts)))
-    if not 150 <= len(text) <= 600:
+    if not 150 <= len(text) <= 700:
         bad.append(f'길이 {len(text)}자')
     if not text.endswith('다.'):
         bad.append('문장이 끝나지 않음')
