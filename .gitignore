@@ -10,3 +10,5 @@ design-preview/
 data-watch/
 # Hallmark 디자인 스킬 작업 기록 (로컬)
 .hallmark/
+# 공모전 제출 문서 (개인정보·제출 전 문서, 로컬 전용)
+docs/contest/

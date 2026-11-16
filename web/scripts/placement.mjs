@@ -22,6 +22,15 @@ for (const kind of ['G007', 'G006']) {
   for (const [i, s] of p.steps.entries()) console.log(`  ${i + 1}. ${s.code} ${s.label} [${s.kind}] 벗어남 ${s.escaped.join(',') || '-'}, 주행시간 줄어드는 인구 ${s.popImproved.toLocaleString()}`)
 }
 
+// 시군구별 최적 1곳 (그 시군구 안 후보 중, 기관 추가 없는 상태 기준): 지역 보고서·AI 브리핑용
+const byRegion = {}
+for (const kind of ['G006', 'G007']) {
+  const t = performance.now()
+  byRegion[kind] = placement.bestPerRegion(facilities, centers, baseline, elderly, kind)
+  const r = Object.values(byRegion[kind])
+  console.log(`${kind} 시군구별 1곳: ${r.length}곳에 효과, 이중 취약을 벗어나게 하는 곳 ${r.filter((x) => x.escaped.length).length}곳 (${((performance.now() - t) / 1000).toFixed(1)}초)`)
+}
+
 const out = {
   설명: '기관 N곳 순차 배치(탐욕): 단계마다 이중 취약 감소 수 -> 동률이면 최근접 주행시간이 줄어드는 인구 합이 최대인 후보 1곳. '
     + '후보는 시뮬레이터 추천과 같은 가정 위치(기준점 신설, 지역센터는 지역기관 승격 포함). 기관 추가 없는 상태에서 시작, 판정은 고정 baseline 기준선',
@@ -29,6 +38,7 @@ const out = {
   기준선: baseline.기준선,
   기관수: facilities.length,
   plans,
+  시군구별: byRegion,
 }
 const json = JSON.stringify(out, null, 1)
 const processed = new URL('../../data/processed/', import.meta.url)
