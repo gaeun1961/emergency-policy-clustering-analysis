@@ -135,7 +135,7 @@ export default function Report({ r, regions, meta, sigungu, byCode, usage, place
           {emd && (
             <p className="report-legend report-map-legend">읍면동 응급의료 접근성 (전국 행정동 기준)
               {emd.bands.map((b, i) => <span key={b}><i style={{ background: bandColor(i) }} />{b}</span>)}
-              <span><i className="lg-dot" />가까운 응급의료기관</span></p>
+              <span><i className="lg-flag" />가까운 응급의료기관</span></p>
           )}
         </div>
         <div className="report-scores">

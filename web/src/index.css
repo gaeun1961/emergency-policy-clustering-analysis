@@ -407,7 +407,8 @@ tbody tr:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 
   .report-map-legend span { display: inline-flex; align-items: center; gap: 0.8mm; }
   .report-map-legend i { width: 2.4mm; height: 2.4mm; border-radius: 0.4mm; margin-left: 0; }
   .report-map-legend i.lg-dot { border-radius: 50%; }
-  .report-fac { fill: var(--data-both); stroke: var(--color-surface); stroke-width: 1; }
+  .report-fac { fill: var(--color-flag); stroke: var(--color-flag-edge); stroke-width: 1; }
+  .report-map-legend i.lg-flag { border-radius: 50%; background: var(--color-flag); border: 1px solid var(--color-flag-edge); }
   .report-scores { display: grid; grid-template-columns: 1fr 1fr; gap: 1mm 4mm; align-content: start; }
   .report-scores > div { display: flex; flex-direction: column; }
   .report-scores span { font-size: 8pt; color: var(--color-muted); }
