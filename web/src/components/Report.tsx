@@ -93,7 +93,7 @@ export default function Report({ r, regions, meta, sigungu, byCode, usage, place
       <header className="report-head">
         <div>
           <h1>{regionName(r)} 지역 보고서</h1>
-          <p className="report-sub">응급의료 × 복지 이중 취약지역 대시보드</p>
+          <p className="report-sub">골든타임 돌봄지도: 응급의료 × 돌봄 이중 취약지역</p>
         </div>
         <div className="report-grade">
           <span className="badge" style={{ background: GRADE_COLOR[r.등급], color: r.등급 === '이중 취약' ? 'var(--color-accent-ink)' : 'var(--color-ink)' }}>{r.등급 || '해당 없음'}</span>
