@@ -41,3 +41,18 @@ describe('분포 탭 누적 인구 곡선 (#83)', () => {
     expect(c.인구['이중 취약'] + c.인구['준 이중 취약'] + c.인구['해당 없음']).toBe(c.인구['전국'])
   })
 })
+
+describe('응급안전안심서비스 이용률·서비스 공백 (#89)', () => {
+  it('서비스 공백은 모두 이중 취약이고 자료가 있는 곳, 자료 없음은 순위도 없음', () => {
+    const gap = regions.filter((r) => r.서비스공백)
+    expect(gap.length).toBeGreaterThan(0)
+    for (const r of gap) { expect(r.등급).toBe('이중 취약'); expect(r.응급안전이용률).not.toBeNull() }
+    for (const r of regions.filter((x) => x.응급안전이용률 === null)) expect(r.응급안전순위).toBeNull()
+  })
+  it('공백 지역 이용률은 공백이 아닌 이중 취약보다 낮다', () => {
+    const dbl = regions.filter((r) => r.등급 === '이중 취약' && r.응급안전이용률 !== null)
+    const maxGap = Math.max(...dbl.filter((r) => r.서비스공백).map((r) => r.응급안전이용률!))
+    const minRest = Math.min(...dbl.filter((r) => !r.서비스공백).map((r) => r.응급안전이용률!))
+    expect(maxGap).toBeLessThan(minRest)
+  })
+})

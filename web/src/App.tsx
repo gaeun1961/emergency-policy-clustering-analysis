@@ -382,7 +382,8 @@ export default function App() {
             ) : tab === 'detail' && <DetailPanel region={selected ? view.byCode.get(selected) ?? null : null} total={meta.시군구수} regions={view.regions}
               usage={usage} cap={simData?.baseline.근사상한분} sim={simOn} section={detailView === 'facilities' ? 'facilities' : 'overview'}
               welfareYm={meta.출처.find((s) => s.이름.startsWith('복지로'))?.기준}
-              pensionYm={meta.출처.find((s) => s.이름.startsWith('보건복지부 기초연금'))?.기준} deptYm={meta.기준시점['진료과목']}
+              pensionYm={meta.출처.find((s) => s.이름.startsWith('보건복지부 기초연금'))?.기준}
+              safetyYm={meta.출처.find((s) => s.이름.startsWith('보건복지부 응급안전안심'))?.기준} deptYm={meta.기준시점['진료과목']}
               briefing={brief} onPrint={() => window.print()} />}
             {tab === 'dist' && (
               <>

@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from src import accessibility, basic_pension, briefing, disability, fetch_emergency, population, welfare  # noqa: E402
+from src import accessibility, basic_pension, briefing, disability, emergency_safety, fetch_emergency, population, welfare  # noqa: E402
 from src.build_table import main  # noqa: E402
 from src.regions import age_start, region_key  # noqa: E402
 
@@ -290,6 +290,23 @@ def test_service_key():
                 os.environ[n] = v
 
 
+
+def test_emergency_safety():
+    """응급안전안심서비스: 나이 구간 -> 65세 이상, 나이 결측은 노인에서 빼고 이용자에는 셈, 서비스 공백 = 이중 취약 중 이용률 하위 25%"""
+    df = pd.DataFrame({'시도': ['경북'] * 4 + ['전남'], '시군구': ['영덕군'] * 4 + ['신안군'],
+                       '나이': ['80세~84세', '60세~64세', '100세 이상', None, '65세~69세']})
+    g = emergency_safety.count_users(df).set_index('시군구')
+    assert g.loc['영덕군', '이용자'] == 4 and g.loc['영덕군', '노인이용자'] == 2 and g.loc['신안군', '노인이용자'] == 1
+    u = pd.DataFrame({'등급': ['이중 취약'] * 4 + ['', '이중 취약'], '이용률': [0.1, 0.2, 0.3, 0.4, 0.05, None]})
+    flag, cut = emergency_safety.gaps(u)
+    assert flag.tolist() == [True, False, False, False, False, False] and abs(cut - 0.175) < 1e-9  # 해당 없음·자료 없음은 공백 아님
+    out = emergency_safety.OUT
+    if out.exists():
+        r = pd.read_csv(out, dtype={'행정기관코드': str})
+        assert len(r) == 229 and r['이용률'].isna().sum() == 28  # 서울 25개 구 + 인천 3곳
+        assert r['서비스공백'].sum() > 0 and r.loc[r['서비스공백'], '이용률'].notna().all()  # 공백은 자료가 있는 곳만
+
+
 if __name__ == '__main__':
     test_units()
     test_end_to_end()
@@ -300,5 +317,6 @@ if __name__ == '__main__':
     test_briefing_output()
     test_departments_parse()
     test_basic_pension()
+    test_emergency_safety()
     test_service_key()
     print('OK')
