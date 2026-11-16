@@ -383,6 +383,32 @@ tbody tr:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 
 /* ---- 지역 보고서 (인쇄·PDF 저장 전용, components/Report.tsx) ---- */
 .report-action { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-xs) var(--space-sm); margin: 0 0 var(--space-md); }
 .report { display: none; }
+/* 분포 탭: 누적 인구 곡선 (AccessCurve) */
+.access-curve { margin-top: var(--space-lg); padding-top: var(--space-md); border-top: 1px solid var(--color-rule); }
+.access-curve h3 { margin: 0 0 var(--space-2xs); }
+.curve { width: 100%; height: auto; display: block; }
+.curve .gridline line { stroke: var(--color-rule); }
+.curve text, .curve .axis-label { font-size: 11px; fill: var(--color-muted); }
+.curve-legend { display: flex; flex-wrap: wrap; gap: var(--space-2xs) var(--space-sm); margin: 0 0 var(--space-xs); }
+.curve-legend span { display: inline-flex; align-items: center; gap: var(--space-2xs); }
+.curve-hover line { stroke: var(--color-ink); stroke-width: 1; opacity: 0.4; }
+.curve-hover circle { stroke: var(--color-surface); stroke-width: 2; }
+.curve-readout { margin: var(--space-2xs) 0 0; font-variant-numeric: tabular-nums; }
+
+/* 분포 탭: 등급별 지표 비교 (GroupCompare) */
+.group-compare { margin-top: var(--space-lg); padding-top: var(--space-md); border-top: 1px solid var(--color-rule); }
+.group-compare h3 { margin: 0 0 var(--space-2xs); }
+.gc-legend { display: flex; flex-wrap: wrap; gap: var(--space-2xs) var(--space-sm); margin: 0 0 var(--space-xs); }
+.gc-legend span { display: inline-flex; align-items: center; gap: var(--space-2xs); }
+.gc-legend i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.gc-head { margin: var(--space-sm) 0 var(--space-2xs); color: var(--color-muted); font-weight: 600; }
+.gc-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'label values' 'strip strip'; align-items: baseline; gap: 0 var(--space-xs); padding: var(--space-2xs) 0; border-bottom: 1px solid var(--color-rule); font-size: var(--text-sm); }
+.gc-label { grid-area: label; color: var(--color-ink); }
+.gc-strip { grid-area: strip; position: relative; height: 14px; margin-top: var(--space-3xs); border-bottom: 1px solid var(--color-rule); }
+.gc-dot { position: absolute; top: 2px; width: 11px; height: 11px; border-radius: 50%; border: 1px solid var(--color-muted); transform: translateX(-50%); }
+.gc-values { grid-area: values; display: inline-flex; gap: var(--space-xs); font-variant-numeric: tabular-nums; font-size: var(--text-xs); color: var(--color-muted); }
+.gc-values span:first-child { color: var(--color-ink); font-weight: 600; }
+
 @media print {
   @page { size: A4 portrait; margin: 11mm 12mm; }
   html, body { background: var(--color-surface); }

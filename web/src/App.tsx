@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import DetailPanel, { IslandBadge, type RegionUsage } from './components/DetailPanel'
+import AccessCurve, { type CurveData } from './components/AccessCurve'
+import GroupCompare from './components/GroupCompare'
 import Report from './components/Report'
 import { FacilityPopup, isVirtual } from './components/FacilityInfo'
 import DoubleTable from './components/DoubleTable'
@@ -68,6 +70,12 @@ export default function App() {
       .catch(() => setPlacement(null)) // 없으면 추천 배치·보고서의 배치 효과만 뺀다
   }, [])
   const plans = placement === undefined ? undefined : placement?.plans ?? null
+  // 분포 탭 누적 인구 곡선 (export_web_data.py 가 만든 고정값): 분포 탭을 처음 열 때 불러온다
+  const [curve, setCurve] = useState<CurveData | null>(null)
+  useEffect(() => {
+    if (tab !== 'dist' || curve) return
+    fetch(`${import.meta.env.BASE_URL}data/access_curve.json`).then((r) => (r.ok ? r.json() : null)).then(setCurve).catch(() => setCurve(null))
+  }, [tab, curve])
   // AI 브리핑 (src/briefing.py 가 오프라인 생성). 없으면 지역 상세에서 빼고 보여 준다
   const [briefs, setBriefs] = useState<{ 모델: string; 지역: Record<string, { 브리핑: string }> } | null>(null)
   useEffect(() => {
@@ -386,6 +394,8 @@ export default function App() {
                   <li className="muted"><span className="line-key dotted" />상위 40%</li>
                 </ul>
                 <ScatterPlot regions={view.regions} cuts={cuts} selected={selected} onSelect={select} onHover={onHover} />
+                {curve && <AccessCurve data={curve} />}
+                <GroupCompare regions={view.regions} />
               </>
             )}
             {tab === 'list' && <DoubleTable regions={view.regions} selected={selected} onSelect={select} sim={simOn} districts={meta.일반구 ?? []} />}
