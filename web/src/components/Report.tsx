@@ -52,9 +52,9 @@ function MiniMap({ r, sigungu, byCode, usage, emd }: Pick<Props, 'r' | 'sigungu'
         return <path key={f.properties.code} d={path(f) ?? ''} fill={row === undefined ? 'var(--data-none)' : bandColor(row)} className="report-emd" />
       })}
       <path d={path(self) ?? ''} className="report-self" />
-      {facs.map(({ f }) => {
+      {facs.map(({ f }, i) => { // 센터는 응급의료기관 목록에도 들어 있을 수 있어 key 에 순서를 붙인다
         const p = proj([f.경도, f.위도])
-        return p && <circle key={f.hpid} cx={p[0]} cy={p[1]} r={3.2} className="report-fac" />
+        return p && <circle key={`${i}-${f.hpid}`} cx={p[0]} cy={p[1]} r={3.2} className="report-fac" />
       })}
     </svg>
   )
@@ -83,7 +83,7 @@ function FacilityRows({ title, items }: { title: string; items: RankedFacility[]
       {items.map((x) => {
         const keys = keyDepartments(x.f.진료과목)
         return (
-          <tr key={x.f.hpid}>
+          <tr key={`${title}-${x.f.hpid}`}>
             <td>{x.f.기관명}<span className="muted"> {GRADE_NAME[x.f.등급]}</span></td>
             <td className="num">{minText(x)}</td>
             <td className="num">{x.alt ? '-' : fmt.pct(x.share)}</td>

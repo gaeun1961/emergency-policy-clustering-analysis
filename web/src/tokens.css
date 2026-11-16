@@ -18,6 +18,8 @@
   /* data colours: the same values as theme.ts (CVD-checked ramp and grades) */
   --data-double: #14506a; --data-near: #7db9c1; --data-none: #dcdfde; --data-both: #8a2f1d; --data-emd-halo: rgb(13 66 86 / 0.75);
   --color-marker: #2b3640; --color-halo: oklch(100% 0 0);
+  /* 지도 강조(가상 추가 기관, 이용 기관 링): 청록 지도 위에서 튀는 노랑 + 어두운 테두리 */
+  --color-flag: #f6c400; --color-flag-edge: #1d2328;
   --shadow-float: 0 1px 2px oklch(30% 0.03 200 / 0.10), 0 12px 28px -12px oklch(30% 0.05 200 / 0.30);
   --p-mon: oklch(85% 0.052 22); --p-tue: oklch(87.5% 0.058 64); --p-wed: oklch(91.5% 0.064 98); --p-thu: oklch(86.5% 0.075 160);
   --p-fri: oklch(87% 0.048 210); --p-sat: oklch(84% 0.045 270); --p-sun: oklch(84% 0.048 322);

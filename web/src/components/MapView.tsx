@@ -254,7 +254,7 @@ function MapView({ data, byCode, metric, selected, onSelect, onHover, facilities
         <g className="markers" style={{ opacity: markerOpacity(t.k) }}>
           {placed.map(({ f, x, y }) => {
             const added = f.hpid.startsWith('SIM-')
-            const r = MARKER[f.등급] + (added ? 1.4 : 0)
+            const r = MARKER[f.등급] + (added ? 2.6 : 0)
             const className = `marker g-${f.등급}${added ? ' added' : ''}`
             return f.등급 === 'G001' && !added
               ? <rect key={f.hpid} x={x - r} y={y - r} width={r * 2} height={r * 2} transform={`rotate(45 ${x} ${y})`} className={className} />
@@ -262,7 +262,9 @@ function MapView({ data, byCode, metric, selected, onSelect, onHover, facilities
           })}
         </g>
         <g className="markers-hl">
-          {placed.filter(({ f }) => highlight?.has(f.hpid)).map(({ f, x, y }) => <circle key={f.hpid} cx={x} cy={y} r={7} className="marker-hl" />)}
+          {placed.filter(({ f }) => highlight?.has(f.hpid)).map(({ f, x, y }) => (
+            <g key={f.hpid}><circle cx={x} cy={y} r={7} className="marker-hl-edge" /><circle cx={x} cy={y} r={7} className="marker-hl" /></g>
+          ))}
         </g>
         {/* 투명 히트 영역: 겹치면 커서에 가장 가까운 기관 */}
         <g className={facTap ? 'hits' : 'hits off'} onClick={hitClick}>
