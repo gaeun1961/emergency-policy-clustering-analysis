@@ -173,6 +173,7 @@ def export_simulation(scores):
     for name, obj in [('facilities.json', facilities), ('centers.json', centers), ('baseline.json', baseline)]:
         (OUT / name).write_text(json.dumps(obj, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
     export_emd()
+    export_access_curve()
     print(f'시뮬레이터: 기관 {len(facilities)}곳, 기준점 {sum(map(len, centers.values()))}개({len(centers)}개 시군구), '
           f'기준선 상위25% 접근성 {cut[TOP][0]:.3f} / 복지 {cut[TOP][1]:.3f}, 등급 재현 일치')
 
@@ -218,6 +219,24 @@ def export_emd():
     (OUT / 'emd.json').write_text(json.dumps(emd, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
     print(f'읍면동: 행정동 {len(e)}곳, 섬 리 {len(li)}곳, 구간 경계 {[round(c, 2) for c in cuts]}, '
           f'emd.json {(OUT / "emd.json").stat().st_size / 1e3:.0f}KB')
+
+
+
+def export_access_curve(max_min=60):
+    """분포 탭 누적 인구 곡선: 최근접 응급의료기관까지 N분 안에 사는 주민 비율 (행정동 인구가중, 등급 그룹별).
+    행정동 지표는 emd_metrics.csv (시뮬레이션 미반영 현재 값). 섬 등 근사값은 상한값 그대로"""
+    e = pd.read_csv(ROOT / 'data' / 'processed' / 'emd_metrics.csv', dtype={'행정동코드': str, '시군구코드': str})
+    grade = {r['코드']: r['등급'] for r in json.loads((OUT / 'sigungu_metrics.json').read_text(encoding='utf-8'))}
+    assert e['시군구코드'].isin(list(grade)).all(), '행정동의 시군구코드가 시군구 목록에 없음'
+    e['등급'] = e['시군구코드'].map(grade)
+    groups = {'전국': e, '이중 취약': e[e['등급'] == '이중 취약'], '준 이중 취약': e[e['등급'] == '준 이중 취약'], '해당 없음': e[e['등급'] == '']}
+    mins = list(range(0, max_min + 1))
+    curve = {name: [round(float(g.loc[g['최근접_응급의료기관_분'] <= m, '인구'].sum() / g['인구'].sum()), 4) for m in mins]
+             for name, g in groups.items()}
+    out = {'설명': f'최근접 응급의료기관까지 자동차 N분 안에 사는 주민 비율 (행정동 {len(e)}곳 인구가중, 0~{max_min}분, 시뮬레이션 미반영)',
+           '분': mins, '비율': curve, '인구': {name: int(g['인구'].sum()) for name, g in groups.items()}}
+    (OUT / 'access_curve.json').write_text(json.dumps(out, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
+    print('누적 곡선: 30분 안 주민 ' + ', '.join(f"{k} {v[30]:.1%}" for k, v in curve.items()))
 
 
 if __name__ == '__main__':
