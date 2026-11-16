@@ -223,8 +223,8 @@ export default function App() {
     }
   }, [drill, emd, emdGeo, selected, selEmd, emdData])
 
-  // 이용 기관 강조 링은 '이용 기관' 탭을 볼 때만
-  const showFacilities = tab === 'detail' && detailView === 'facilities'
+  // 이용 기관 강조 링: 지역 상세(개요·이용 기관·읍면동 보기)를 보는 동안 항상
+  const showFacilities = tab === 'detail'
   const highlight = useMemo(() => new Set(usage && showFacilities ? [...usage.em, ...usage.ctr].map((u) => u.f.hpid) : []), [usage, showFacilities])
   // 강조 기관은 지역응급의료기관 표시를 꺼도 보이게
   const markers = useMemo(() => (applied ?? []).filter((f) => showLocal || f.등급 !== 'G007' || f.hpid.startsWith('SIM-') || highlight.has(f.hpid)), [applied, showLocal, highlight])
