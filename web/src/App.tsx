@@ -192,8 +192,10 @@ export default function App() {
     return { em: rankFacilities(pts, applied, r.우회계수, cap, LIST_TOP.em), ctr: rankFacilities(pts, applied, r.우회계수, cap, LIST_TOP.ctr, true) }
   }, [selected, view, simData, applied])
   const drill = tab === 'detail' && detailView === 'emd' && !!selected
+  // 지역 보고서(인쇄)도 읍면동 지도를 쓰므로 지역 상세에서 시군구를 고르면 미리 불러온다
+  const needEmd = tab === 'detail' && !!selected
   useEffect(() => {
-    if (!drill) return
+    if (!needEmd) return
     const get = (name: string) => fetch(`${import.meta.env.BASE_URL}data/${name}`).then((r) => {
       if (!r.ok) throw new Error(`${name}: ${r.status}`)
       return r.json()
@@ -203,14 +205,14 @@ export default function App() {
     const hit = geoCache.current.get(code)
     if (hit) setEmdGeo({ code, fc: hit })
     else get(`emd/${code}.json`).then((fc) => { geoCache.current.set(code, fc); setEmdGeo({ code, fc }) }).catch((e) => setError(String(e)))
-  }, [drill, selected, emdData])
+  }, [needEmd, selected, emdData])
   useEffect(() => setSelEmd(null), [selected])
   /** 선택 시군구의 행정동별 지표 (시뮬레이션 중이면 추가·제거 반영) */
   const emd = useMemo(() => {
     const r = selected ? view?.byCode.get(selected) : null
-    if (!drill || !r || !simData || !applied || !emdData) return null
+    if (!needEmd || !r || !simData || !applied || !emdData) return null
     return emdRows(simData.centers[r.코드], applied, r.우회계수, simData.baseline.근사상한분, simData.baseline.기준분, emdData)
-  }, [drill, selected, view, simData, applied, emdData])
+  }, [needEmd, selected, view, simData, applied, emdData])
   const overlay: MapOverlay | undefined = useMemo(() => {
     if (!drill || !emd || !emdGeo || emdGeo.code !== selected) return undefined
     const byCode = new Map(emd.map((x) => [x.code, x]))
@@ -458,6 +460,7 @@ export default function App() {
       {selected && view.byCode.get(selected) && (
         <Report r={view.byCode.get(selected)!} regions={view.regions} meta={meta} sigungu={data.sigungu} byCode={view.byCode} usage={usage}
           placement={placement} brief={brief} sim={simOn}
+          emd={emd && emdData && emdGeo?.code === selected ? { rows: emd, fc: emdGeo.fc, bands: emdData.구간 } : null}
           url={`${location.origin}${location.pathname}${withView(toQuery(simOn, scenario), selected, 'detail', simOn)}`} />
       )}
       {facPopup && <FacilityPopup f={facPopup.f} x={facPopup.x} y={facPopup.y} onClose={() => setFacPopup(null)} time={popupTime(facPopup.f)}

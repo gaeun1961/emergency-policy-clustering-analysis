@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { bestSentence, planStep } from './report'
+import { bestSentence, planStep, strip } from './report'
 import { simulate, type Baseline, type Centers, type Facility } from './sim/model'
 import { planScenario, type PlacementData } from './sim/placement'
 import { applyScenario } from './sim/scenario'
@@ -41,4 +41,27 @@ describe('지역 보고서 (#70)', () => {
       }
     }
   }, 60_000)
+})
+
+describe('지표 위치 차트 (#78)', () => {
+  const vs = Array.from({ length: 101 }, (_, i) => i) // 0..100
+  it('클수록 취약: 오른쪽이 취약, 중앙값·상위 25% 기준선', () => {
+    const s = strip(vs, 75, 'high')
+    expect(s.median).toBeCloseTo(50 / 98)
+    expect(s.cut).toBeCloseTo(75 / 98)
+    expect(s.pos).toBeCloseTo(s.cut)
+    expect(strip(vs, 10, 'high').pos).toBeLessThan(s.pos)
+  })
+  it('작을수록 취약: 방향을 뒤집어 작은 값이 오른쪽', () => {
+    const s = strip(vs, 5, 'low')
+    expect(s.pos).toBeGreaterThan(strip(vs, 50, 'low').pos)
+    expect(s.cut).toBeCloseTo(1 - (25 - 2) / 98)
+    expect(s.ticks).toHaveLength(101)
+  })
+  it('꼬리값은 끝에 붙이고 표시', () => {
+    const s = strip([...vs, 1000], 1000, 'high')
+    expect(s.pos).toBe(1)
+    expect(s.clipped).toBe(true)
+    expect(strip(vs, 50, 'high').clipped).toBe(false)
+  })
 })
