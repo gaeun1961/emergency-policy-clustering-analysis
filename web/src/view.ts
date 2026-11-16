@@ -1,7 +1,8 @@
 /**
  * 보던 화면을 URL 로: 선택 시군구(r)와 탭(tab). 시뮬레이션 파라미터(sim·add·rm·up, scenario.toQuery)와 함께 쓴다.
  * 예: ?r=47770&tab=list, ?sim=1&add=G006:34.57391,126.59964&r=46820
- * 잘못된 값은 버리고 기본 화면. 기본 탭(시뮬레이션이 꺼져 있으면 지역 상세, 켜져 있으면 시뮬레이터)은 URL 에 쓰지 않는다
+ * 잘못된 값은 버리고 기본 화면. 기본 탭(시뮬레이션이 꺼져 있으면 지역 상세, 켜져 있으면 시뮬레이터)은 URL 에 쓰지 않는다.
+ * 아무 파라미터 없이 처음 열면(지역을 고르지 않음) 전국 분포 탭부터 보여 준다
  */
 export type Tab = 'detail' | 'dist' | 'list' | 'sim' | 'about'
 export const TAB_IDS: Tab[] = ['detail', 'dist', 'list', 'sim', 'about']
@@ -14,7 +15,7 @@ export function readView(search: string, sim: boolean): { r: string | null; tab:
   const tab = p.get('tab') as Tab | null
   return {
     r: r && /^\d{5}$/.test(r) ? r : null,
-    tab: tab && TAB_IDS.includes(tab) && (tab !== 'sim' || sim) ? tab : defaultTab(sim),
+    tab: tab && TAB_IDS.includes(tab) && (tab !== 'sim' || sim) ? tab : !r && !sim && !p.has('tab') ? 'dist' : defaultTab(sim),
   }
 }
 

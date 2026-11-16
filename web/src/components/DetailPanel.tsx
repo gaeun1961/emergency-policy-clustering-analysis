@@ -187,9 +187,9 @@ export default function DetailPanel({ region: r, total, regions, usage, cap, sim
         {cards.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
         {/* 참고 지표: 이중 취약 판정·점수에는 쓰지 않는다 */}
         <div className="ref"><dt>기초생활수급자 비율<small>복지로{welfareYm ? ` ${welfareYm}` : ''} 기준, 참고 지표(판정 미사용)</small></dt>
-          <dd>{fmt.pct(r.수급자비율)} <span className="muted">(전국 {total}곳 중 {r.수급자비율순위}위)</span></dd></div>
+          <dd>{fmt.pct(r.수급자비율)}<span className="muted rank">전국 {total}곳 중 {r.수급자비율순위}위</span></dd></div>
         <div className="ref"><dt>기초연금 수급률 (65세 이상)<small>보건복지부{pensionYm ? ` ${pensionYm}` : ''} 기준, 참고 지표(판정 미사용)</small></dt>
-          <dd>{fmt.pct(r.기초연금수급률)} <span className="muted">(전국 {total}곳 중 {r.기초연금순위}위)</span></dd></div>
+          <dd>{fmt.pct(r.기초연금수급률)}<span className="muted rank">전국 {total}곳 중 {r.기초연금순위}위</span></dd></div>
       </dl>
 
       <SfcaCard r={r} regions={regions} sim={sim} />

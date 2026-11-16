@@ -202,6 +202,7 @@ input[type="checkbox"] { accent-color: var(--color-accent); width: 16px; height:
 .ai-brief p { max-width: none; font-size: var(--text-sm); line-height: 1.65; margin: 0; }
 .ai-brief .hint { margin-top: var(--space-xs); font-size: var(--text-xs); }
 .facts .ref dd .muted { font-weight: 400; }
+.facts dd .rank { display: block; font-size: var(--text-xs); white-space: nowrap; }
 .cluster { display: flex; gap: var(--space-sm); align-items: flex-start; font-size: var(--text-sm); margin-top: var(--space-sm); }
 .cluster .swatch { margin-top: var(--space-2xs); }
 .cluster p { color: var(--color-muted); margin: var(--space-3xs) 0 0; }
