@@ -174,9 +174,10 @@ export default function DetailPanel({ region: r, total, regions, usage, cap, sim
       )}
       {briefing && (
         <section className="ai-brief" aria-label="AI 브리핑">
-          <h3>AI 브리핑 <span className="muted small">{briefing.model} 생성</span></h3>
-          <BriefList parts={briefing.parts} />
-          <p className="hint">생성형 AI가 아래 지표만 보고 쓴 요약입니다. 숫자는 데이터와 자동으로 대조했고, 판정·점수에는 쓰지 않습니다.{sim ? ' 시뮬레이션 전 현재 기준입니다.' : ''}</p>
+          <h3>AI 제안 <span className="muted small">{briefing.model} 생성</span></h3>
+          {/* '핵심'은 아래 점수·지표와 겹쳐 화면에서는 빼고, 판단(우선 서비스·배치 제안)만. 지역 보고서에는 세 줄 모두 */}
+          <BriefList parts={briefing.parts.filter(([k]) => k !== '핵심')} />
+          <p className="hint">생성형 AI가 지표와 배치 시뮬레이션 결과만 보고 쓴 제안입니다. 숫자는 데이터와 자동으로 대조했고, 판정·점수에는 쓰지 않습니다.{sim ? ' 시뮬레이션 전 현재 기준입니다.' : ''}</p>
         </section>
       )}
 
