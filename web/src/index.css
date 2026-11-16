@@ -108,10 +108,11 @@ input[type="checkbox"] { accent-color: var(--color-accent); width: 16px; height:
 @media (pointer: coarse) { .hit { r: 22px; } }
 /* 터치 기기 전국 화면: 기관 히트 영역이 육지 대부분을 덮어 지역 탭을 가로챘다. 확대하면 다시 켠다 (mapZoom.ts) */
 .hits.off .hit { pointer-events: none; }
-.marker-hl { fill: none; stroke: var(--color-accent); stroke-width: 2.4; pointer-events: none; }
+.marker-hl { fill: none; stroke: var(--color-flag); stroke-width: 2.6; pointer-events: none; }
+.marker-hl-edge { fill: none; stroke: var(--color-flag-edge); stroke-width: 4.6; pointer-events: none; }
 .marker.g-G001 { fill-opacity: 0.45; }
 .marker.g-G007 { fill-opacity: 0.18; stroke-opacity: 0.5; stroke-width: 0.6; }
-.marker.added { fill: var(--color-accent); fill-opacity: 1; stroke: var(--color-halo); stroke-width: 1.4; stroke-opacity: 1; }
+.marker.added { fill: var(--color-flag); fill-opacity: 1; stroke: var(--color-flag-edge); stroke-width: 1.6; stroke-opacity: 1; }
 .label {
   font-size: 11px; fill: var(--color-ink); text-anchor: middle; dominant-baseline: middle; pointer-events: none;
   paint-order: stroke; stroke: var(--color-halo); stroke-width: 3px; stroke-linejoin: round; stroke-opacity: 0.85;
@@ -144,10 +145,10 @@ input[type="checkbox"] { accent-color: var(--color-accent); width: 16px; height:
   background: var(--color-ink); color: var(--color-paper); padding: var(--space-xs) var(--space-md); border-radius: var(--radius-input); font-size: var(--text-sm); box-shadow: var(--shadow-float);
 }
 .mk { display: inline-block; width: 8px; height: 8px; border: 1px solid var(--color-marker); background: color-mix(in srgb, var(--color-marker) 30%, transparent); }
-.mk.hl { border: 2px solid var(--color-accent); background: none; border-radius: 50%; }
+.mk.hl { border: 2px solid var(--color-flag); background: none; border-radius: 50%; box-shadow: 0 0 0 1px var(--color-flag-edge), inset 0 0 0 1px var(--color-flag-edge); }
 .mk.circle { border-radius: 50%; width: 6px; height: 6px; }
 .mk.diamond { transform: rotate(45deg); width: 7px; height: 7px; }
-.mk.added { border-radius: 50%; background: var(--color-accent); border-color: var(--color-halo); outline: 1px solid var(--color-accent); }
+.mk.added { border-radius: 50%; width: 10px; height: 10px; background: var(--color-flag); border: 1.5px solid var(--color-flag-edge); }
 .mk.changed { width: 14px; height: 8px; background: none; border: 2px dashed var(--color-ink); }
 
 /* ---- 공통 ---- */
@@ -406,7 +407,8 @@ tbody tr:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 
   .report-map-legend span { display: inline-flex; align-items: center; gap: 0.8mm; }
   .report-map-legend i { width: 2.4mm; height: 2.4mm; border-radius: 0.4mm; margin-left: 0; }
   .report-map-legend i.lg-dot { border-radius: 50%; }
-  .report-fac { fill: var(--data-both); stroke: var(--color-surface); stroke-width: 1; }
+  .report-fac { fill: var(--color-flag); stroke: var(--color-flag-edge); stroke-width: 1; }
+  .report-map-legend i.lg-flag { border-radius: 50%; background: var(--color-flag); border: 1px solid var(--color-flag-edge); }
   .report-scores { display: grid; grid-template-columns: 1fr 1fr; gap: 1mm 4mm; align-content: start; }
   .report-scores > div { display: flex; flex-direction: column; }
   .report-scores span { font-size: 8pt; color: var(--color-muted); }
