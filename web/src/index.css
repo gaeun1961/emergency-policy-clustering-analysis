@@ -376,3 +376,51 @@ tbody tr:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 
   .scores .score + .score, .sim-counts .score + .score { padding-left: 0; border-left: 0; border-top: 1px solid var(--color-rule); }
   .scores .score:first-child { padding-right: 0; }
 }
+
+/* ---- 지역 보고서 (인쇄·PDF 저장 전용, components/Report.tsx) ---- */
+.report-action { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-xs) var(--space-sm); margin: 0 0 var(--space-md); }
+.report { display: none; }
+@media print {
+  @page { size: A4 portrait; margin: 11mm 12mm; }
+  html, body { background: var(--color-surface); }
+  .app { height: auto; display: block; }
+  .app > :not(.report) { display: none !important; }
+  .report { display: block; color: var(--color-ink); font-size: 9.5pt; line-height: 1.45; }
+  .report h1 { font-size: 17pt; max-width: none; margin: 0; }
+  .report h2 { font-size: 10.5pt; max-width: none; margin: 0; }
+  .report-h { display: flex; align-items: baseline; gap: 2mm; margin: 3mm 0 1.5mm; padding-top: 2mm; border-top: 1px solid var(--color-rule); }
+  .report-h span { font-size: 8pt; color: var(--color-muted); }
+  .report p { margin: 0; max-width: none; }
+  .report-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 4mm; padding-bottom: 2mm; border-bottom: 2px solid var(--color-ink); }
+  .report-sub { color: var(--color-muted); font-size: 8.5pt; }
+  .report-grade { text-align: right; font-size: 8pt; color: var(--color-muted); }
+  .report-grade .badge { font-size: 9pt; display: inline-block; margin-bottom: 1mm; }
+  .report-top { display: grid; grid-template-columns: 62mm minmax(0, 1fr); gap: 5mm; margin-top: 3mm; }
+  .report-map { width: 62mm; height: auto; border: 1px solid var(--color-rule); border-radius: 2mm; background: var(--color-paper); }
+  .report-region { stroke: var(--color-surface); stroke-width: 0.6; }
+  .report-self { fill: none; stroke: var(--color-ink); stroke-width: 2; }
+  .report-fac { fill: var(--data-both); stroke: var(--color-surface); stroke-width: 1; }
+  .report-scores { display: grid; grid-template-columns: 1fr 1fr; gap: 1mm 4mm; align-content: start; }
+  .report-scores > div { display: flex; flex-direction: column; }
+  .report-scores span { font-size: 8pt; color: var(--color-muted); }
+  .report-scores strong { font-family: var(--font-display); font-size: 15pt; line-height: 1.1; }
+  .report-scores em { font-style: normal; font-size: 8pt; }
+  .report-cluster { grid-column: 1 / -1; display: flex; align-items: center; gap: 1.5mm; font-size: 8.5pt; }
+  .report-cluster i { width: 3mm; height: 3mm; border-radius: 0.6mm; display: inline-block; }
+  .report-facts { grid-column: 1 / -1; width: 100%; border-collapse: collapse; font-size: 8.5pt; }
+  .report-facts th, .report-facts td { padding: 0.6mm 0; border-bottom: 1px solid var(--color-rule); white-space: normal; }
+  .report-facts th { font-weight: 400; color: var(--color-muted); width: 46%; text-align: left; }
+  .report-facts td { text-align: right; font-variant-numeric: tabular-nums; }
+  .report-brief p { font-size: 9pt; line-height: 1.6; }
+  .report-table { width: 100%; border-collapse: collapse; font-size: 8.3pt; }
+  .report-table th, .report-table td { padding: 0.7mm 1mm; border-bottom: 1px solid var(--color-rule); white-space: normal; vertical-align: top; }
+  .report-table thead th { color: var(--color-muted); font-weight: 500; }
+  .report-table thead th, .report-table td.num, .report-table td .muted:first-child { white-space: nowrap; }
+  .report-group th { text-align: left; font-weight: 600; padding-top: 1.5mm; }
+  .report-table .muted, .report-list .muted { color: var(--color-muted); }
+  .report-list { margin: 0; padding-left: 4mm; font-size: 9pt; }
+  .report-list li { margin-bottom: 0.8mm; }
+  .report-foot { margin-top: 3mm; padding-top: 2mm; border-top: 1px solid var(--color-rule); font-size: 7.5pt; color: var(--color-muted); line-height: 1.5; }
+  .report-foot p + p { margin-top: 1mm; }
+  .report-url { color: var(--color-ink); word-break: break-all; }
+}

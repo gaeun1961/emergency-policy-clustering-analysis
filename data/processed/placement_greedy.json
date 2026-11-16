@@ -153,5 +153,3967 @@
     }
    ]
   }
+ },
+ "시군구별": {
+  "G006": {
+   "11110": {
+    "kind": "G006",
+    "label": "무악동",
+    "lat": 37.57599,
+    "lon": 126.95825,
+    "escaped": [],
+    "popImproved": 283587
+   },
+   "11140": {
+    "kind": "G006",
+    "label": "중림동",
+    "lat": 37.55479,
+    "lon": 126.96444,
+    "escaped": [],
+    "popImproved": 254785
+   },
+   "11170": {
+    "kind": "G006",
+    "label": "효창동",
+    "lat": 37.54246,
+    "lon": 126.9619,
+    "escaped": [],
+    "popImproved": 278277
+   },
+   "11200": {
+    "kind": "G006",
+    "label": "송정동",
+    "lat": 37.55453,
+    "lon": 127.06957,
+    "escaped": [],
+    "popImproved": 262814
+   },
+   "11215": {
+    "kind": "upgrade",
+    "label": "혜민병원",
+    "lat": 37.53532,
+    "lon": 127.0836,
+    "hpid": "A1100051",
+    "escaped": [],
+    "popImproved": 392920
+   },
+   "11230": {
+    "kind": "G006",
+    "label": "휘경2동",
+    "lat": 37.59011,
+    "lon": 127.06861,
+    "escaped": [],
+    "popImproved": 343194
+   },
+   "11260": {
+    "kind": "upgrade",
+    "label": "녹색병원",
+    "lat": 37.58362,
+    "lon": 127.08606,
+    "hpid": "A1100044",
+    "escaped": [],
+    "popImproved": 345822
+   },
+   "11290": {
+    "kind": "G006",
+    "label": "길음2동",
+    "lat": 37.6067,
+    "lon": 127.02731,
+    "escaped": [],
+    "popImproved": 390940
+   },
+   "11305": {
+    "kind": "G006",
+    "label": "번3동",
+    "lat": 37.62585,
+    "lon": 127.04661,
+    "escaped": [],
+    "popImproved": 344320
+   },
+   "11320": {
+    "kind": "G006",
+    "label": "쌍문3동",
+    "lat": 37.64897,
+    "lon": 127.02793,
+    "escaped": [],
+    "popImproved": 330586
+   },
+   "11350": {
+    "kind": "G006",
+    "label": "월계1동",
+    "lat": 37.61989,
+    "lon": 127.063,
+    "escaped": [],
+    "popImproved": 289986
+   },
+   "11380": {
+    "kind": "G006",
+    "label": "신사2동",
+    "lat": 37.59023,
+    "lon": 126.9082,
+    "escaped": [],
+    "popImproved": 565598
+   },
+   "11410": {
+    "kind": "upgrade",
+    "label": "의료법인동신의료재단동신병원",
+    "lat": 37.5811,
+    "lon": 126.93658,
+    "hpid": "A1100025",
+    "escaped": [],
+    "popImproved": 673645
+   },
+   "11440": {
+    "kind": "G006",
+    "label": "연남동",
+    "lat": 37.56448,
+    "lon": 126.92202,
+    "escaped": [],
+    "popImproved": 457293
+   },
+   "11470": {
+    "kind": "G006",
+    "label": "신정4동",
+    "lat": 37.52456,
+    "lon": 126.85574,
+    "escaped": [],
+    "popImproved": 532642
+   },
+   "11500": {
+    "kind": "upgrade",
+    "label": "부민병원",
+    "lat": 37.55694,
+    "lon": 126.85095,
+    "hpid": "A1100036",
+    "escaped": [],
+    "popImproved": 727720
+   },
+   "11530": {
+    "kind": "upgrade",
+    "label": "구로성심병원",
+    "lat": 37.49965,
+    "lon": 126.86636,
+    "hpid": "A1100026",
+    "escaped": [],
+    "popImproved": 492826
+   },
+   "11545": {
+    "kind": "G006",
+    "label": "독산3동",
+    "lat": 37.47515,
+    "lon": 126.90318,
+    "escaped": [],
+    "popImproved": 329297
+   },
+   "11560": {
+    "kind": "upgrade",
+    "label": "가톨릭대학교 여의도성모병원",
+    "lat": 37.51827,
+    "lon": 126.93673,
+    "hpid": "A1100011",
+    "escaped": [],
+    "popImproved": 229837
+   },
+   "11590": {
+    "kind": "G006",
+    "label": "사당1동",
+    "lat": 37.48301,
+    "lon": 126.97875,
+    "escaped": [],
+    "popImproved": 287559
+   },
+   "11620": {
+    "kind": "G006",
+    "label": "미성동",
+    "lat": 37.4781,
+    "lon": 126.91625,
+    "escaped": [],
+    "popImproved": 316885
+   },
+   "11650": {
+    "kind": "G006",
+    "label": "방배2동",
+    "lat": 37.47978,
+    "lon": 126.98558,
+    "escaped": [],
+    "popImproved": 253136
+   },
+   "11680": {
+    "kind": "G006",
+    "label": "수서동",
+    "lat": 37.48888,
+    "lon": 127.10495,
+    "escaped": [],
+    "popImproved": 353795
+   },
+   "11710": {
+    "kind": "G006",
+    "label": "송파1동",
+    "lat": 37.50622,
+    "lon": 127.10932,
+    "escaped": [],
+    "popImproved": 484488
+   },
+   "11740": {
+    "kind": "upgrade",
+    "label": "한국보훈복지의료공단중앙보훈병원",
+    "lat": 37.53036,
+    "lon": 127.14797,
+    "hpid": "A1100053",
+    "escaped": [],
+    "popImproved": 519043
+   },
+   "26110": {
+    "kind": "G006",
+    "label": "동광동",
+    "lat": 35.10741,
+    "lon": 129.03519,
+    "escaped": [],
+    "popImproved": 161398
+   },
+   "26140": {
+    "kind": "upgrade",
+    "label": "삼육부산병원",
+    "lat": 35.11178,
+    "lon": 129.01075,
+    "hpid": "A1200021",
+    "escaped": [],
+    "popImproved": 312491
+   },
+   "26170": {
+    "kind": "upgrade",
+    "label": "좋은문화병원",
+    "lat": 35.14072,
+    "lon": 129.05906,
+    "hpid": "A1200026",
+    "escaped": [],
+    "popImproved": 219352
+   },
+   "26200": {
+    "kind": "upgrade",
+    "label": "영도병원",
+    "lat": 35.09227,
+    "lon": 129.04054,
+    "hpid": "A1200014",
+    "escaped": [],
+    "popImproved": 135098
+   },
+   "26230": {
+    "kind": "upgrade",
+    "label": "춘해보건대학교병원",
+    "lat": 35.14704,
+    "lon": 129.05855,
+    "hpid": "A1200025",
+    "escaped": [],
+    "popImproved": 253361
+   },
+   "26260": {
+    "kind": "upgrade",
+    "label": "동래봉생병원",
+    "lat": 35.19695,
+    "lon": 129.09617,
+    "hpid": "A1200011",
+    "escaped": [],
+    "popImproved": 441568
+   },
+   "26290": {
+    "kind": "G006",
+    "label": "감만2동",
+    "lat": 35.12253,
+    "lon": 129.08454,
+    "escaped": [],
+    "popImproved": 180088
+   },
+   "26320": {
+    "kind": "G006",
+    "label": "덕천2동",
+    "lat": 35.21237,
+    "lon": 129.00783,
+    "escaped": [],
+    "popImproved": 179264
+   },
+   "26350": {
+    "kind": "G006",
+    "label": "반송1동",
+    "lat": 35.22516,
+    "lon": 129.1479,
+    "escaped": [],
+    "popImproved": 224448
+   },
+   "26380": {
+    "kind": "G006",
+    "label": "괴정1동",
+    "lat": 35.09967,
+    "lon": 128.98935,
+    "escaped": [],
+    "popImproved": 389263
+   },
+   "26410": {
+    "kind": "G006",
+    "label": "부곡3동",
+    "lat": 35.24055,
+    "lon": 129.09381,
+    "escaped": [],
+    "popImproved": 261024
+   },
+   "26440": {
+    "kind": "G006",
+    "label": "가덕도동",
+    "lat": 35.0567,
+    "lon": 128.83171,
+    "escaped": [],
+    "popImproved": 293783
+   },
+   "26470": {
+    "kind": "G006",
+    "label": "거제3동",
+    "lat": 35.18427,
+    "lon": 129.0712,
+    "escaped": [],
+    "popImproved": 181783
+   },
+   "26500": {
+    "kind": "G006",
+    "label": "망미1동",
+    "lat": 35.17338,
+    "lon": 129.10487,
+    "escaped": [],
+    "popImproved": 166449
+   },
+   "26530": {
+    "kind": "G006",
+    "label": "엄궁동",
+    "lat": 35.12869,
+    "lon": 128.9722,
+    "escaped": [],
+    "popImproved": 217545
+   },
+   "26710": {
+    "kind": "upgrade",
+    "label": "동남권원자력의학원",
+    "lat": 35.32184,
+    "lon": 129.24433,
+    "hpid": "A1200015",
+    "escaped": [],
+    "popImproved": 305945
+   },
+   "27110": {
+    "kind": "upgrade",
+    "label": "곽병원",
+    "lat": 35.87069,
+    "lon": 128.58873,
+    "hpid": "A1300008",
+    "escaped": [],
+    "popImproved": 323701
+   },
+   "27140": {
+    "kind": "G006",
+    "label": "안심3동",
+    "lat": 35.86603,
+    "lon": 128.72422,
+    "escaped": [
+     "47230"
+    ],
+    "popImproved": 539160
+   },
+   "27170": {
+    "kind": "upgrade",
+    "label": "더필종합병원",
+    "lat": 35.8753,
+    "lon": 128.5553,
+    "hpid": "A1303923",
+    "escaped": [],
+    "popImproved": 405071
+   },
+   "27200": {
+    "kind": "G006",
+    "label": "이천동",
+    "lat": 35.85285,
+    "lon": 128.59715,
+    "escaped": [],
+    "popImproved": 151811
+   },
+   "27230": {
+    "kind": "G006",
+    "label": "고성동",
+    "lat": 35.88187,
+    "lon": 128.58364,
+    "escaped": [],
+    "popImproved": 243930
+   },
+   "27260": {
+    "kind": "G006",
+    "label": "고산1동",
+    "lat": 35.8371,
+    "lon": 128.7124,
+    "escaped": [
+     "47230"
+    ],
+    "popImproved": 477776
+   },
+   "27290": {
+    "kind": "upgrade",
+    "label": "삼일병원",
+    "lat": 35.83275,
+    "lon": 128.55386,
+    "hpid": "A1300045",
+    "escaped": [],
+    "popImproved": 654180
+   },
+   "27710": {
+    "kind": "G006",
+    "label": "논공읍",
+    "lat": 35.77434,
+    "lon": 128.41991,
+    "escaped": [],
+    "popImproved": 240099
+   },
+   "27720": {
+    "kind": "G006",
+    "label": "삼국유사면",
+    "lat": 36.12346,
+    "lon": 128.79478,
+    "escaped": [
+     "47230"
+    ],
+    "popImproved": 99280
+   },
+   "28110": {
+    "kind": "G006",
+    "label": "율목동",
+    "lat": 37.46938,
+    "lon": 126.63574,
+    "escaped": [],
+    "popImproved": 214138
+   },
+   "28140": {
+    "kind": "G006",
+    "label": "송현1·2동",
+    "lat": 37.47653,
+    "lon": 126.6356,
+    "escaped": [],
+    "popImproved": 170290
+   },
+   "28177": {
+    "kind": "G006",
+    "label": "도화1동",
+    "lat": 37.46098,
+    "lon": 126.67392,
+    "escaped": [],
+    "popImproved": 214317
+   },
+   "28185": {
+    "kind": "G006",
+    "label": "동춘2동",
+    "lat": 37.40278,
+    "lon": 126.66931,
+    "escaped": [],
+    "popImproved": 247933
+   },
+   "28200": {
+    "kind": "G006",
+    "label": "간석1동",
+    "lat": 37.4586,
+    "lon": 126.7053,
+    "escaped": [],
+    "popImproved": 256055
+   },
+   "28237": {
+    "kind": "G006",
+    "label": "산곡1동",
+    "lat": 37.50663,
+    "lon": 126.69517,
+    "escaped": [],
+    "popImproved": 208451
+   },
+   "28245": {
+    "kind": "G006",
+    "label": "계양1동",
+    "lat": 37.57689,
+    "lon": 126.7342,
+    "escaped": [],
+    "popImproved": 228955
+   },
+   "28260": {
+    "kind": "upgrade",
+    "label": "(의)성세의료재단 뉴성민병원",
+    "lat": 37.50899,
+    "lon": 126.66948,
+    "hpid": "A1400008",
+    "escaped": [],
+    "popImproved": 358678
+   },
+   "28710": {
+    "kind": "G006",
+    "label": "불은면",
+    "lat": 37.68658,
+    "lon": 126.48034,
+    "escaped": [],
+    "popImproved": 77772
+   },
+   "28720": {
+    "kind": "G006",
+    "label": "신도리",
+    "lat": 37.52582,
+    "lon": 126.45238,
+    "escaped": [],
+    "popImproved": 90393
+   },
+   "29110": {
+    "kind": "G006",
+    "label": "계림2동",
+    "lat": 35.15795,
+    "lon": 126.9236,
+    "escaped": [],
+    "popImproved": 296538
+   },
+   "29140": {
+    "kind": "upgrade",
+    "label": "광주한국병원",
+    "lat": 35.15618,
+    "lon": 126.86881,
+    "hpid": "A1500016",
+    "escaped": [
+     "46860"
+    ],
+    "popImproved": 475186
+   },
+   "29155": {
+    "kind": "G006",
+    "label": "송암동",
+    "lat": 35.11153,
+    "lon": 126.87713,
+    "escaped": [
+     "46860"
+    ],
+    "popImproved": 167363
+   },
+   "29170": {
+    "kind": "G006",
+    "label": "동림동",
+    "lat": 35.18704,
+    "lon": 126.86661,
+    "escaped": [
+     "46860"
+    ],
+    "popImproved": 279646
+   },
+   "29200": {
+    "kind": "G006",
+    "label": "삼도동",
+    "lat": 35.16219,
+    "lon": 126.69758,
+    "escaped": [
+     "46860",
+     "46870"
+    ],
+    "popImproved": 138921
+   },
+   "30110": {
+    "kind": "upgrade",
+    "label": "대전한국병원",
+    "lat": 36.34832,
+    "lon": 127.43575,
+    "hpid": "A1600003",
+    "escaped": [],
+    "popImproved": 323793
+   },
+   "30140": {
+    "kind": "G006",
+    "label": "태평2동",
+    "lat": 36.32129,
+    "lon": 127.3929,
+    "escaped": [],
+    "popImproved": 197989
+   },
+   "30170": {
+    "kind": "G006",
+    "label": "관저1동",
+    "lat": 36.30387,
+    "lon": 127.33738,
+    "escaped": [],
+    "popImproved": 184211
+   },
+   "30200": {
+    "kind": "G006",
+    "label": "온천2동",
+    "lat": 36.36544,
+    "lon": 127.33337,
+    "escaped": [],
+    "popImproved": 188274
+   },
+   "30230": {
+    "kind": "G006",
+    "label": "비래동",
+    "lat": 36.3549,
+    "lon": 127.45002,
+    "escaped": [],
+    "popImproved": 242685
+   },
+   "31110": {
+    "kind": "G006",
+    "label": "다운동",
+    "lat": 35.55629,
+    "lon": 129.27571,
+    "escaped": [],
+    "popImproved": 169847
+   },
+   "31140": {
+    "kind": "upgrade",
+    "label": "의료법인은성의료재단좋은삼정병원",
+    "lat": 35.55283,
+    "lon": 129.269,
+    "hpid": "A1700011",
+    "escaped": [],
+    "popImproved": 263261
+   },
+   "31170": {
+    "kind": "G006",
+    "label": "전하1동",
+    "lat": 35.51681,
+    "lon": 129.42865,
+    "escaped": [],
+    "popImproved": 152336
+   },
+   "31200": {
+    "kind": "G006",
+    "label": "송정동",
+    "lat": 35.59231,
+    "lon": 129.36517,
+    "escaped": [],
+    "popImproved": 205534
+   },
+   "31710": {
+    "kind": "G006",
+    "label": "웅촌면",
+    "lat": 35.46129,
+    "lon": 129.20832,
+    "escaped": [],
+    "popImproved": 167054
+   },
+   "36110": {
+    "kind": "G006",
+    "label": "도담동",
+    "lat": 36.51517,
+    "lon": 127.26162,
+    "escaped": [],
+    "popImproved": 268863
+   },
+   "41110": {
+    "kind": "G006",
+    "label": "망포2동",
+    "lat": 37.23888,
+    "lon": 127.05162,
+    "escaped": [],
+    "popImproved": 397287
+   },
+   "41130": {
+    "kind": "G006",
+    "label": "구미1동",
+    "lat": 37.34927,
+    "lon": 127.11179,
+    "escaped": [],
+    "popImproved": 438553
+   },
+   "41150": {
+    "kind": "G006",
+    "label": "신곡2동",
+    "lat": 37.74366,
+    "lon": 127.05794,
+    "escaped": [],
+    "popImproved": 358215
+   },
+   "41170": {
+    "kind": "G006",
+    "label": "평안동",
+    "lat": 37.39195,
+    "lon": 126.96673,
+    "escaped": [],
+    "popImproved": 235343
+   },
+   "41190": {
+    "kind": "G006",
+    "label": "고강본동",
+    "lat": 37.52707,
+    "lon": 126.82484,
+    "escaped": [],
+    "popImproved": 336195
+   },
+   "41210": {
+    "kind": "G006",
+    "label": "광명2동",
+    "lat": 37.48335,
+    "lon": 126.85595,
+    "escaped": [],
+    "popImproved": 303055
+   },
+   "41220": {
+    "kind": "G006",
+    "label": "서정동",
+    "lat": 37.06777,
+    "lon": 127.05471,
+    "escaped": [],
+    "popImproved": 257113
+   },
+   "41250": {
+    "kind": "G006",
+    "label": "송내동",
+    "lat": 37.88401,
+    "lon": 127.05129,
+    "escaped": [],
+    "popImproved": 204556
+   },
+   "41270": {
+    "kind": "G006",
+    "label": "일동",
+    "lat": 37.3103,
+    "lon": 126.86615,
+    "escaped": [],
+    "popImproved": 275373
+   },
+   "41280": {
+    "kind": "G006",
+    "label": "대화동",
+    "lat": 37.68298,
+    "lon": 126.75514,
+    "escaped": [],
+    "popImproved": 536624
+   },
+   "41290": {
+    "kind": "G006",
+    "label": "갈현동",
+    "lat": 37.40979,
+    "lon": 126.98249,
+    "escaped": [],
+    "popImproved": 135033
+   },
+   "41310": {
+    "kind": "G006",
+    "label": "수택1동",
+    "lat": 37.59617,
+    "lon": 127.14841,
+    "escaped": [],
+    "popImproved": 213970
+   },
+   "41360": {
+    "kind": "upgrade",
+    "label": "엘병원",
+    "lat": 37.64873,
+    "lon": 127.14105,
+    "hpid": "A2118188",
+    "escaped": [],
+    "popImproved": 401436
+   },
+   "41370": {
+    "kind": "G006",
+    "label": "신장2동",
+    "lat": 37.16977,
+    "lon": 127.06539,
+    "escaped": [],
+    "popImproved": 292443
+   },
+   "41390": {
+    "kind": "upgrade",
+    "label": "의료법인록향의료재단신천연합병원",
+    "lat": 37.44455,
+    "lon": 126.78938,
+    "hpid": "A2100013",
+    "escaped": [],
+    "popImproved": 239096
+   },
+   "41410": {
+    "kind": "G006",
+    "label": "군포1동",
+    "lat": 37.35369,
+    "lon": 126.94557,
+    "escaped": [],
+    "popImproved": 99739
+   },
+   "41430": {
+    "kind": "G006",
+    "label": "내손2동",
+    "lat": 37.38763,
+    "lon": 126.98149,
+    "escaped": [],
+    "popImproved": 134768
+   },
+   "41450": {
+    "kind": "G006",
+    "label": "미사3동",
+    "lat": 37.5508,
+    "lon": 127.18844,
+    "escaped": [],
+    "popImproved": 403954
+   },
+   "41460": {
+    "kind": "G006",
+    "label": "풍덕천2동",
+    "lat": 37.31945,
+    "lon": 127.08878,
+    "escaped": [],
+    "popImproved": 443625
+   },
+   "41480": {
+    "kind": "G006",
+    "label": "운정1동",
+    "lat": 37.7241,
+    "lon": 126.75138,
+    "escaped": [],
+    "popImproved": 328181
+   },
+   "41500": {
+    "kind": "G006",
+    "label": "부발읍",
+    "lat": 37.28366,
+    "lon": 127.48689,
+    "escaped": [],
+    "popImproved": 237903
+   },
+   "41550": {
+    "kind": "G006",
+    "label": "공도읍",
+    "lat": 37.00105,
+    "lon": 127.17254,
+    "escaped": [],
+    "popImproved": 179591
+   },
+   "41570": {
+    "kind": "G006",
+    "label": "풍무동",
+    "lat": 37.60217,
+    "lon": 126.72204,
+    "escaped": [],
+    "popImproved": 249073
+   },
+   "41590": {
+    "kind": "G006",
+    "label": "동탄2동",
+    "lat": 37.19685,
+    "lon": 127.07239,
+    "escaped": [],
+    "popImproved": 482356
+   },
+   "41610": {
+    "kind": "G006",
+    "label": "오포2동",
+    "lat": 37.37774,
+    "lon": 127.25465,
+    "escaped": [],
+    "popImproved": 213478
+   },
+   "41630": {
+    "kind": "G006",
+    "label": "회천2동",
+    "lat": 37.82168,
+    "lon": 127.04676,
+    "escaped": [],
+    "popImproved": 374459
+   },
+   "41650": {
+    "kind": "G006",
+    "label": "소흘읍",
+    "lat": 37.82332,
+    "lon": 127.1386,
+    "escaped": [],
+    "popImproved": 257036
+   },
+   "41670": {
+    "kind": "upgrade",
+    "label": "세종여주병원",
+    "lat": 37.30133,
+    "lon": 127.62672,
+    "hpid": "A2100194",
+    "escaped": [],
+    "popImproved": 235834
+   },
+   "41800": {
+    "kind": "G006",
+    "label": "청산면",
+    "lat": 37.98176,
+    "lon": 127.06768,
+    "escaped": [],
+    "popImproved": 141178
+   },
+   "41820": {
+    "kind": "G006",
+    "label": "설악면",
+    "lat": 37.6758,
+    "lon": 127.49471,
+    "escaped": [],
+    "popImproved": 108358
+   },
+   "41830": {
+    "kind": "G006",
+    "label": "서종면",
+    "lat": 37.60658,
+    "lon": 127.34872,
+    "escaped": [],
+    "popImproved": 241869
+   },
+   "43110": {
+    "kind": "G006",
+    "label": "복대2동",
+    "lat": 36.62618,
+    "lon": 127.44375,
+    "escaped": [],
+    "popImproved": 210175
+   },
+   "43130": {
+    "kind": "G006",
+    "label": "교현2동",
+    "lat": 36.98148,
+    "lon": 127.9291,
+    "escaped": [],
+    "popImproved": 161841
+   },
+   "43150": {
+    "kind": "G006",
+    "label": "송학면",
+    "lat": 37.18491,
+    "lon": 128.26096,
+    "escaped": [
+     "51750"
+    ],
+    "popImproved": 31957
+   },
+   "43720": {
+    "kind": "G006",
+    "label": "보은읍",
+    "lat": 36.48364,
+    "lon": 127.71707,
+    "escaped": [
+     "43720"
+    ],
+    "popImproved": 50776
+   },
+   "43730": {
+    "kind": "G006",
+    "label": "이원면",
+    "lat": 36.24624,
+    "lon": 127.6195,
+    "escaped": [
+     "43740"
+    ],
+    "popImproved": 99969
+   },
+   "43740": {
+    "kind": "G006",
+    "label": "용화면",
+    "lat": 36.02081,
+    "lon": 127.76719,
+    "escaped": [
+     "43740",
+     "52730"
+    ],
+    "popImproved": 116373
+   },
+   "43745": {
+    "kind": "G006",
+    "label": "증평읍",
+    "lat": 36.78464,
+    "lon": 127.58103,
+    "escaped": [],
+    "popImproved": 88394
+   },
+   "43750": {
+    "kind": "G006",
+    "label": "덕산읍",
+    "lat": 36.91384,
+    "lon": 127.50921,
+    "escaped": [],
+    "popImproved": 139101
+   },
+   "43760": {
+    "kind": "G006",
+    "label": "사리면",
+    "lat": 36.81692,
+    "lon": 127.6487,
+    "escaped": [
+     "43760"
+    ],
+    "popImproved": 89870
+   },
+   "43770": {
+    "kind": "G006",
+    "label": "대소면",
+    "lat": 36.97194,
+    "lon": 127.4833,
+    "escaped": [],
+    "popImproved": 179884
+   },
+   "43800": {
+    "kind": "G006",
+    "label": "영춘면",
+    "lat": 37.07869,
+    "lon": 128.48738,
+    "escaped": [
+     "43800",
+     "51750"
+    ],
+    "popImproved": 70406
+   },
+   "44130": {
+    "kind": "G006",
+    "label": "성정1동",
+    "lat": 36.81793,
+    "lon": 127.14145,
+    "escaped": [],
+    "popImproved": 254149
+   },
+   "44150": {
+    "kind": "G006",
+    "label": "탄천면",
+    "lat": 36.33004,
+    "lon": 127.03016,
+    "escaped": [
+     "44760"
+    ],
+    "popImproved": 61926
+   },
+   "44180": {
+    "kind": "G006",
+    "label": "대천1동",
+    "lat": 36.35189,
+    "lon": 126.5971,
+    "escaped": [
+     "44760"
+    ],
+    "popImproved": 88050
+   },
+   "44200": {
+    "kind": "G006",
+    "label": "온양3동",
+    "lat": 36.78352,
+    "lon": 127.01289,
+    "escaped": [],
+    "popImproved": 171998
+   },
+   "44210": {
+    "kind": "G006",
+    "label": "수석동",
+    "lat": 36.77137,
+    "lon": 126.46726,
+    "escaped": [],
+    "popImproved": 133561
+   },
+   "44230": {
+    "kind": "G006",
+    "label": "성동면",
+    "lat": 36.20361,
+    "lon": 127.03359,
+    "escaped": [
+     "44760"
+    ],
+    "popImproved": 63784
+   },
+   "44250": {
+    "kind": "G006",
+    "label": "금암동",
+    "lat": 36.27274,
+    "lon": 127.24637,
+    "escaped": [],
+    "popImproved": 69488
+   },
+   "44270": {
+    "kind": "G006",
+    "label": "당진3동",
+    "lat": 36.90852,
+    "lon": 126.64578,
+    "escaped": [],
+    "popImproved": 111122
+   },
+   "44710": {
+    "kind": "G006",
+    "label": "군북면",
+    "lat": 36.16891,
+    "lon": 127.52772,
+    "escaped": [],
+    "popImproved": 109581
+   },
+   "44760": {
+    "kind": "G006",
+    "label": "석성면",
+    "lat": 36.2538,
+    "lon": 127.00269,
+    "escaped": [
+     "44760"
+    ],
+    "popImproved": 70530
+   },
+   "44770": {
+    "kind": "G006",
+    "label": "시초면",
+    "lat": 36.12187,
+    "lon": 126.75286,
+    "escaped": [
+     "44760"
+    ],
+    "popImproved": 52951
+   },
+   "44790": {
+    "kind": "G006",
+    "label": "장평면",
+    "lat": 36.34183,
+    "lon": 126.89305,
+    "escaped": [
+     "44760"
+    ],
+    "popImproved": 62511
+   },
+   "44800": {
+    "kind": "G006",
+    "label": "홍성읍",
+    "lat": 36.59705,
+    "lon": 126.66315,
+    "escaped": [],
+    "popImproved": 126595
+   },
+   "44810": {
+    "kind": "G006",
+    "label": "응봉면",
+    "lat": 36.65864,
+    "lon": 126.7612,
+    "escaped": [],
+    "popImproved": 116120
+   },
+   "44825": {
+    "kind": "upgrade",
+    "label": "태안군보건의료원",
+    "lat": 36.75191,
+    "lon": 126.32321,
+    "hpid": "E2400033",
+    "escaped": [],
+    "popImproved": 60452
+   },
+   "46110": {
+    "kind": "G006",
+    "label": "삼향동",
+    "lat": 34.83046,
+    "lon": 126.4179,
+    "escaped": [
+     "46860"
+    ],
+    "popImproved": 135844
+   },
+   "46130": {
+    "kind": "G006",
+    "label": "쌍봉동",
+    "lat": 34.76351,
+    "lon": 127.6655,
+    "escaped": [],
+    "popImproved": 244170
+   },
+   "46150": {
+    "kind": "upgrade",
+    "label": "순천제일병원",
+    "lat": 34.95422,
+    "lon": 127.52386,
+    "hpid": "A2600008",
+    "escaped": [],
+    "popImproved": 273839
+   },
+   "46170": {
+    "kind": "upgrade",
+    "label": "나주종합병원",
+    "lat": 35.0364,
+    "lon": 126.72144,
+    "hpid": "A2600016",
+    "escaped": [
+     "46860"
+    ],
+    "popImproved": 185549
+   },
+   "46230": {
+    "kind": "G006",
+    "label": "광영동",
+    "lat": 34.96307,
+    "lon": 127.72504,
+    "escaped": [],
+    "popImproved": 169232
+   },
+   "46710": {
+    "kind": "G006",
+    "label": "대전면",
+    "lat": 35.27496,
+    "lon": 126.88796,
+    "escaped": [],
+    "popImproved": 79873
+   },
+   "46720": {
+    "kind": "G006",
+    "label": "곡성읍",
+    "lat": 35.2821,
+    "lon": 127.29638,
+    "escaped": [],
+    "popImproved": 78242
+   },
+   "46730": {
+    "kind": "G006",
+    "label": "용방면",
+    "lat": 35.25066,
+    "lon": 127.43015,
+    "escaped": [],
+    "popImproved": 48600
+   },
+   "46770": {
+    "kind": "G006",
+    "label": "득량리",
+    "lat": 34.6037,
+    "lon": 127.09789,
+    "escaped": [
+     "46800"
+    ],
+    "popImproved": 155245
+   },
+   "46780": {
+    "kind": "G006",
+    "label": "웅치면",
+    "lat": 34.71596,
+    "lon": 127.02021,
+    "escaped": [
+     "46800"
+    ],
+    "popImproved": 145538
+   },
+   "46790": {
+    "kind": "G006",
+    "label": "도암면",
+    "lat": 34.9378,
+    "lon": 126.89679,
+    "escaped": [],
+    "popImproved": 107025
+   },
+   "46800": {
+    "kind": "G006",
+    "label": "관산읍",
+    "lat": 34.56156,
+    "lon": 126.93891,
+    "escaped": [
+     "46800"
+    ],
+    "popImproved": 195696
+   },
+   "46810": {
+    "kind": "G006",
+    "label": "작천면",
+    "lat": 34.70426,
+    "lon": 126.77141,
+    "escaped": [
+     "46800"
+    ],
+    "popImproved": 201923
+   },
+   "46820": {
+    "kind": "G006",
+    "label": "산막리",
+    "lat": 34.63447,
+    "lon": 126.5679,
+    "escaped": [
+     "46820"
+    ],
+    "popImproved": 216951
+   },
+   "46830": {
+    "kind": "G006",
+    "label": "도포면",
+    "lat": 34.84514,
+    "lon": 126.64369,
+    "escaped": [
+     "46860"
+    ],
+    "popImproved": 117486
+   },
+   "46840": {
+    "kind": "G006",
+    "label": "해제면",
+    "lat": 35.11049,
+    "lon": 126.29447,
+    "escaped": [
+     "46860",
+     "46870"
+    ],
+    "popImproved": 91605
+   },
+   "46860": {
+    "kind": "G006",
+    "label": "나산면",
+    "lat": 35.11387,
+    "lon": 126.60909,
+    "escaped": [
+     "46860",
+     "46870"
+    ],
+    "popImproved": 146268
+   },
+   "46870": {
+    "kind": "G006",
+    "label": "법성면",
+    "lat": 35.36206,
+    "lon": 126.44602,
+    "escaped": [
+     "46860",
+     "46870",
+     "52800"
+    ],
+    "popImproved": 82711
+   },
+   "46880": {
+    "kind": "G006",
+    "label": "동화면",
+    "lat": 35.28428,
+    "lon": 126.7388,
+    "escaped": [
+     "46860",
+     "46870"
+    ],
+    "popImproved": 138689
+   },
+   "46890": {
+    "kind": "G006",
+    "label": "군외면",
+    "lat": 34.38942,
+    "lon": 126.64742,
+    "escaped": [
+     "46820"
+    ],
+    "popImproved": 131328
+   },
+   "46900": {
+    "kind": "G006",
+    "label": "고군면",
+    "lat": 34.49048,
+    "lon": 126.34301,
+    "escaped": [
+     "46900"
+    ],
+    "popImproved": 133995
+   },
+   "46910": {
+    "kind": "G006",
+    "label": "가란리",
+    "lat": 34.87158,
+    "lon": 126.36563,
+    "escaped": [
+     "46860"
+    ],
+    "popImproved": 81518
+   },
+   "47110": {
+    "kind": "G006",
+    "label": "기북면",
+    "lat": 36.12852,
+    "lon": 129.16632,
+    "escaped": [
+     "47230"
+    ],
+    "popImproved": 41941
+   },
+   "47130": {
+    "kind": "G006",
+    "label": "서면",
+    "lat": 35.8913,
+    "lon": 129.05253,
+    "escaped": [
+     "47230"
+    ],
+    "popImproved": 113256
+   },
+   "47150": {
+    "kind": "G006",
+    "label": "대신동",
+    "lat": 36.13536,
+    "lon": 128.11599,
+    "escaped": [],
+    "popImproved": 110072
+   },
+   "47170": {
+    "kind": "G006",
+    "label": "녹전면",
+    "lat": 36.74291,
+    "lon": 128.77366,
+    "escaped": [],
+    "popImproved": 157681
+   },
+   "47190": {
+    "kind": "G006",
+    "label": "진미동",
+    "lat": 36.10606,
+    "lon": 128.41869,
+    "escaped": [],
+    "popImproved": 204937
+   },
+   "47210": {
+    "kind": "upgrade",
+    "label": "영주기독병원",
+    "lat": 36.82516,
+    "lon": 128.62115,
+    "hpid": "A2700031",
+    "escaped": [],
+    "popImproved": 179912
+   },
+   "47230": {
+    "kind": "upgrade",
+    "label": "영남대학교의과대학부속영천병원",
+    "lat": 35.95732,
+    "lon": 128.91305,
+    "hpid": "A2700017",
+    "escaped": [
+     "47230"
+    ],
+    "popImproved": 193009
+   },
+   "47250": {
+    "kind": "upgrade",
+    "label": "상주적십자병원",
+    "lat": 36.41464,
+    "lon": 128.1556,
+    "hpid": "A2700011",
+    "escaped": [],
+    "popImproved": 100428
+   },
+   "47280": {
+    "kind": "G006",
+    "label": "점촌5동",
+    "lat": 36.59043,
+    "lon": 128.18026,
+    "escaped": [],
+    "popImproved": 73231
+   },
+   "47290": {
+    "kind": "G006",
+    "label": "압량읍",
+    "lat": 35.84332,
+    "lon": 128.75981,
+    "escaped": [
+     "47230"
+    ],
+    "popImproved": 442133
+   },
+   "47730": {
+    "kind": "G006",
+    "label": "의성읍",
+    "lat": 36.35591,
+    "lon": 128.69479,
+    "escaped": [
+     "47730"
+    ],
+    "popImproved": 68988
+   },
+   "47750": {
+    "kind": "upgrade",
+    "label": "청송군보건의료원",
+    "lat": 36.43104,
+    "lon": 129.05266,
+    "hpid": "E2700554",
+    "escaped": [],
+    "popImproved": 89487
+   },
+   "47760": {
+    "kind": "G006",
+    "label": "영양읍",
+    "lat": 36.66704,
+    "lon": 129.11417,
+    "escaped": [
+     "47760"
+    ],
+    "popImproved": 86898
+   },
+   "47770": {
+    "kind": "G006",
+    "label": "지품면",
+    "lat": 36.4485,
+    "lon": 129.28178,
+    "escaped": [],
+    "popImproved": 81468
+   },
+   "47820": {
+    "kind": "G006",
+    "label": "풍각면",
+    "lat": 35.63889,
+    "lon": 128.61823,
+    "escaped": [],
+    "popImproved": 171423
+   },
+   "47830": {
+    "kind": "G006",
+    "label": "쌍림면",
+    "lat": 35.67982,
+    "lon": 128.2419,
+    "escaped": [
+     "48890"
+    ],
+    "popImproved": 168487
+   },
+   "47840": {
+    "kind": "G006",
+    "label": "수륜면",
+    "lat": 35.83293,
+    "lon": 128.19239,
+    "escaped": [
+     "47840"
+    ],
+    "popImproved": 142033
+   },
+   "47850": {
+    "kind": "G006",
+    "label": "왜관읍",
+    "lat": 35.98877,
+    "lon": 128.39759,
+    "escaped": [
+     "47840"
+    ],
+    "popImproved": 79758
+   },
+   "47900": {
+    "kind": "upgrade",
+    "label": "의료법인서준의료재단예천권병원",
+    "lat": 36.65742,
+    "lon": 128.4589,
+    "hpid": "A2700023",
+    "escaped": [],
+    "popImproved": 179252
+   },
+   "47920": {
+    "kind": "G006",
+    "label": "봉성면",
+    "lat": 36.88593,
+    "lon": 128.81805,
+    "escaped": [],
+    "popImproved": 152576
+   },
+   "47930": {
+    "kind": "G006",
+    "label": "금강송면",
+    "lat": 36.93559,
+    "lon": 129.24717,
+    "escaped": [],
+    "popImproved": 78718
+   },
+   "47940": {
+    "kind": "G006",
+    "label": "서면",
+    "lat": 37.46771,
+    "lon": 130.8381,
+    "escaped": [],
+    "popImproved": 8649
+   },
+   "48120": {
+    "kind": "upgrade",
+    "label": "연세에스병원",
+    "lat": 35.15473,
+    "lon": 128.69834,
+    "hpid": "A2800021",
+    "escaped": [],
+    "popImproved": 413458
+   },
+   "48170": {
+    "kind": "G006",
+    "label": "미천면",
+    "lat": 35.29922,
+    "lon": 128.11539,
+    "escaped": [
+     "48860"
+    ],
+    "popImproved": 96264
+   },
+   "48220": {
+    "kind": "G006",
+    "label": "어의리",
+    "lat": 34.96063,
+    "lon": 128.48481,
+    "escaped": [],
+    "popImproved": 386194
+   },
+   "48240": {
+    "kind": "upgrade",
+    "label": "의료법인승연의료재단삼천포서울병원",
+    "lat": 34.93302,
+    "lon": 128.08012,
+    "hpid": "A2800068",
+    "escaped": [],
+    "popImproved": 249021
+   },
+   "48250": {
+    "kind": "upgrade",
+    "label": "의료법인갑을의료재단갑을장유병원",
+    "lat": 35.20867,
+    "lon": 128.80564,
+    "hpid": "A2800014",
+    "escaped": [],
+    "popImproved": 309630
+   },
+   "48270": {
+    "kind": "G006",
+    "label": "무안면",
+    "lat": 35.4732,
+    "lon": 128.65193,
+    "escaped": [],
+    "popImproved": 178006
+   },
+   "48310": {
+    "kind": "G006",
+    "label": "성포리",
+    "lat": 34.91608,
+    "lon": 128.52625,
+    "escaped": [],
+    "popImproved": 380451
+   },
+   "48330": {
+    "kind": "upgrade",
+    "label": "베데스다복음병원",
+    "lat": 35.35322,
+    "lon": 129.04357,
+    "hpid": "A2800019",
+    "escaped": [],
+    "popImproved": 357403
+   },
+   "48720": {
+    "kind": "G006",
+    "label": "대의면",
+    "lat": 35.37191,
+    "lon": 128.10828,
+    "escaped": [
+     "48720",
+     "48860"
+    ],
+    "popImproved": 135883
+   },
+   "48730": {
+    "kind": "G006",
+    "label": "대산면",
+    "lat": 35.35021,
+    "lon": 128.43158,
+    "escaped": [
+     "48720"
+    ],
+    "popImproved": 137299
+   },
+   "48740": {
+    "kind": "G006",
+    "label": "유어면",
+    "lat": 35.50809,
+    "lon": 128.41114,
+    "escaped": [
+     "48720"
+    ],
+    "popImproved": 122719
+   },
+   "48820": {
+    "kind": "upgrade",
+    "label": "강병원",
+    "lat": 34.97416,
+    "lon": 128.32529,
+    "hpid": "A2800032",
+    "escaped": [],
+    "popImproved": 384896
+   },
+   "48840": {
+    "kind": "G006",
+    "label": "설천면",
+    "lat": 34.92483,
+    "lon": 127.91402,
+    "escaped": [
+     "48840"
+    ],
+    "popImproved": 107798
+   },
+   "48850": {
+    "kind": "G006",
+    "label": "양보면",
+    "lat": 35.04731,
+    "lon": 127.84574,
+    "escaped": [
+     "48850"
+    ],
+    "popImproved": 92632
+   },
+   "48860": {
+    "kind": "G006",
+    "label": "생초면",
+    "lat": 35.49316,
+    "lon": 127.83289,
+    "escaped": [
+     "48860",
+     "48870"
+    ],
+    "popImproved": 143427
+   },
+   "48870": {
+    "kind": "G006",
+    "label": "수동면",
+    "lat": 35.5221,
+    "lon": 127.78775,
+    "escaped": [
+     "48860",
+     "48870"
+    ],
+    "popImproved": 142107
+   },
+   "48880": {
+    "kind": "G006",
+    "label": "신원면",
+    "lat": 35.56773,
+    "lon": 127.92515,
+    "escaped": [
+     "48860"
+    ],
+    "popImproved": 146602
+   },
+   "48890": {
+    "kind": "G006",
+    "label": "가회면",
+    "lat": 35.43517,
+    "lon": 128.03368,
+    "escaped": [
+     "48860",
+     "48890"
+    ],
+    "popImproved": 132436
+   },
+   "50110": {
+    "kind": "G006",
+    "label": "이도2동",
+    "lat": 33.49705,
+    "lon": 126.53529,
+    "escaped": [],
+    "popImproved": 120145
+   },
+   "50130": {
+    "kind": "G006",
+    "label": "서홍동",
+    "lat": 33.25596,
+    "lon": 126.56018,
+    "escaped": [],
+    "popImproved": 117319
+   },
+   "51110": {
+    "kind": "G006",
+    "label": "퇴계동",
+    "lat": 37.86236,
+    "lon": 127.72943,
+    "escaped": [],
+    "popImproved": 235237
+   },
+   "51130": {
+    "kind": "upgrade",
+    "label": "의료법인성지의료재단성지병원",
+    "lat": 37.3453,
+    "lon": 127.95401,
+    "hpid": "A2200024",
+    "escaped": [],
+    "popImproved": 254827
+   },
+   "51150": {
+    "kind": "G006",
+    "label": "옥천동",
+    "lat": 37.76017,
+    "lon": 128.90298,
+    "escaped": [],
+    "popImproved": 140243
+   },
+   "51170": {
+    "kind": "G006",
+    "label": "북삼동",
+    "lat": 37.48941,
+    "lon": 129.10763,
+    "escaped": [],
+    "popImproved": 94352
+   },
+   "51190": {
+    "kind": "G006",
+    "label": "황연동",
+    "lat": 37.17876,
+    "lon": 128.98669,
+    "escaped": [
+     "51190"
+    ],
+    "popImproved": 117392
+   },
+   "51210": {
+    "kind": "G006",
+    "label": "대포동",
+    "lat": 38.16566,
+    "lon": 128.5571,
+    "escaped": [],
+    "popImproved": 159604
+   },
+   "51230": {
+    "kind": "G006",
+    "label": "도계읍",
+    "lat": 37.23644,
+    "lon": 129.04517,
+    "escaped": [],
+    "popImproved": 106190
+   },
+   "51720": {
+    "kind": "upgrade",
+    "label": "홍천아산병원",
+    "lat": 37.69082,
+    "lon": 127.89491,
+    "hpid": "A2200014",
+    "escaped": [],
+    "popImproved": 130495
+   },
+   "51730": {
+    "kind": "upgrade",
+    "label": "횡성대성병원",
+    "lat": 37.47846,
+    "lon": 127.97995,
+    "hpid": "A2200016",
+    "escaped": [],
+    "popImproved": 144934
+   },
+   "51750": {
+    "kind": "G006",
+    "label": "김삿갓면",
+    "lat": 37.12569,
+    "lon": 128.57001,
+    "escaped": [
+     "51750"
+    ],
+    "popImproved": 99067
+   },
+   "51760": {
+    "kind": "G006",
+    "label": "방림면",
+    "lat": 37.42645,
+    "lon": 128.39422,
+    "escaped": [],
+    "popImproved": 69748
+   },
+   "51770": {
+    "kind": "G006",
+    "label": "고한읍",
+    "lat": 37.20427,
+    "lon": 128.85165,
+    "escaped": [
+     "51750"
+    ],
+    "popImproved": 92133
+   },
+   "51780": {
+    "kind": "G006",
+    "label": "서면",
+    "lat": 38.16465,
+    "lon": 127.41571,
+    "escaped": [],
+    "popImproved": 64289
+   },
+   "51790": {
+    "kind": "G006",
+    "label": "간동면",
+    "lat": 38.05526,
+    "lon": 127.79002,
+    "escaped": [],
+    "popImproved": 75891
+   },
+   "51800": {
+    "kind": "G006",
+    "label": "국토정중앙면",
+    "lat": 38.10847,
+    "lon": 128.03456,
+    "escaped": [],
+    "popImproved": 77166
+   },
+   "51810": {
+    "kind": "G006",
+    "label": "인제읍",
+    "lat": 38.07039,
+    "lon": 128.17222,
+    "escaped": [],
+    "popImproved": 89349
+   },
+   "51820": {
+    "kind": "G006",
+    "label": "간성읍",
+    "lat": 38.37838,
+    "lon": 128.46686,
+    "escaped": [
+     "51820"
+    ],
+    "popImproved": 86100
+   },
+   "51830": {
+    "kind": "G006",
+    "label": "양양읍",
+    "lat": 38.08067,
+    "lon": 128.62401,
+    "escaped": [],
+    "popImproved": 162176
+   },
+   "52110": {
+    "kind": "G006",
+    "label": "송천1동",
+    "lat": 35.85711,
+    "lon": 127.12091,
+    "escaped": [],
+    "popImproved": 221513
+   },
+   "52130": {
+    "kind": "G006",
+    "label": "나포면",
+    "lat": 36.03047,
+    "lon": 126.83201,
+    "escaped": [
+     "44760"
+    ],
+    "popImproved": 25523
+   },
+   "52140": {
+    "kind": "G006",
+    "label": "망성면",
+    "lat": 36.13259,
+    "lon": 127.02065,
+    "escaped": [
+     "44760"
+    ],
+    "popImproved": 50767
+   },
+   "52180": {
+    "kind": "G006",
+    "label": "농소동",
+    "lat": 35.58328,
+    "lon": 126.82843,
+    "escaped": [
+     "52800"
+    ],
+    "popImproved": 115156
+   },
+   "52190": {
+    "kind": "G006",
+    "label": "아영면",
+    "lat": 35.50866,
+    "lon": 127.6129,
+    "escaped": [
+     "48870",
+     "52740"
+    ],
+    "popImproved": 133373
+   },
+   "52210": {
+    "kind": "upgrade",
+    "label": "김제우석병원",
+    "lat": 35.80674,
+    "lon": 126.8797,
+    "hpid": "A2500038",
+    "escaped": [
+     "52800"
+    ],
+    "popImproved": 118717
+   },
+   "52710": {
+    "kind": "G006",
+    "label": "동상면",
+    "lat": 35.93688,
+    "lon": 127.29675,
+    "escaped": [
+     "52720"
+    ],
+    "popImproved": 46029
+   },
+   "52720": {
+    "kind": "G006",
+    "label": "동향면",
+    "lat": 35.83822,
+    "lon": 127.56728,
+    "escaped": [
+     "52720",
+     "52740"
+    ],
+    "popImproved": 121825
+   },
+   "52730": {
+    "kind": "G006",
+    "label": "안성면",
+    "lat": 35.8635,
+    "lon": 127.65305,
+    "escaped": [
+     "52730",
+     "52740"
+    ],
+    "popImproved": 117931
+   },
+   "52740": {
+    "kind": "G006",
+    "label": "번암면",
+    "lat": 35.532,
+    "lon": 127.54384,
+    "escaped": [
+     "48870",
+     "52740"
+    ],
+    "popImproved": 125361
+   },
+   "52750": {
+    "kind": "G006",
+    "label": "성수면",
+    "lat": 35.63015,
+    "lon": 127.33367,
+    "escaped": [
+     "52720",
+     "52740"
+    ],
+    "popImproved": 62843
+   },
+   "52770": {
+    "kind": "G006",
+    "label": "금과면",
+    "lat": 35.33964,
+    "lon": 127.08645,
+    "escaped": [],
+    "popImproved": 68255
+   },
+   "52790": {
+    "kind": "G006",
+    "label": "공음면",
+    "lat": 35.37788,
+    "lon": 126.51139,
+    "escaped": [
+     "46860",
+     "46870",
+     "52800"
+    ],
+    "popImproved": 100545
+   },
+   "52800": {
+    "kind": "G006",
+    "label": "줄포면",
+    "lat": 35.59114,
+    "lon": 126.67764,
+    "escaped": [
+     "52800"
+    ],
+    "popImproved": 107755
+   }
+  },
+  "G007": {
+   "11110": {
+    "kind": "G007",
+    "label": "숭인2동",
+    "lat": 37.57487,
+    "lon": 127.01996,
+    "escaped": [],
+    "popImproved": 104447
+   },
+   "11140": {
+    "kind": "G007",
+    "label": "중림동",
+    "lat": 37.55479,
+    "lon": 126.96444,
+    "escaped": [],
+    "popImproved": 220281
+   },
+   "11170": {
+    "kind": "G007",
+    "label": "효창동",
+    "lat": 37.54246,
+    "lon": 126.9619,
+    "escaped": [],
+    "popImproved": 278277
+   },
+   "11200": {
+    "kind": "G007",
+    "label": "송정동",
+    "lat": 37.55453,
+    "lon": 127.06957,
+    "escaped": [],
+    "popImproved": 199937
+   },
+   "11215": {
+    "kind": "G007",
+    "label": "중곡3동",
+    "lat": 37.56879,
+    "lon": 127.08021,
+    "escaped": [],
+    "popImproved": 187699
+   },
+   "11230": {
+    "kind": "G007",
+    "label": "이문2동",
+    "lat": 37.60339,
+    "lon": 127.06512,
+    "escaped": [],
+    "popImproved": 231799
+   },
+   "11260": {
+    "kind": "G007",
+    "label": "묵1동",
+    "lat": 37.61241,
+    "lon": 127.07848,
+    "escaped": [],
+    "popImproved": 275182
+   },
+   "11290": {
+    "kind": "G007",
+    "label": "길음2동",
+    "lat": 37.6067,
+    "lon": 127.02731,
+    "escaped": [],
+    "popImproved": 390940
+   },
+   "11305": {
+    "kind": "G007",
+    "label": "번3동",
+    "lat": 37.62585,
+    "lon": 127.04661,
+    "escaped": [],
+    "popImproved": 344320
+   },
+   "11320": {
+    "kind": "G007",
+    "label": "쌍문3동",
+    "lat": 37.64897,
+    "lon": 127.02793,
+    "escaped": [],
+    "popImproved": 330586
+   },
+   "11350": {
+    "kind": "G007",
+    "label": "월계3동",
+    "lat": 37.62101,
+    "lon": 127.06926,
+    "escaped": [],
+    "popImproved": 282545
+   },
+   "11380": {
+    "kind": "G007",
+    "label": "역촌동",
+    "lat": 37.6044,
+    "lon": 126.91512,
+    "escaped": [],
+    "popImproved": 334348
+   },
+   "11410": {
+    "kind": "G007",
+    "label": "북가좌1동",
+    "lat": 37.57428,
+    "lon": 126.91019,
+    "escaped": [],
+    "popImproved": 354432
+   },
+   "11440": {
+    "kind": "G007",
+    "label": "성산2동",
+    "lat": 37.56861,
+    "lon": 126.90897,
+    "escaped": [],
+    "popImproved": 292964
+   },
+   "11470": {
+    "kind": "G007",
+    "label": "신정4동",
+    "lat": 37.52456,
+    "lon": 126.85574,
+    "escaped": [],
+    "popImproved": 288856
+   },
+   "11500": {
+    "kind": "G007",
+    "label": "화곡1동",
+    "lat": 37.53039,
+    "lon": 126.8416,
+    "escaped": [],
+    "popImproved": 260646
+   },
+   "11530": {
+    "kind": "G007",
+    "label": "개봉1동",
+    "lat": 37.50027,
+    "lon": 126.85115,
+    "escaped": [],
+    "popImproved": 224060
+   },
+   "11545": {
+    "kind": "G007",
+    "label": "시흥4동",
+    "lat": 37.45898,
+    "lon": 126.90619,
+    "escaped": [],
+    "popImproved": 200171
+   },
+   "11560": {
+    "kind": "G007",
+    "label": "당산2동",
+    "lat": 37.531,
+    "lon": 126.89731,
+    "escaped": [],
+    "popImproved": 98058
+   },
+   "11590": {
+    "kind": "G007",
+    "label": "사당1동",
+    "lat": 37.48301,
+    "lon": 126.97875,
+    "escaped": [],
+    "popImproved": 272041
+   },
+   "11620": {
+    "kind": "G007",
+    "label": "청림동",
+    "lat": 37.49182,
+    "lon": 126.95864,
+    "escaped": [],
+    "popImproved": 273954
+   },
+   "11650": {
+    "kind": "G007",
+    "label": "방배2동",
+    "lat": 37.47978,
+    "lon": 126.98558,
+    "escaped": [],
+    "popImproved": 253136
+   },
+   "11680": {
+    "kind": "G007",
+    "label": "수서동",
+    "lat": 37.48888,
+    "lon": 127.10495,
+    "escaped": [],
+    "popImproved": 353795
+   },
+   "11710": {
+    "kind": "G007",
+    "label": "송파1동",
+    "lat": 37.50622,
+    "lon": 127.10932,
+    "escaped": [],
+    "popImproved": 484488
+   },
+   "11740": {
+    "kind": "G007",
+    "label": "상일제2동",
+    "lat": 37.55196,
+    "lon": 127.17732,
+    "escaped": [],
+    "popImproved": 426390
+   },
+   "26110": {
+    "kind": "G007",
+    "label": "동광동",
+    "lat": 35.10741,
+    "lon": 129.03519,
+    "escaped": [],
+    "popImproved": 47190
+   },
+   "26140": {
+    "kind": "G007",
+    "label": "남부민2동",
+    "lat": 35.08447,
+    "lon": 129.02054,
+    "escaped": [],
+    "popImproved": 133438
+   },
+   "26170": {
+    "kind": "G007",
+    "label": "수정1동",
+    "lat": 35.12541,
+    "lon": 129.04227,
+    "escaped": [],
+    "popImproved": 58671
+   },
+   "26200": {
+    "kind": "G007",
+    "label": "영선1동",
+    "lat": 35.09025,
+    "lon": 129.04474,
+    "escaped": [],
+    "popImproved": 69701
+   },
+   "26230": {
+    "kind": "G007",
+    "label": "양정2동",
+    "lat": 35.17288,
+    "lon": 129.07572,
+    "escaped": [],
+    "popImproved": 134494
+   },
+   "26260": {
+    "kind": "G007",
+    "label": "온천1동",
+    "lat": 35.22006,
+    "lon": 129.0801,
+    "escaped": [],
+    "popImproved": 150021
+   },
+   "26290": {
+    "kind": "G007",
+    "label": "대연5동",
+    "lat": 35.13846,
+    "lon": 129.09017,
+    "escaped": [],
+    "popImproved": 102574
+   },
+   "26320": {
+    "kind": "G007",
+    "label": "덕천2동",
+    "lat": 35.21237,
+    "lon": 129.00783,
+    "escaped": [],
+    "popImproved": 139140
+   },
+   "26350": {
+    "kind": "G007",
+    "label": "반여4동",
+    "lat": 35.20925,
+    "lon": 129.11708,
+    "escaped": [],
+    "popImproved": 114047
+   },
+   "26380": {
+    "kind": "G007",
+    "label": "괴정3동",
+    "lat": 35.1003,
+    "lon": 128.99807,
+    "escaped": [],
+    "popImproved": 385133
+   },
+   "26410": {
+    "kind": "G007",
+    "label": "장전2동",
+    "lat": 35.22772,
+    "lon": 129.08096,
+    "escaped": [],
+    "popImproved": 187509
+   },
+   "26440": {
+    "kind": "G007",
+    "label": "명지2동",
+    "lat": 35.08456,
+    "lon": 128.90007,
+    "escaped": [],
+    "popImproved": 162880
+   },
+   "26470": {
+    "kind": "G007",
+    "label": "거제2동",
+    "lat": 35.18776,
+    "lon": 129.07032,
+    "escaped": [],
+    "popImproved": 127486
+   },
+   "26500": {
+    "kind": "G007",
+    "label": "망미2동",
+    "lat": 35.17532,
+    "lon": 129.11526,
+    "escaped": [],
+    "popImproved": 70562
+   },
+   "26530": {
+    "kind": "G007",
+    "label": "엄궁동",
+    "lat": 35.12869,
+    "lon": 128.9722,
+    "escaped": [],
+    "popImproved": 217545
+   },
+   "26710": {
+    "kind": "G007",
+    "label": "기장읍",
+    "lat": 35.24063,
+    "lon": 129.2168,
+    "escaped": [],
+    "popImproved": 88882
+   },
+   "27110": {
+    "kind": "G007",
+    "label": "삼덕동",
+    "lat": 35.86552,
+    "lon": 128.60898,
+    "escaped": [],
+    "popImproved": 196871
+   },
+   "27140": {
+    "kind": "G007",
+    "label": "안심3동",
+    "lat": 35.86603,
+    "lon": 128.72422,
+    "escaped": [
+     "47230"
+    ],
+    "popImproved": 133638
+   },
+   "27170": {
+    "kind": "G007",
+    "label": "비산6동",
+    "lat": 35.87627,
+    "lon": 128.5691,
+    "escaped": [],
+    "popImproved": 92082
+   },
+   "27200": {
+    "kind": "G007",
+    "label": "봉덕2동",
+    "lat": 35.82141,
+    "lon": 128.59877,
+    "escaped": [],
+    "popImproved": 127876
+   },
+   "27230": {
+    "kind": "G007",
+    "label": "산격3동",
+    "lat": 35.89354,
+    "lon": 128.60858,
+    "escaped": [],
+    "popImproved": 140210
+   },
+   "27260": {
+    "kind": "G007",
+    "label": "고산3동",
+    "lat": 35.84411,
+    "lon": 128.7066,
+    "escaped": [
+     "47230"
+    ],
+    "popImproved": 148564
+   },
+   "27290": {
+    "kind": "G007",
+    "label": "진천동",
+    "lat": 35.81222,
+    "lon": 128.52283,
+    "escaped": [],
+    "popImproved": 191258
+   },
+   "27710": {
+    "kind": "G007",
+    "label": "다사읍",
+    "lat": 35.86181,
+    "lon": 128.45391,
+    "escaped": [],
+    "popImproved": 119960
+   },
+   "27720": {
+    "kind": "G007",
+    "label": "삼국유사면",
+    "lat": 36.12346,
+    "lon": 128.79478,
+    "escaped": [
+     "47230"
+    ],
+    "popImproved": 28157
+   },
+   "28110": {
+    "kind": "G007",
+    "label": "영종동",
+    "lat": 37.49424,
+    "lon": 126.53153,
+    "escaped": [],
+    "popImproved": 139903
+   },
+   "28140": {
+    "kind": "G007",
+    "label": "만석동",
+    "lat": 37.48326,
+    "lon": 126.62551,
+    "escaped": [],
+    "popImproved": 92563
+   },
+   "28177": {
+    "kind": "G007",
+    "label": "도화1동",
+    "lat": 37.46098,
+    "lon": 126.67392,
+    "escaped": [],
+    "popImproved": 197858
+   },
+   "28185": {
+    "kind": "G007",
+    "label": "동춘2동",
+    "lat": 37.40278,
+    "lon": 126.66931,
+    "escaped": [],
+    "popImproved": 247933
+   },
+   "28200": {
+    "kind": "G007",
+    "label": "간석1동",
+    "lat": 37.4586,
+    "lon": 126.7053,
+    "escaped": [],
+    "popImproved": 256055
+   },
+   "28237": {
+    "kind": "G007",
+    "label": "부평1동",
+    "lat": 37.49427,
+    "lon": 126.71997,
+    "escaped": [],
+    "popImproved": 186536
+   },
+   "28245": {
+    "kind": "G007",
+    "label": "계양1동",
+    "lat": 37.57689,
+    "lon": 126.7342,
+    "escaped": [],
+    "popImproved": 228955
+   },
+   "28260": {
+    "kind": "G007",
+    "label": "신현원창동",
+    "lat": 37.51687,
+    "lon": 126.66727,
+    "escaped": [],
+    "popImproved": 210057
+   },
+   "28710": {
+    "kind": "G007",
+    "label": "강화읍",
+    "lat": 37.74835,
+    "lon": 126.48373,
+    "escaped": [],
+    "popImproved": 33445
+   },
+   "28720": {
+    "kind": "G007",
+    "label": "모도리",
+    "lat": 37.53313,
+    "lon": 126.40864,
+    "escaped": [],
+    "popImproved": 55975
+   },
+   "29110": {
+    "kind": "G007",
+    "label": "계림2동",
+    "lat": 35.15795,
+    "lon": 126.9236,
+    "escaped": [],
+    "popImproved": 114825
+   },
+   "29140": {
+    "kind": "G007",
+    "label": "상무1동",
+    "lat": 35.15378,
+    "lon": 126.86743,
+    "escaped": [
+     "46860"
+    ],
+    "popImproved": 76936
+   },
+   "29155": {
+    "kind": "G007",
+    "label": "대촌동",
+    "lat": 35.08121,
+    "lon": 126.83374,
+    "escaped": [
+     "46860"
+    ],
+    "popImproved": 20652
+   },
+   "29170": {
+    "kind": "G007",
+    "label": "운암1동",
+    "lat": 35.17487,
+    "lon": 126.87443,
+    "escaped": [
+     "46860"
+    ],
+    "popImproved": 62738
+   },
+   "29200": {
+    "kind": "G007",
+    "label": "우산동",
+    "lat": 35.16022,
+    "lon": 126.80706,
+    "escaped": [
+     "46860"
+    ],
+    "popImproved": 106971
+   },
+   "30110": {
+    "kind": "G007",
+    "label": "효동",
+    "lat": 36.31694,
+    "lon": 127.4425,
+    "escaped": [],
+    "popImproved": 153433
+   },
+   "30140": {
+    "kind": "G007",
+    "label": "태평2동",
+    "lat": 36.32129,
+    "lon": 127.3929,
+    "escaped": [],
+    "popImproved": 154344
+   },
+   "30170": {
+    "kind": "G007",
+    "label": "관저1동",
+    "lat": 36.30387,
+    "lon": 127.33738,
+    "escaped": [],
+    "popImproved": 184211
+   },
+   "30200": {
+    "kind": "G007",
+    "label": "온천2동",
+    "lat": 36.36544,
+    "lon": 127.33337,
+    "escaped": [],
+    "popImproved": 188274
+   },
+   "30230": {
+    "kind": "G007",
+    "label": "중리동",
+    "lat": 36.36057,
+    "lon": 127.42642,
+    "escaped": [],
+    "popImproved": 132360
+   },
+   "31110": {
+    "kind": "G007",
+    "label": "학성동",
+    "lat": 35.55534,
+    "lon": 129.3346,
+    "escaped": [],
+    "popImproved": 153751
+   },
+   "31140": {
+    "kind": "G007",
+    "label": "신정2동",
+    "lat": 35.53471,
+    "lon": 129.30779,
+    "escaped": [],
+    "popImproved": 161189
+   },
+   "31170": {
+    "kind": "G007",
+    "label": "전하1동",
+    "lat": 35.51681,
+    "lon": 129.42865,
+    "escaped": [],
+    "popImproved": 152336
+   },
+   "31200": {
+    "kind": "G007",
+    "label": "송정동",
+    "lat": 35.59231,
+    "lon": 129.36517,
+    "escaped": [],
+    "popImproved": 205534
+   },
+   "31710": {
+    "kind": "G007",
+    "label": "범서읍",
+    "lat": 35.56879,
+    "lon": 129.23042,
+    "escaped": [],
+    "popImproved": 72958
+   },
+   "36110": {
+    "kind": "G007",
+    "label": "나성동",
+    "lat": 36.4891,
+    "lon": 127.26397,
+    "escaped": [],
+    "popImproved": 174879
+   },
+   "41110": {
+    "kind": "G007",
+    "label": "광교2동",
+    "lat": 37.29222,
+    "lon": 127.07012,
+    "escaped": [],
+    "popImproved": 278912
+   },
+   "41130": {
+    "kind": "G007",
+    "label": "구미1동",
+    "lat": 37.34927,
+    "lon": 127.11179,
+    "escaped": [],
+    "popImproved": 438553
+   },
+   "41150": {
+    "kind": "G007",
+    "label": "의정부2동",
+    "lat": 37.74078,
+    "lon": 127.04279,
+    "escaped": [],
+    "popImproved": 170654
+   },
+   "41170": {
+    "kind": "G007",
+    "label": "평안동",
+    "lat": 37.39195,
+    "lon": 126.96673,
+    "escaped": [],
+    "popImproved": 235343
+   },
+   "41190": {
+    "kind": "G007",
+    "label": "고강본동",
+    "lat": 37.52707,
+    "lon": 126.82484,
+    "escaped": [],
+    "popImproved": 243574
+   },
+   "41210": {
+    "kind": "G007",
+    "label": "광명2동",
+    "lat": 37.48335,
+    "lon": 126.85595,
+    "escaped": [],
+    "popImproved": 199178
+   },
+   "41220": {
+    "kind": "G007",
+    "label": "중앙동",
+    "lat": 37.05534,
+    "lon": 127.056,
+    "escaped": [],
+    "popImproved": 190114
+   },
+   "41250": {
+    "kind": "G007",
+    "label": "송내동",
+    "lat": 37.88401,
+    "lon": 127.05129,
+    "escaped": [],
+    "popImproved": 189258
+   },
+   "41270": {
+    "kind": "G007",
+    "label": "호수동",
+    "lat": 37.3103,
+    "lon": 126.8244,
+    "escaped": [],
+    "popImproved": 213767
+   },
+   "41280": {
+    "kind": "G007",
+    "label": "덕이동",
+    "lat": 37.69092,
+    "lon": 126.75432,
+    "escaped": [],
+    "popImproved": 458817
+   },
+   "41290": {
+    "kind": "G007",
+    "label": "갈현동",
+    "lat": 37.40979,
+    "lon": 126.98249,
+    "escaped": [],
+    "popImproved": 135033
+   },
+   "41310": {
+    "kind": "G007",
+    "label": "수택1동",
+    "lat": 37.59617,
+    "lon": 127.14841,
+    "escaped": [],
+    "popImproved": 204146
+   },
+   "41360": {
+    "kind": "G007",
+    "label": "화도읍",
+    "lat": 37.65785,
+    "lon": 127.30072,
+    "escaped": [],
+    "popImproved": 251222
+   },
+   "41370": {
+    "kind": "G007",
+    "label": "신장2동",
+    "lat": 37.16977,
+    "lon": 127.06539,
+    "escaped": [],
+    "popImproved": 256520
+   },
+   "41390": {
+    "kind": "G007",
+    "label": "대야동",
+    "lat": 37.44305,
+    "lon": 126.78854,
+    "escaped": [],
+    "popImproved": 179222
+   },
+   "41410": {
+    "kind": "G007",
+    "label": "군포1동",
+    "lat": 37.35369,
+    "lon": 126.94557,
+    "escaped": [],
+    "popImproved": 99739
+   },
+   "41430": {
+    "kind": "G007",
+    "label": "내손2동",
+    "lat": 37.38763,
+    "lon": 126.98149,
+    "escaped": [],
+    "popImproved": 134768
+   },
+   "41450": {
+    "kind": "G007",
+    "label": "미사3동",
+    "lat": 37.5508,
+    "lon": 127.18844,
+    "escaped": [],
+    "popImproved": 403954
+   },
+   "41460": {
+    "kind": "G007",
+    "label": "풍덕천2동",
+    "lat": 37.31945,
+    "lon": 127.08878,
+    "escaped": [],
+    "popImproved": 443625
+   },
+   "41480": {
+    "kind": "G007",
+    "label": "운정1동",
+    "lat": 37.7241,
+    "lon": 126.75138,
+    "escaped": [],
+    "popImproved": 321173
+   },
+   "41500": {
+    "kind": "G007",
+    "label": "중리동",
+    "lat": 37.27794,
+    "lon": 127.44173,
+    "escaped": [],
+    "popImproved": 188721
+   },
+   "41550": {
+    "kind": "G007",
+    "label": "죽산면",
+    "lat": 37.07856,
+    "lon": 127.42248,
+    "escaped": [],
+    "popImproved": 92588
+   },
+   "41570": {
+    "kind": "G007",
+    "label": "풍무동",
+    "lat": 37.60217,
+    "lon": 126.72204,
+    "escaped": [],
+    "popImproved": 249073
+   },
+   "41590": {
+    "kind": "G007",
+    "label": "동탄6동",
+    "lat": 37.19151,
+    "lon": 127.09023,
+    "escaped": [],
+    "popImproved": 380536
+   },
+   "41610": {
+    "kind": "G007",
+    "label": "오포2동",
+    "lat": 37.37774,
+    "lon": 127.25465,
+    "escaped": [],
+    "popImproved": 213478
+   },
+   "41630": {
+    "kind": "G007",
+    "label": "회천2동",
+    "lat": 37.82168,
+    "lon": 127.04676,
+    "escaped": [],
+    "popImproved": 354182
+   },
+   "41650": {
+    "kind": "G007",
+    "label": "소흘읍",
+    "lat": 37.82332,
+    "lon": 127.1386,
+    "escaped": [],
+    "popImproved": 229259
+   },
+   "41670": {
+    "kind": "G007",
+    "label": "중앙동",
+    "lat": 37.2987,
+    "lon": 127.62929,
+    "escaped": [],
+    "popImproved": 92052
+   },
+   "41800": {
+    "kind": "G007",
+    "label": "청산면",
+    "lat": 37.98176,
+    "lon": 127.06768,
+    "escaped": [],
+    "popImproved": 96305
+   },
+   "41820": {
+    "kind": "G007",
+    "label": "청평면",
+    "lat": 37.74046,
+    "lon": 127.42414,
+    "escaped": [],
+    "popImproved": 71949
+   },
+   "41830": {
+    "kind": "G007",
+    "label": "서종면",
+    "lat": 37.60658,
+    "lon": 127.34872,
+    "escaped": [],
+    "popImproved": 158297
+   },
+   "43110": {
+    "kind": "G007",
+    "label": "복대2동",
+    "lat": 36.62618,
+    "lon": 127.44375,
+    "escaped": [],
+    "popImproved": 174262
+   },
+   "43130": {
+    "kind": "G007",
+    "label": "교현2동",
+    "lat": 36.98148,
+    "lon": 127.9291,
+    "escaped": [],
+    "popImproved": 137441
+   },
+   "43150": {
+    "kind": "G007",
+    "label": "송학면",
+    "lat": 37.18491,
+    "lon": 128.26096,
+    "escaped": [
+     "51750"
+    ],
+    "popImproved": 13075
+   },
+   "43720": {
+    "kind": "G007",
+    "label": "마로면",
+    "lat": 36.43574,
+    "lon": 127.82044,
+    "escaped": [],
+    "popImproved": 42906
+   },
+   "43730": {
+    "kind": "G007",
+    "label": "옥천읍",
+    "lat": 36.30738,
+    "lon": 127.57489,
+    "escaped": [],
+    "popImproved": 42721
+   },
+   "43740": {
+    "kind": "G007",
+    "label": "영동읍",
+    "lat": 36.1711,
+    "lon": 127.77603,
+    "escaped": [
+     "43740"
+    ],
+    "popImproved": 28744
+   },
+   "43745": {
+    "kind": "G007",
+    "label": "도안면",
+    "lat": 36.81335,
+    "lon": 127.61294,
+    "escaped": [],
+    "popImproved": 61490
+   },
+   "43750": {
+    "kind": "G007",
+    "label": "덕산읍",
+    "lat": 36.91384,
+    "lon": 127.50921,
+    "escaped": [],
+    "popImproved": 134122
+   },
+   "43760": {
+    "kind": "G007",
+    "label": "사리면",
+    "lat": 36.81692,
+    "lon": 127.6487,
+    "escaped": [],
+    "popImproved": 64200
+   },
+   "43770": {
+    "kind": "G007",
+    "label": "맹동면",
+    "lat": 36.9043,
+    "lon": 127.54759,
+    "escaped": [],
+    "popImproved": 152148
+   },
+   "43800": {
+    "kind": "G007",
+    "label": "어상천면",
+    "lat": 37.10233,
+    "lon": 128.3588,
+    "escaped": [
+     "51750"
+    ],
+    "popImproved": 4841
+   },
+   "44130": {
+    "kind": "G007",
+    "label": "성정1동",
+    "lat": 36.81793,
+    "lon": 127.14145,
+    "escaped": [],
+    "popImproved": 254149
+   },
+   "44150": {
+    "kind": "G007",
+    "label": "이인면",
+    "lat": 36.36195,
+    "lon": 127.0632,
+    "escaped": [
+     "44760"
+    ],
+    "popImproved": 17003
+   },
+   "44180": {
+    "kind": "G007",
+    "label": "대천4동",
+    "lat": 36.33813,
+    "lon": 126.60774,
+    "escaped": [
+     "44760"
+    ],
+    "popImproved": 71194
+   },
+   "44200": {
+    "kind": "G007",
+    "label": "배방읍",
+    "lat": 36.77391,
+    "lon": 127.05395,
+    "escaped": [],
+    "popImproved": 142160
+   },
+   "44210": {
+    "kind": "G007",
+    "label": "수석동",
+    "lat": 36.77137,
+    "lon": 126.46726,
+    "escaped": [],
+    "popImproved": 119148
+   },
+   "44230": {
+    "kind": "G007",
+    "label": "채운면",
+    "lat": 36.17354,
+    "lon": 127.06277,
+    "escaped": [
+     "44760"
+    ],
+    "popImproved": 39982
+   },
+   "44250": {
+    "kind": "G007",
+    "label": "금암동",
+    "lat": 36.27274,
+    "lon": 127.24637,
+    "escaped": [],
+    "popImproved": 64490
+   },
+   "44270": {
+    "kind": "G007",
+    "label": "당진3동",
+    "lat": 36.90852,
+    "lon": 126.64578,
+    "escaped": [],
+    "popImproved": 109408
+   },
+   "44710": {
+    "kind": "G007",
+    "label": "복수면",
+    "lat": 36.16644,
+    "lon": 127.39834,
+    "escaped": [],
+    "popImproved": 56415
+   },
+   "44760": {
+    "kind": "G007",
+    "label": "규암면",
+    "lat": 36.27528,
+    "lon": 126.88417,
+    "escaped": [
+     "44760"
+    ],
+    "popImproved": 41639
+   },
+   "44770": {
+    "kind": "G007",
+    "label": "한산면",
+    "lat": 36.08626,
+    "lon": 126.80206,
+    "escaped": [
+     "44760"
+    ],
+    "popImproved": 17286
+   },
+   "44790": {
+    "kind": "G007",
+    "label": "목면",
+    "lat": 36.41898,
+    "lon": 127.0039,
+    "escaped": [
+     "44760"
+    ],
+    "popImproved": 15257
+   },
+   "44800": {
+    "kind": "G007",
+    "label": "홍성읍",
+    "lat": 36.59705,
+    "lon": 126.66315,
+    "escaped": [],
+    "popImproved": 97197
+   },
+   "44810": {
+    "kind": "G007",
+    "label": "응봉면",
+    "lat": 36.65864,
+    "lon": 126.7612,
+    "escaped": [],
+    "popImproved": 75141
+   },
+   "44825": {
+    "kind": "G007",
+    "label": "태안읍",
+    "lat": 36.75767,
+    "lon": 126.29632,
+    "escaped": [],
+    "popImproved": 41655
+   },
+   "46110": {
+    "kind": "G007",
+    "label": "삼향동",
+    "lat": 34.83046,
+    "lon": 126.4179,
+    "escaped": [
+     "46860"
+    ],
+    "popImproved": 75587
+   },
+   "46130": {
+    "kind": "G007",
+    "label": "서강동",
+    "lat": 34.74113,
+    "lon": 127.72591,
+    "escaped": [],
+    "popImproved": 81901
+   },
+   "46150": {
+    "kind": "G007",
+    "label": "덕연동",
+    "lat": 34.94832,
+    "lon": 127.51073,
+    "escaped": [],
+    "popImproved": 156103
+   },
+   "46170": {
+    "kind": "G007",
+    "label": "빛가람동",
+    "lat": 35.0218,
+    "lon": 126.79033,
+    "escaped": [
+     "46860"
+    ],
+    "popImproved": 60833
+   },
+   "46230": {
+    "kind": "G007",
+    "label": "중마동",
+    "lat": 34.94096,
+    "lon": 127.69766,
+    "escaped": [],
+    "popImproved": 85375
+   },
+   "46710": {
+    "kind": "G007",
+    "label": "담양읍",
+    "lat": 35.32042,
+    "lon": 126.98184,
+    "escaped": [],
+    "popImproved": 24579
+   },
+   "46720": {
+    "kind": "G007",
+    "label": "오산면",
+    "lat": 35.23795,
+    "lon": 127.12153,
+    "escaped": [],
+    "popImproved": 19900
+   },
+   "46730": {
+    "kind": "G007",
+    "label": "구례읍",
+    "lat": 35.20948,
+    "lon": 127.46377,
+    "escaped": [],
+    "popImproved": 17246
+   },
+   "46770": {
+    "kind": "G007",
+    "label": "봉암리",
+    "lat": 34.53089,
+    "lon": 127.15008,
+    "escaped": [],
+    "popImproved": 19799
+   },
+   "46780": {
+    "kind": "G007",
+    "label": "보성읍",
+    "lat": 34.76842,
+    "lon": 127.08007,
+    "escaped": [],
+    "popImproved": 12513
+   },
+   "46790": {
+    "kind": "G007",
+    "label": "화순읍",
+    "lat": 35.05994,
+    "lon": 126.98457,
+    "escaped": [],
+    "popImproved": 39921
+   },
+   "46800": {
+    "kind": "G007",
+    "label": "회진면",
+    "lat": 34.48162,
+    "lon": 126.93958,
+    "escaped": [
+     "46800"
+    ],
+    "popImproved": 19246
+   },
+   "46810": {
+    "kind": "G007",
+    "label": "강진읍",
+    "lat": 34.6358,
+    "lon": 126.77352,
+    "escaped": [],
+    "popImproved": 25137
+   },
+   "46820": {
+    "kind": "G007",
+    "label": "해남읍",
+    "lat": 34.56521,
+    "lon": 126.59919,
+    "escaped": [],
+    "popImproved": 33687
+   },
+   "46830": {
+    "kind": "G007",
+    "label": "신북면",
+    "lat": 34.89027,
+    "lon": 126.69262,
+    "escaped": [
+     "46860"
+    ],
+    "popImproved": 16903
+   },
+   "46840": {
+    "kind": "G007",
+    "label": "삼향읍",
+    "lat": 34.82311,
+    "lon": 126.4416,
+    "escaped": [
+     "46860"
+    ],
+    "popImproved": 105307
+   },
+   "46860": {
+    "kind": "G007",
+    "label": "월야면",
+    "lat": 35.1801,
+    "lon": 126.63226,
+    "escaped": [
+     "46860",
+     "46870"
+    ],
+    "popImproved": 18737
+   },
+   "46870": {
+    "kind": "G007",
+    "label": "영광읍",
+    "lat": 35.27323,
+    "lon": 126.51282,
+    "escaped": [
+     "46860",
+     "46870"
+    ],
+    "popImproved": 36568
+   },
+   "46880": {
+    "kind": "G007",
+    "label": "삼서면",
+    "lat": 35.23219,
+    "lon": 126.64638,
+    "escaped": [
+     "46860",
+     "46870"
+    ],
+    "popImproved": 16716
+   },
+   "46890": {
+    "kind": "G007",
+    "label": "완도읍",
+    "lat": 34.31674,
+    "lon": 126.74554,
+    "escaped": [],
+    "popImproved": 30160
+   },
+   "46900": {
+    "kind": "G007",
+    "label": "진도읍",
+    "lat": 34.48075,
+    "lon": 126.26288,
+    "escaped": [],
+    "popImproved": 17438
+   },
+   "46910": {
+    "kind": "G007",
+    "label": "복룡리",
+    "lat": 34.89594,
+    "lon": 126.33092,
+    "escaped": [
+     "46860"
+    ],
+    "popImproved": 21994
+   },
+   "47110": {
+    "kind": "G007",
+    "label": "기북면",
+    "lat": 36.12852,
+    "lon": 129.16632,
+    "escaped": [
+     "47230"
+    ],
+    "popImproved": 12580
+   },
+   "47130": {
+    "kind": "G007",
+    "label": "서면",
+    "lat": 35.8913,
+    "lon": 129.05253,
+    "escaped": [
+     "47230"
+    ],
+    "popImproved": 24400
+   },
+   "47150": {
+    "kind": "G007",
+    "label": "자산동",
+    "lat": 36.12231,
+    "lon": 128.12777,
+    "escaped": [],
+    "popImproved": 75846
+   },
+   "47170": {
+    "kind": "G007",
+    "label": "서구동",
+    "lat": 36.56434,
+    "lon": 128.71749,
+    "escaped": [],
+    "popImproved": 79346
+   },
+   "47190": {
+    "kind": "G007",
+    "label": "인동동",
+    "lat": 36.10408,
+    "lon": 128.4293,
+    "escaped": [],
+    "popImproved": 178167
+   },
+   "47210": {
+    "kind": "G007",
+    "label": "하망동",
+    "lat": 36.82386,
+    "lon": 128.6303,
+    "escaped": [],
+    "popImproved": 45816
+   },
+   "47230": {
+    "kind": "G007",
+    "label": "서부동",
+    "lat": 35.96366,
+    "lon": 128.92106,
+    "escaped": [
+     "47230"
+    ],
+    "popImproved": 76439
+   },
+   "47250": {
+    "kind": "G007",
+    "label": "남원동",
+    "lat": 36.41549,
+    "lon": 128.1526,
+    "escaped": [],
+    "popImproved": 51479
+   },
+   "47280": {
+    "kind": "G007",
+    "label": "점촌5동",
+    "lat": 36.59043,
+    "lon": 128.18026,
+    "escaped": [],
+    "popImproved": 50805
+   },
+   "47290": {
+    "kind": "G007",
+    "label": "중방동",
+    "lat": 35.8271,
+    "lon": 128.73401,
+    "escaped": [
+     "47230"
+    ],
+    "popImproved": 103668
+   },
+   "47730": {
+    "kind": "G007",
+    "label": "금성면",
+    "lat": 36.26138,
+    "lon": 128.68106,
+    "escaped": [],
+    "popImproved": 47141
+   },
+   "47750": {
+    "kind": "G007",
+    "label": "진보면",
+    "lat": 36.52944,
+    "lon": 129.04672,
+    "escaped": [],
+    "popImproved": 35277
+   },
+   "47760": {
+    "kind": "G007",
+    "label": "입암면",
+    "lat": 36.59314,
+    "lon": 129.09033,
+    "escaped": [],
+    "popImproved": 39868
+   },
+   "47770": {
+    "kind": "G007",
+    "label": "창수면",
+    "lat": 36.54626,
+    "lon": 129.34824,
+    "escaped": [],
+    "popImproved": 44631
+   },
+   "47820": {
+    "kind": "G007",
+    "label": "화양읍",
+    "lat": 35.64984,
+    "lon": 128.70616,
+    "escaped": [],
+    "popImproved": 20415
+   },
+   "47830": {
+    "kind": "G007",
+    "label": "다산면",
+    "lat": 35.82273,
+    "lon": 128.45168,
+    "escaped": [],
+    "popImproved": 97709
+   },
+   "47840": {
+    "kind": "G007",
+    "label": "월항면",
+    "lat": 35.9456,
+    "lon": 128.31578,
+    "escaped": [
+     "47840"
+    ],
+    "popImproved": 65046
+   },
+   "47850": {
+    "kind": "G007",
+    "label": "약목면",
+    "lat": 36.03274,
+    "lon": 128.3637,
+    "escaped": [],
+    "popImproved": 116249
+   },
+   "47900": {
+    "kind": "G007",
+    "label": "호명읍",
+    "lat": 36.59433,
+    "lon": 128.46838,
+    "escaped": [],
+    "popImproved": 30975
+   },
+   "47920": {
+    "kind": "G007",
+    "label": "봉화읍",
+    "lat": 36.88767,
+    "lon": 128.73963,
+    "escaped": [],
+    "popImproved": 28918
+   },
+   "47930": {
+    "kind": "G007",
+    "label": "온정면",
+    "lat": 36.72405,
+    "lon": 129.34542,
+    "escaped": [],
+    "popImproved": 35474
+   },
+   "47940": {
+    "kind": "G007",
+    "label": "도동리",
+    "lat": 37.49358,
+    "lon": 130.90515,
+    "escaped": [],
+    "popImproved": 7308
+   },
+   "48120": {
+    "kind": "G007",
+    "label": "용지동",
+    "lat": 35.23604,
+    "lon": 128.684,
+    "escaped": [],
+    "popImproved": 188729
+   },
+   "48170": {
+    "kind": "G007",
+    "label": "대평면",
+    "lat": 35.23263,
+    "lon": 127.96094,
+    "escaped": [
+     "48860"
+    ],
+    "popImproved": 24084
+   },
+   "48220": {
+    "kind": "G007",
+    "label": "무전동",
+    "lat": 34.85896,
+    "lon": 128.42905,
+    "escaped": [],
+    "popImproved": 64262
+   },
+   "48240": {
+    "kind": "G007",
+    "label": "용현면",
+    "lat": 35.01367,
+    "lon": 128.06133,
+    "escaped": [],
+    "popImproved": 68061
+   },
+   "48250": {
+    "kind": "G007",
+    "label": "장유1동",
+    "lat": 35.20121,
+    "lon": 128.81284,
+    "escaped": [],
+    "popImproved": 194795
+   },
+   "48270": {
+    "kind": "G007",
+    "label": "내이동",
+    "lat": 35.49712,
+    "lon": 128.74617,
+    "escaped": [],
+    "popImproved": 46872
+   },
+   "48310": {
+    "kind": "G007",
+    "label": "장평동",
+    "lat": 34.88944,
+    "lon": 128.60944,
+    "escaped": [],
+    "popImproved": 70421
+   },
+   "48330": {
+    "kind": "G007",
+    "label": "양주동",
+    "lat": 35.3365,
+    "lon": 129.03227,
+    "escaped": [],
+    "popImproved": 128345
+   },
+   "48720": {
+    "kind": "G007",
+    "label": "낙서면",
+    "lat": 35.48414,
+    "lon": 128.37723,
+    "escaped": [
+     "48720"
+    ],
+    "popImproved": 29993
+   },
+   "48730": {
+    "kind": "G007",
+    "label": "산인면",
+    "lat": 35.27929,
+    "lon": 128.4243,
+    "escaped": [],
+    "popImproved": 51195
+   },
+   "48740": {
+    "kind": "G007",
+    "label": "길곡면",
+    "lat": 35.38703,
+    "lon": 128.56898,
+    "escaped": [],
+    "popImproved": 80473
+   },
+   "48820": {
+    "kind": "G007",
+    "label": "고성읍",
+    "lat": 34.97806,
+    "lon": 128.31934,
+    "escaped": [],
+    "popImproved": 34032
+   },
+   "48840": {
+    "kind": "G007",
+    "label": "남해읍",
+    "lat": 34.83849,
+    "lon": 127.89382,
+    "escaped": [],
+    "popImproved": 25863
+   },
+   "48850": {
+    "kind": "G007",
+    "label": "양보면",
+    "lat": 35.04731,
+    "lon": 127.84574,
+    "escaped": [],
+    "popImproved": 37974
+   },
+   "48860": {
+    "kind": "G007",
+    "label": "단성면",
+    "lat": 35.29886,
+    "lon": 127.95765,
+    "escaped": [
+     "48860"
+    ],
+    "popImproved": 28038
+   },
+   "48870": {
+    "kind": "G007",
+    "label": "백전면",
+    "lat": 35.55318,
+    "lon": 127.63532,
+    "escaped": [
+     "48870",
+     "52740"
+    ],
+    "popImproved": 9661
+   },
+   "48880": {
+    "kind": "G007",
+    "label": "거창읍",
+    "lat": 35.68801,
+    "lon": 127.90391,
+    "escaped": [],
+    "popImproved": 47604
+   },
+   "48890": {
+    "kind": "G007",
+    "label": "덕곡면",
+    "lat": 35.61523,
+    "lon": 128.35904,
+    "escaped": [],
+    "popImproved": 26687
+   },
+   "50110": {
+    "kind": "G007",
+    "label": "한림읍",
+    "lat": 33.41058,
+    "lon": 126.26679,
+    "escaped": [],
+    "popImproved": 101782
+   },
+   "50130": {
+    "kind": "G007",
+    "label": "서홍동",
+    "lat": 33.25596,
+    "lon": 126.56018,
+    "escaped": [],
+    "popImproved": 117319
+   },
+   "51110": {
+    "kind": "G007",
+    "label": "효자3동",
+    "lat": 37.87646,
+    "lon": 127.74139,
+    "escaped": [],
+    "popImproved": 191670
+   },
+   "51130": {
+    "kind": "G007",
+    "label": "봉산동",
+    "lat": 37.34755,
+    "lon": 127.95697,
+    "escaped": [],
+    "popImproved": 181903
+   },
+   "51150": {
+    "kind": "G007",
+    "label": "옥천동",
+    "lat": 37.76017,
+    "lon": 128.90298,
+    "escaped": [],
+    "popImproved": 73154
+   },
+   "51170": {
+    "kind": "G007",
+    "label": "송정동",
+    "lat": 37.49971,
+    "lon": 129.1287,
+    "escaped": [],
+    "popImproved": 40234
+   },
+   "51190": {
+    "kind": "G007",
+    "label": "황연동",
+    "lat": 37.17876,
+    "lon": 128.98669,
+    "escaped": [
+     "51190"
+    ],
+    "popImproved": 50695
+   },
+   "51210": {
+    "kind": "G007",
+    "label": "금호동",
+    "lat": 38.20695,
+    "lon": 128.58822,
+    "escaped": [],
+    "popImproved": 105773
+   },
+   "51230": {
+    "kind": "G007",
+    "label": "남양동",
+    "lat": 37.44256,
+    "lon": 129.16847,
+    "escaped": [],
+    "popImproved": 39890
+   },
+   "51720": {
+    "kind": "G007",
+    "label": "홍천읍",
+    "lat": 37.68943,
+    "lon": 127.88431,
+    "escaped": [],
+    "popImproved": 44189
+   },
+   "51730": {
+    "kind": "G007",
+    "label": "횡성읍",
+    "lat": 37.49236,
+    "lon": 127.9926,
+    "escaped": [],
+    "popImproved": 42514
+   },
+   "51750": {
+    "kind": "G007",
+    "label": "영월읍",
+    "lat": 37.18744,
+    "lon": 128.46607,
+    "escaped": [
+     "51750"
+    ],
+    "popImproved": 23398
+   },
+   "51760": {
+    "kind": "G007",
+    "label": "봉평면",
+    "lat": 37.61619,
+    "lon": 128.37949,
+    "escaped": [],
+    "popImproved": 31232
+   },
+   "51770": {
+    "kind": "G007",
+    "label": "신동읍",
+    "lat": 37.21222,
+    "lon": 128.64212,
+    "escaped": [
+     "51750"
+    ],
+    "popImproved": 8951
+   },
+   "51780": {
+    "kind": "G007",
+    "label": "갈말읍",
+    "lat": 38.14772,
+    "lon": 127.3083,
+    "escaped": [],
+    "popImproved": 43052
+   },
+   "51790": {
+    "kind": "G007",
+    "label": "화천읍",
+    "lat": 38.10859,
+    "lon": 127.70497,
+    "escaped": [],
+    "popImproved": 19611
+   },
+   "51800": {
+    "kind": "G007",
+    "label": "국토정중앙면",
+    "lat": 38.10847,
+    "lon": 128.03456,
+    "escaped": [],
+    "popImproved": 33206
+   },
+   "51810": {
+    "kind": "G007",
+    "label": "인제읍",
+    "lat": 38.07039,
+    "lon": 128.17222,
+    "escaped": [],
+    "popImproved": 33759
+   },
+   "51820": {
+    "kind": "G007",
+    "label": "토성면",
+    "lat": 38.26076,
+    "lon": 128.55666,
+    "escaped": [],
+    "popImproved": 26845
+   },
+   "51830": {
+    "kind": "G007",
+    "label": "양양읍",
+    "lat": 38.08067,
+    "lon": 128.62401,
+    "escaped": [],
+    "popImproved": 32260
+   },
+   "52110": {
+    "kind": "G007",
+    "label": "효자4동",
+    "lat": 35.80393,
+    "lon": 127.09783,
+    "escaped": [],
+    "popImproved": 165289
+   },
+   "52130": {
+    "kind": "G007",
+    "label": "회현면",
+    "lat": 35.91349,
+    "lon": 126.75697,
+    "escaped": [
+     "52800"
+    ],
+    "popImproved": 10946
+   },
+   "52140": {
+    "kind": "G007",
+    "label": "망성면",
+    "lat": 36.13259,
+    "lon": 127.02065,
+    "escaped": [
+     "44760"
+    ],
+    "popImproved": 43049
+   },
+   "52180": {
+    "kind": "G007",
+    "label": "농소동",
+    "lat": 35.58328,
+    "lon": 126.82843,
+    "escaped": [
+     "52800"
+    ],
+    "popImproved": 77021
+   },
+   "52190": {
+    "kind": "G007",
+    "label": "동충동",
+    "lat": 35.41103,
+    "lon": 127.38296,
+    "escaped": [],
+    "popImproved": 51353
+   },
+   "52210": {
+    "kind": "G007",
+    "label": "신풍동",
+    "lat": 35.79598,
+    "lon": 126.89792,
+    "escaped": [
+     "52800"
+    ],
+    "popImproved": 54235
+   },
+   "52710": {
+    "kind": "G007",
+    "label": "봉동읍",
+    "lat": 35.94168,
+    "lon": 127.1658,
+    "escaped": [],
+    "popImproved": 63992
+   },
+   "52720": {
+    "kind": "G007",
+    "label": "안천면",
+    "lat": 35.89712,
+    "lon": 127.55292,
+    "escaped": [
+     "52720"
+    ],
+    "popImproved": 16000
+   },
+   "52730": {
+    "kind": "G007",
+    "label": "무주읍",
+    "lat": 36.0088,
+    "lon": 127.6623,
+    "escaped": [],
+    "popImproved": 21939
+   },
+   "52740": {
+    "kind": "G007",
+    "label": "번암면",
+    "lat": 35.532,
+    "lon": 127.54384,
+    "escaped": [
+     "52740"
+    ],
+    "popImproved": 15178
+   },
+   "52750": {
+    "kind": "G007",
+    "label": "임실읍",
+    "lat": 35.6135,
+    "lon": 127.27928,
+    "escaped": [],
+    "popImproved": 17306
+   },
+   "52770": {
+    "kind": "G007",
+    "label": "순창읍",
+    "lat": 35.37694,
+    "lon": 127.14703,
+    "escaped": [],
+    "popImproved": 23791
+   },
+   "52790": {
+    "kind": "G007",
+    "label": "무장면",
+    "lat": 35.41919,
+    "lon": 126.56076,
+    "escaped": [
+     "46870",
+     "52800"
+    ],
+    "popImproved": 22564
+   },
+   "52800": {
+    "kind": "G007",
+    "label": "부안읍",
+    "lat": 35.7296,
+    "lon": 126.73689,
+    "escaped": [
+     "52800"
+    ],
+    "popImproved": 31854
+   }
+  }
  }
 }

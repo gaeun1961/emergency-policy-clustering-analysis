@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import DetailPanel, { IslandBadge, type RegionUsage } from './components/DetailPanel'
+import Report from './components/Report'
 import { FacilityPopup, isVirtual } from './components/FacilityInfo'
 import DoubleTable from './components/DoubleTable'
 import EmdPanel, { bandColor } from './components/EmdPanel'
@@ -10,7 +11,7 @@ import SimPanel, { AddChooser, type RecKind } from './components/SimPanel'
 import { isIsland, loadData, loadSimData, quantile, regionName, type Data, type Region, type SimData } from './data'
 import { CLUSTER_COLOR, GRADE_COLOR, buildMetrics, clusterDesc, isBothVulnerable, sfcaCuts, type MetricKey } from './metrics'
 import { LIST_TOP, facilityUsage, isCenter, nearestFacilities, rankFacilities, type Facility, type FacilityGrade, type SimRegion } from './sim/model'
-import type { Placement } from './sim/placement'
+import type { PlacementData } from './sim/placement'
 import type { Effect } from './sim/recommend'
 import { locateSigungu } from './sim/geo'
 import { EMPTY, applyScenario, fromQuery, keepOnLand, toQuery, type Scenario } from './sim/scenario'
@@ -58,8 +59,15 @@ export default function App() {
     toastTimer.current = window.setTimeout(() => setToast(null), ms)
   }, [])
   const [recKind, setRecKind] = useState<RecKind>('G006')
-  // 순차 배치 추천: 오프라인 계산 결과(web/scripts/placement.mjs)를 시뮬레이션을 처음 켤 때 불러온다
-  const [plans, setPlans] = useState<Record<RecKind, Placement> | null | undefined>(undefined)
+  // 배치 추천(순차 배치·시군구별 1곳): 오프라인 계산 결과(web/scripts/placement.mjs). 시뮬레이터와 지역 보고서가 같이 쓴다
+  const [placement, setPlacement] = useState<PlacementData | null | undefined>(undefined)
+  useEffect(() => {
+    fetch(`${import.meta.env.BASE_URL}data/placement_greedy.json`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then(setPlacement)
+      .catch(() => setPlacement(null)) // 없으면 추천 배치·보고서의 배치 효과만 뺀다
+  }, [])
+  const plans = placement === undefined ? undefined : placement?.plans ?? null
   // AI 브리핑 (src/briefing.py 가 오프라인 생성). 없으면 지역 상세에서 빼고 보여 준다
   const [briefs, setBriefs] = useState<{ 모델: string; 지역: Record<string, { 브리핑: string }> } | null>(null)
   useEffect(() => {
@@ -86,13 +94,6 @@ export default function App() {
     setHistory((h) => (h.length === 1 ? [s] : h))
     if (dropped) flash(`공유 링크의 ${dropped}곳은 바다·경계 밖이라 제외했어요`, 6000)
   }, [data, flash])
-  useEffect(() => {
-    if (!simOn || plans !== undefined) return
-    fetch(`${import.meta.env.BASE_URL}data/placement_greedy.json`)
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then((d: { plans: Record<RecKind, Placement> }) => setPlans(d.plans))
-      .catch(() => setPlans(null)) // 없으면 추천 배치만 숨긴다
-  }, [simOn, plans])
   // URL = 시뮬레이션 시나리오 + 보던 시군구·탭. 기록을 쌓지 않고 바꿔 쓴다(replaceState): 뒤로가기는 이 페이지 전으로 간다
   useEffect(() => {
     if (!selected) return // 데이터를 불러오기 전에는 링크의 r 을 지우지 않게
@@ -283,6 +284,7 @@ export default function App() {
   if (!data || !metrics || !baseCuts || !view) return <main className="page"><p className="muted">불러오는 중…</p></main>
 
   const metric = metrics[metricKey]
+  const brief = selected && briefs?.지역[selected] ? { text: briefs.지역[selected].브리핑, model: modelLabel(briefs.모델) } : null
   const hovered = hover && view.byCode.get(hover.code)
   const { meta } = data
   const cuts = simOn && simData ? {
@@ -367,7 +369,7 @@ export default function App() {
             ) : tab === 'detail' && <DetailPanel region={selected ? view.byCode.get(selected) ?? null : null} total={meta.시군구수} regions={view.regions}
               usage={usage} cap={simData?.baseline.근사상한분} sim={simOn} section={detailView === 'facilities' ? 'facilities' : 'overview'}
               welfareYm={meta.출처.find((s) => s.이름.startsWith('복지로'))?.기준} deptYm={meta.기준시점['진료과목']}
-              briefing={selected && briefs?.지역[selected] ? { text: briefs.지역[selected].브리핑, model: modelLabel(briefs.모델) } : null} />}
+              briefing={brief} onPrint={() => window.print()} />}
             {tab === 'dist' && (
               <>
                 <ul className="legend">
@@ -449,6 +451,11 @@ export default function App() {
         </div>
       )}
       {toast && <div className="toast" role="status">{toast}</div>}
+      {selected && view.byCode.get(selected) && (
+        <Report r={view.byCode.get(selected)!} regions={view.regions} meta={meta} sigungu={data.sigungu} byCode={view.byCode} usage={usage}
+          placement={placement} brief={brief} sim={simOn}
+          url={`${location.origin}${location.pathname}${withView(toQuery(simOn, scenario), selected, 'detail', simOn)}`} />
+      )}
       {facPopup && <FacilityPopup f={facPopup.f} x={facPopup.x} y={facPopup.y} onClose={() => setFacPopup(null)} time={popupTime(facPopup.f)}
         onRemove={simOn ? () => removeFacility(facPopup.f) : undefined} deptYm={data.meta.기준시점['진료과목']} />}
       {simOn && pending && <AddChooser x={pending.x} y={pending.y} onPick={addAt} onCancel={() => setPending(null)} />}

@@ -5,7 +5,7 @@ import { textOn } from '../theme'
 import { FacilityLines } from './FacilityInfo'
 import { DEPT_NOTE } from '../departments'
 
-interface Props { region: Region | null; total: number; regions: Region[]; usage?: RegionUsage | null; cap?: number; sim?: boolean; section: 'overview' | 'facilities'; welfareYm?: string | null; deptYm?: string; briefing?: { text: string; model: string } | null }
+interface Props { region: Region | null; total: number; regions: Region[]; usage?: RegionUsage | null; cap?: number; sim?: boolean; section: 'overview' | 'facilities'; welfareYm?: string | null; deptYm?: string; briefing?: { text: string; model: string } | null; onPrint?: () => void }
 
 /** 근사값 반영 인구 비율이 이 이상이면 배지 */
 const APPROX_BADGE = 0.05
@@ -122,7 +122,7 @@ export function IslandBadge() {
 }
 
 /** 지역 상세: 개요(판정·점수·지표·군집) 또는 이용 기관(응급의료기관·센터 목록). 읍면동 보기는 EmdPanel */
-export default function DetailPanel({ region: r, total, regions, usage, cap, sim, section, welfareYm, deptYm, briefing }: Props) {
+export default function DetailPanel({ region: r, total, regions, usage, cap, sim, section, welfareYm, deptYm, briefing, onPrint }: Props) {
   if (!r) return <div className="detail"><p className="muted">지도, 산점도, 표에서 시군구를 선택하세요.</p></div>
 
   const cards: [string, string][] = [
@@ -157,6 +157,12 @@ export default function DetailPanel({ region: r, total, regions, usage, cap, sim
   return (
     <div className="detail">
       {head}
+      {onPrint && (
+        <div className="report-action">
+          <button type="button" className="btn" onClick={onPrint}>지역 보고서 인쇄·PDF 저장</button>
+          <span className="muted small">판정·지표·AI 브리핑·가까운 기관·배치 효과를 A4 한 장으로</span>
+        </div>
+      )}
       {briefing && (
         <section className="ai-brief" aria-label="AI 브리핑">
           <h3>AI 브리핑 <span className="muted small">{briefing.model} 생성</span></h3>
