@@ -305,7 +305,10 @@ export default function App() {
   return (
     <div className="app">
       <header className="topbar">
-        <h1>응급의료 × 복지 이중 취약지역</h1>
+        <div className="brand">
+          <h1>골든타임 돌봄지도</h1>
+          <p>응급의료 × 돌봄 이중 취약지역</p>
+        </div>
         <dl className="stats">
           {chip('이중 취약', meta.이중취약수)}
           {chip('준 이중 취약', meta.준이중취약수)}
