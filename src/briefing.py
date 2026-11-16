@@ -22,17 +22,20 @@ ROOT = Path(__file__).resolve().parents[1]
 PUB = ROOT / 'web' / 'public' / 'data'
 OUT = ROOT / 'data' / 'processed' / 'ai_briefing.json'
 MODEL = 'gemini-3.5-flash-lite'  # 무료 등급: 3.5-flash 는 하루 20회라 229곳 불가, 3.8·3.7 은 혼잡(2026-11). lite 도 같은 검증을 통과
-PROMPT_VERSION = 2  # 2: 배치 효과(시군구별 1곳)·기초연금 사실, 근사 주행시간 표시
+PROMPT_VERSION = 3  # 3: 한 문단 -> 짧은 세 줄(핵심·우선 서비스·배치 제안). 2: 배치 효과·기초연금 사실, 근사 주행시간 표시
 URL = f'https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent'
+# 화면에 보일 항목 이름 -> 모델 응답 JSON 키
+PARTS = {'핵심': 'core', '우선 서비스': 'service', '배치 제안': 'placement'}
 
-INSTRUCTION = """너는 지자체 복지·보건 정책 담당자에게 시군구 상황을 알려 주는 브리핑을 쓴다.
+INSTRUCTION = """너는 지자체 복지·보건 정책 담당자가 10초 안에 읽을 시군구 브리핑을 쓴다.
 규칙:
 1. 아래 [사실]에 있는 숫자만, 적힌 그대로 쓴다. 계산·반올림·추정·새 통계·비교 배수를 만들지 않는다.
 2. 사실에 없는 기관명, 사업명, 정책, 원인을 지어내지 않는다.
-3. 4~5문장, 300~550자, "~다"로 끝나는 보고서 문체. 제목·목록·마크다운 없이 한 문단.
-4. 순서: 판정과 가장 두드러진 취약 원인 -> 복지 측면 -> 우선 검토할 서비스 1~2개 -> 배치 효과.
-5. 우선 검토할 서비스는 [검토 후보]에서만 고르고, 그 후보의 근거가 된 사실을 함께 쓴다. 후보가 없으면 "현재 지표로는 우선 검토 대상이 두드러지지 않는다"고 쓴다.
-6. [사실]에 "배치 효과(시뮬레이션)"가 있으면 마지막 문장에서 그 위치와 효과를 근거로 배치 검토를 제안한다. 벗어나는 시군구가 0곳이면 주행시간이 줄어드는 인구만 쓴다. "이상(근사)"이 붙은 시간은 그 표현을 그대로 쓴다."""
+3. 세 항목을 JSON 으로 쓴다. 항목마다 한 문장, 40~100자, "~다."로 끝나는 보고서 문체. 마크다운·줄바꿈 없음.
+   - core: 판정(등급)과 가장 두드러진 취약 원인 지표 1~2개를 숫자와 함께. 순위(몇 곳 중 몇 위)는 쓰지 않는다.
+   - service: [검토 후보]에서 1~2개를 고르고 근거 숫자 1개를 붙인다. core 에 쓴 숫자는 다시 쓰지 않는다. 후보가 없으면 "현재 지표로는 우선 검토할 서비스가 두드러지지 않는다."
+   - placement: [사실]의 "배치 효과(시뮬레이션)" 중 이중 취약에서 벗어나는 시군구가 더 많은 것 하나의 위치와 효과. 벗어나는 시군구가 1곳이면 "OO군이 이중 취약에서 벗어난다", 여러 곳이면 "OO군, OO군 N곳이 이중 취약에서 벗어난다"처럼 이름과 함께, 0곳이면 주행시간이 줄어드는 인구를 쓴다. 배치 효과가 없으면 "시군구 안 1곳 배치로 나아지는 후보는 없다." "이상(근사)"이 붙은 시간과 기관 종류 이름(예: 응급의료기관·센터)은 [사실]의 표기 그대로 쓴다."""
+SCHEMA = {'type': 'OBJECT', 'properties': {k: {'type': 'STRING'} for k in PARTS.values()}, 'required': list(PARTS.values())}
 
 pct = lambda v: f'{v * 100:.1f}%'
 mins = lambda v: f'{v:.0f}분' if v >= 10 else f'{v:.1f}분'
@@ -113,10 +116,10 @@ def numbers(text):
     return {m.replace(',', '') for m in NUM.findall(text)}
 
 
-def check(text, facts):
-    """검증 실패 사유 목록 (비면 통과): 사실에 없는 숫자, 잘렸거나 형식이 다른 답"""
+def check(text, facts, lo=20, hi=130):
+    """한 줄 검증 실패 사유 목록 (비면 통과): 사실에 없는 숫자, 잘렸거나 형식이 다른 답"""
     bad = sorted(numbers(text) - numbers('\n'.join(facts)))
-    if not 150 <= len(text) <= 700:
+    if not lo <= len(text) <= hi:
         bad.append(f'길이 {len(text)}자')
     if not text.endswith('다.'):
         bad.append('문장이 끝나지 않음')
@@ -125,10 +128,18 @@ def check(text, facts):
     return bad
 
 
+def check_parts(parts, facts):
+    """세 줄 브리핑 검증: 항목이 모두 있고 줄마다 check 통과"""
+    if not isinstance(parts, dict) or list(parts) != list(PARTS):
+        return ['항목 누락']
+    return [f'{k}: {b}' for k, v in parts.items() for b in check(v, facts)]
+
+
 def generate(key, lines, cands, session):
     prompt = '[사실]\n' + '\n'.join(f'- {l}' for l in lines) + '\n\n[검토 후보]\n' + ('\n'.join(f'- {c}' for c in cands) or '- 없음')
     body = {'systemInstruction': {'parts': [{'text': INSTRUCTION}]}, 'contents': [{'role': 'user', 'parts': [{'text': prompt}]}],
-            'generationConfig': {'temperature': 0.2, 'maxOutputTokens': 8192}}  # 생각(thinking) 토큰도 이 안에서 써서 넉넉히
+            'generationConfig': {'temperature': 0.2, 'maxOutputTokens': 8192,  # 생각(thinking) 토큰도 이 안에서 써서 넉넉히
+                                 'responseMimeType': 'application/json', 'responseSchema': SCHEMA}}
     import requests
     for attempt in range(6):
         try:
@@ -147,9 +158,13 @@ def generate(key, lines, cands, session):
         if not r.ok:
             raise RuntimeError(f'Gemini HTTP {r.status_code}: {r.json().get("error", {}).get("status", "")}')  # 키·URL 은 넣지 않는다
         cand = r.json()['candidates'][0]
-        if cand.get('finishReason') != 'STOP':  # 길이 제한 등으로 잘린 답은 버린다 (check 에서 다시 생성)
-            return ''
-        return ' '.join(p.get('text', '') for p in cand['content']['parts'] if not p.get('thought')).strip()
+        if cand.get('finishReason') != 'STOP':  # 길이 제한 등으로 잘린 답은 버린다 (check_parts 에서 다시 생성)
+            return None
+        try:
+            raw = json.loads(''.join(p.get('text', '') for p in cand['content']['parts'] if not p.get('thought')))
+        except ValueError:
+            return None
+        return {label: str(raw.get(key, '')).strip() for label, key in PARTS.items()}
     raise RuntimeError('Gemini 요청이 계속 제한됨 (잠시 뒤 다시 실행하면 이어서 생성)')
 
 
@@ -174,20 +189,20 @@ def main():
     failed = []
     for i, r in enumerate(targets):
         lines, cands = facts_for(r, regions, placement)
-        if r['코드'] in done and done[r['코드']]['사실'] == lines and not a.only:
+        if r['코드'] in done and done[r['코드']]['사실'] == lines and done[r['코드']].get('버전') == PROMPT_VERSION and not a.only:
             continue
-        text, bad = '', ['-']
+        text, bad = None, ['-']
         for _ in range(3):
             text = generate(key, lines, cands, session)
-            bad = check(text, lines)
+            bad = check_parts(text, lines)
             if not bad:
                 break
         if bad:
             failed.append((r['코드'], bad))
             done.pop(r['코드'], None)
         else:
-            done[r['코드']] = {'브리핑': text, '사실': lines, '검토후보': cands}
-        print(f"[{i + 1}/{len(targets)}] {r['시도']} {r['시군구']}: {'실패 ' + str(bad) if bad else f'{len(text)}자'}", flush=True)
+            done[r['코드']] = {'브리핑': text, '사실': lines, '검토후보': cands, '버전': PROMPT_VERSION}
+        print(f"[{i + 1}/{len(targets)}] {r['시도']} {r['시군구']}: {'실패 ' + str(bad) if bad else f"{sum(map(len, text.values()))}자"}", flush=True)
         save(done)
         time.sleep(1)  # 분당 요청 제한 여유
     print(f'완료: {len(done)}곳, 숫자 검증 실패로 뺀 곳 {len(failed)}곳 {failed}')
