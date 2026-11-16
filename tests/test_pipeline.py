@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from src import accessibility, briefing, disability, fetch_emergency, population, welfare  # noqa: E402
+from src import accessibility, basic_pension, briefing, disability, fetch_emergency, population, welfare  # noqa: E402
 from src.build_table import main  # noqa: E402
 from src.regions import age_start, region_key  # noqa: E402
 
@@ -230,6 +230,26 @@ def test_departments_parse():
     assert fetch_emergency.parse_departments(None) == [] and fetch_emergency.parse_departments('') == []
 
 
+def test_basic_pension():
+    """기초연금 수급률: 기준월 행만, '시도 시군구' 나눔, 일반구는 상위 시로, 미매칭 보고, 순위 1 = 가장 높음"""
+    with tempfile.TemporaryDirectory() as d:
+        d = Path(d)
+        pop = d / 'pop.csv'
+        pd.DataFrame({'행정기관코드': ['11110', '41110', '36110'], '시도': ['서울', '경기', '세종'], '시군구': ['종로구', '수원시', ''],
+                      '총인구': [1000, 2000, 500]}).to_csv(pop, index=False, encoding='utf-8-sig')
+        rows = [('2025-11', '서울특별시 종로구', 999, 1), ('2025-12', '서울특별시 종로구', 100, 50),
+                ('2025-12', '경기도 수원시장안구', 100, 30), ('2025-12', '경기도 수원시권선구', 300, 90),
+                ('2025-12', '세종특별자치시 세종특별자치시', 200, 160), ('2025-12', '없는도 없는군', 10, 5)]
+        write(d / 'raw' / '기초연금.csv', pd.DataFrame([[m, n, a, b, round(b / a * 100, 2)] for m, n, a, b in rows],
+                                                    columns=['통계연월', '행정동명', '65세이상 인구수', '수급자수', '수급비율']))
+        u, ok = basic_pension.build(raw=d / 'raw', out=d / 'out.csv', pop_csv=pop)
+        assert not ok  # 미매칭 '없는도 없는군'
+        assert u.loc['11110', ['65세이상인구', '기초연금수급자수']].tolist() == [100, 50]   # 2025-11 행은 안 씀
+        assert u.loc['41110', ['65세이상인구', '기초연금수급자수']].tolist() == [400, 120]  # 장안구 + 권선구 -> 수원시
+        assert u['기초연금수급률'].round(3).tolist() == [0.5, 0.3, 0.8]
+        assert u['기초연금수급률_순위'].tolist() == [2, 3, 1]
+
+
 def test_service_key():
     """공공데이터포털 키: DATA_GO_KR_SERVICE_KEY 우선, 없으면 KR_SERVICE_KEY, URL 인코딩은 풀어서"""
     saved = {n: os.environ.pop(n, None) for n in fetch_emergency.KEY_NAMES}
@@ -264,5 +284,6 @@ if __name__ == '__main__':
     test_briefing_check()
     test_briefing_output()
     test_departments_parse()
+    test_basic_pension()
     test_service_key()
     print('OK')
