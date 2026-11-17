@@ -6,7 +6,7 @@ import { KIND_NAME, bestSentence, planStep, strip } from '../report'
 import type { RankedFacility } from '../sim/model'
 import type { PlacementData } from '../sim/placement'
 import { GRADE_NAME } from '../sim/scenario'
-import type { RegionUsage } from './DetailPanel'
+import { BriefList, type Brief, type RegionUsage } from './DetailPanel'
 import { bandColor } from './EmdPanel'
 import type { MapOverlay } from './MapView'
 import type { EmdRow } from '../sim/emd'
@@ -22,7 +22,7 @@ interface Props {
   byCode: Map<string, Region>
   usage: RegionUsage | null
   placement: PlacementData | null | undefined
-  brief: { text: string; model: string } | null
+  brief: Brief | null
   url: string
   sim: boolean
   emd: ReportEmd | null
@@ -159,7 +159,7 @@ export default function Report({ r, regions, meta, sigungu, byCode, usage, place
       {brief && (
         <section className="report-brief">
           <div className="report-h"><h2>AI 브리핑</h2><span>{brief.model} 생성, 숫자는 데이터와 자동 대조</span></div>
-          <p>{brief.text}</p>
+          <BriefList parts={brief.parts} />
         </section>
       )}
 

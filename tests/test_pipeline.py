@@ -198,15 +198,24 @@ def test_welfare():
 
 
 def test_briefing_check():
-    """AI 브리핑 검증: 사실에 없는 숫자, 잘린 답, 마크다운이면 실패"""
+    """AI 브리핑 검증(줄 단위): 사실에 없는 숫자, 잘린 답, 마크다운이면 실패. 세 항목이 모두 있어야 함"""
     facts = ['최근접 응급의료기관까지 자동차 주민 평균 44분 (전국 중앙값 6.9분)', '독거노인비율 41.6% (229곳 중 11위)']
-    good = '최근접 응급의료기관까지 주민 평균 44분이 걸려 전국 중앙값 6.9분보다 멀다. ' * 3 + '독거노인비율은 41.6%로 229곳 중 11위이며 응급안전안심서비스 확대를 우선 검토할 만하다.'
+    good = '최근접 응급의료기관까지 주민 평균 44분이 걸려 전국 중앙값 6.9분보다 멀다.'
     assert briefing.check(good, facts) == []
     assert '45' in briefing.check(good.replace('44분', '45분'), facts)            # 지어낸 숫자
-    assert briefing.check(good.replace('41.6%', '41.60%'), facts) != []          # 다른 형식의 숫자도 거절
+    assert briefing.check('독거노인비율이 41.60%로 높아 응급안전안심서비스 확대를 검토한다.', facts) != []  # 다른 형식의 숫자도 거절
     assert any('끝나지' in b for b in briefing.check(good[:-1], facts))           # 잘린 문장
     assert any('길이' in b for b in briefing.check('44분이다.', facts))
     assert any('마크다운' in b for b in briefing.check('**' + good, facts))
+    assert any('길이' in b for b in briefing.check(good * 3, facts))                # 한 줄이 너무 김
+    parts = dict(zip(briefing.PARTS, [good, '독거노인비율이 41.6%로 높아 응급안전안심서비스 확대를 검토한다.', good]))
+    assert briefing.check_parts(parts, facts) == []
+    assert briefing.check_parts({**parts, '우선 서비스': '45분이다.'}, facts) != []
+    assert briefing.check_parts({'핵심': good}, facts) == ['항목 누락']
+    assert briefing.check_parts({**parts, '핵심': good.replace('44분', '44퍼센트')}, facts) != []  # % 를 풀어 씀
+    eff = facts + ['배치 효과(시뮬레이션): 시군구 안 지품면에 지역응급의료센터 1곳을 두면 이중 취약에서 벗어나는 시군구 0곳, 주행시간이 줄어드는 인구 81,468명']
+    assert briefing.check_parts({**parts, '배치 제안': '시군구 안 1곳 배치로 나아지는 후보는 없다.'}, eff) != []  # 배치 효과가 있는데 없다고 씀
+    assert briefing.check_parts({**parts, '배치 제안': '시군구 안 지품면에 지역응급의료센터 1곳을 두면 81,468명의 주행시간이 줄어든다.'}, eff) == []
 
 
 def test_briefing_facts():
@@ -233,7 +242,8 @@ def test_briefing_output():
     placement = json.loads((briefing.PUB / 'placement_greedy.json').read_text(encoding='utf-8'))
     by_code = {r['코드']: r for r in regions}
     for code, b in out['지역'].items():
-        assert briefing.check(b['브리핑'], b['사실']) == [], code
+        assert b['버전'] == briefing.PROMPT_VERSION, code
+        assert briefing.check_parts(b['브리핑'], b['사실']) == [], code
         assert b['사실'] == briefing.facts_for(by_code[code], regions, placement)[0], f'{code}: 사실이 지금 데이터와 다름 -> python -m src.briefing'
     assert out == json.loads((briefing.PUB / 'ai_briefing.json').read_text(encoding='utf-8'))
 

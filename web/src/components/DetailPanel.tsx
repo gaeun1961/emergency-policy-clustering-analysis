@@ -5,7 +5,15 @@ import { textOn } from '../theme'
 import { FacilityLines } from './FacilityInfo'
 import { DEPT_NOTE } from '../departments'
 
-interface Props { region: Region | null; total: number; regions: Region[]; usage?: RegionUsage | null; cap?: number; sim?: boolean; section: 'overview' | 'facilities'; welfareYm?: string | null; pensionYm?: string | null; safetyYm?: string | null; deptYm?: string; briefing?: { text: string; model: string } | null; onPrint?: () => void }
+/** AI 브리핑: 짧은 세 줄 (src/briefing.py 가 핵심·우선 서비스·배치 제안 순으로 생성) */
+export interface Brief { parts: [string, string][]; model: string }
+export const BriefList = ({ parts }: { parts: [string, string][] }) => (
+  <dl className="brief-list">
+    {parts.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
+  </dl>
+)
+
+interface Props { region: Region | null; total: number; regions: Region[]; usage?: RegionUsage | null; cap?: number; sim?: boolean; section: 'overview' | 'facilities'; welfareYm?: string | null; pensionYm?: string | null; safetyYm?: string | null; deptYm?: string; briefing?: Brief | null; onPrint?: () => void }
 
 /** 근사값 반영 인구 비율이 이 이상이면 배지 */
 const APPROX_BADGE = 0.05
@@ -166,9 +174,10 @@ export default function DetailPanel({ region: r, total, regions, usage, cap, sim
       )}
       {briefing && (
         <section className="ai-brief" aria-label="AI 브리핑">
-          <h3>AI 브리핑 <span className="muted small">{briefing.model} 생성</span></h3>
-          <p>{briefing.text}</p>
-          <p className="hint">생성형 AI가 아래 지표만 보고 쓴 요약입니다. 숫자는 데이터와 자동으로 대조했고, 판정·점수에는 쓰지 않습니다.{sim ? ' 시뮬레이션 전 현재 기준입니다.' : ''}</p>
+          <h3>AI 제안 <span className="muted small">{briefing.model} 생성</span></h3>
+          {/* '핵심'은 아래 점수·지표와 겹쳐 화면에서는 빼고, 판단(우선 서비스·배치 제안)만. 지역 보고서에는 세 줄 모두 */}
+          <BriefList parts={briefing.parts.filter(([k]) => k !== '핵심')} />
+          <p className="hint">생성형 AI가 지표와 배치 시뮬레이션 결과만 보고 쓴 제안입니다. 숫자는 데이터와 자동으로 대조했고, 판정·점수에는 쓰지 않습니다.{sim ? ' 시뮬레이션 전 현재 기준입니다.' : ''}</p>
         </section>
       )}
 

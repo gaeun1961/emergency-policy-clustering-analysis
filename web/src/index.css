@@ -200,6 +200,10 @@ input[type="checkbox"] { accent-color: var(--color-accent); width: 16px; height:
 .ai-brief { margin: 0 0 var(--space-md); padding: var(--space-sm) var(--space-md); background: var(--color-paper-2); border-radius: var(--radius-input); }
 .ai-brief h3 { margin: 0 0 var(--space-2xs); }
 .ai-brief p { max-width: none; font-size: var(--text-sm); line-height: 1.65; margin: 0; }
+.brief-list { margin: 0; display: grid; gap: var(--space-2xs); font-size: var(--text-sm); line-height: 1.55; }
+.brief-list div { display: grid; grid-template-columns: 5.5em minmax(0, 1fr); gap: var(--space-xs); }
+.brief-list dt { font-weight: 600; color: var(--color-accent-deep); }
+.brief-list dd { margin: 0; }
 .ai-brief .hint { margin-top: var(--space-xs); font-size: var(--text-xs); }
 .facts .ref dd .muted { font-weight: 400; }
 .facts dd .rank { display: block; font-size: var(--text-xs); white-space: nowrap; }
@@ -466,6 +470,7 @@ tbody tr:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 
   .strip-dot { fill: var(--data-both); stroke: var(--color-surface); stroke-width: 1.4; }
   .strip-more { fill: none; stroke: var(--color-ink); stroke-width: 1.2; }
   .report-brief p { font-size: 9pt; line-height: 1.5; }
+  .report .brief-list { font-size: 9pt; line-height: 1.5; gap: 0.6mm; }
   .report-table { width: 100%; border-collapse: collapse; font-size: 8.3pt; }
   .report-table th, .report-table td { padding: 0.45mm 1mm; border-bottom: 1px solid var(--color-rule); white-space: normal; vertical-align: top; }
   .report-table thead th { color: var(--color-muted); font-weight: 500; }

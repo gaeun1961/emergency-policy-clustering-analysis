@@ -77,7 +77,7 @@ export default function App() {
     fetch(`${import.meta.env.BASE_URL}data/access_curve.json`).then((r) => (r.ok ? r.json() : null)).then(setCurve).catch(() => setCurve(null))
   }, [tab, curve])
   // AI 브리핑 (src/briefing.py 가 오프라인 생성). 없으면 지역 상세에서 빼고 보여 준다
-  const [briefs, setBriefs] = useState<{ 모델: string; 지역: Record<string, { 브리핑: string }> } | null>(null)
+  const [briefs, setBriefs] = useState<{ 모델: string; 지역: Record<string, { 브리핑: Record<string, string> }> } | null>(null)
   useEffect(() => {
     fetch(`${import.meta.env.BASE_URL}data/ai_briefing.json`).then((r) => (r.ok ? r.json() : null)).then(setBriefs).catch(() => setBriefs(null))
   }, [])
@@ -294,7 +294,7 @@ export default function App() {
   if (!data || !metrics || !baseCuts || !view) return <main className="page"><p className="muted">불러오는 중…</p></main>
 
   const metric = metrics[metricKey]
-  const brief = selected && briefs?.지역[selected] ? { text: briefs.지역[selected].브리핑, model: modelLabel(briefs.모델) } : null
+  const brief = selected && briefs?.지역[selected] ? { parts: Object.entries(briefs.지역[selected].브리핑), model: modelLabel(briefs.모델) } : null
   const hovered = hover && view.byCode.get(hover.code)
   const { meta } = data
   const cuts = simOn && simData ? {
