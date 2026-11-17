@@ -87,8 +87,9 @@ function FacilityRows({ title, items }: { title: string; items: RankedFacility[]
             <td>{x.f.기관명}<span className="muted"> {GRADE_NAME[x.f.등급]}</span></td>
             <td className="num">{minText(x)}</td>
             <td className="num">{x.alt ? '-' : fmt.pct(x.share)}</td>
-            <td>{keys ? <>{keys.filter((d) => d.has).map((d) => d.name).join(', ') || '없음'}
-              {keys.some((d) => !d.has) && <span className="muted"> (없음: {keys.filter((d) => !d.has).map((d) => d.name).join(', ')})</span>}</> : '-'}</td>
+            {/* 한 장에 들어가게 없는 과만 (보유 목록은 대시보드 팝업에) */}
+            <td>{!keys ? '-' : keys.every((d) => d.has) ? <span className="muted">{keys.length}과 모두 있음</span>
+              : <>없음: {keys.filter((d) => !d.has).map((d) => d.name).join(', ')}</>}</td>
           </tr>
         )
       })}
@@ -167,7 +168,7 @@ export default function Report({ r, regions, meta, sigungu, byCode, usage, place
         <section>
           <div className="report-h"><h2>가까운 응급의료기관</h2><span>주민 평균 자동차 주행시간 순</span></div>
           <table className="report-table">
-            <thead><tr><th>기관</th><th className="num">주민 평균</th><th className="num">이용 주민</th><th>주요 진료과목</th></tr></thead>
+            <thead><tr><th>기관</th><th className="num">주민 평균</th><th className="num">이용 주민</th><th>주요 진료과목 (없는 과)</th></tr></thead>
             <tbody>
               <FacilityRows title="응급의료기관" items={usage.em} />
               <FacilityRows title="권역·지역응급의료센터" items={usage.ctr} />
