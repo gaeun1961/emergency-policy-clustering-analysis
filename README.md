@@ -4,7 +4,7 @@
 
 **대시보드: https://gaeun1961.github.io/emergency-policy-clustering-analysis/**
 
-![대시보드: 등급 지도와 지역 상세](docs/images/dashboard.png)
+![시연: 분포 분석 → 지역 상세(AI 제안·서비스 공백) → 시뮬레이터 → 기관 추가로 등급 변화](docs/images/demo.gif)
 
 | 지역 상세 (AI 제안·서비스 공백·지표) | 배치 시뮬레이터 (해남 지역센터 추가 예시) |
 |---|---|
@@ -22,6 +22,56 @@
 - **분포 탭 분석**: 두 점수 산점도, 응급실까지 N분 안에 사는 주민 누적 비율, 등급별 지표 비교 (처음 열면 이 탭부터)
 - **배치 시뮬레이터**: 지도에 응급의료기관을 추가·제거·승격해 등급 변화를 바로 계산, 추천 위치와 1~5곳 순차 최적 배치
 - **지역 보고서**: 판정·지표 위치 차트·읍면동 지도·AI 브리핑·가까운 기관·배치 효과를 A4 한 장으로 (229곳 모두 1쪽 확인)
+
+**시스템 구조**
+
+공개 통계와 도로망으로 지표·판정·검증·배치 최적화·AI 브리핑을 오프라인에서 미리 만들고, 웹은 그 결과(JSON)만 읽는다. 서버 없이 GitHub Pages 로 배포하고, 기관을 바꿔 보는 재계산만 브라우저(Web Worker)에서 한다. 브라우저 계산이 Python 결과와 같은지는 vitest 로 검사한다.
+
+```mermaid
+flowchart LR
+  subgraph SRC["공공 데이터"]
+    S1["행안부 주민등록·행정동 인구<br/>KOSIS 등록장애인"]
+    S2["국립중앙의료원<br/>응급의료기관 API"]
+    S3["복지로·보건복지부<br/>수급자·기초연금·응급안전안심"]
+    S4["OpenStreetMap 도로망<br/>카카오 로컬·행정동 경계"]
+  end
+  subgraph PY["오프라인 파이프라인 (src/, web/scripts/)"]
+    P1["수집·정제<br/>population · fetch_emergency · welfare"]
+    P2["자동차 주행시간<br/>로컬 OSRM (drivetime)"]
+    P3["접근성 지표<br/>accessibility · sfca · emd_metrics"]
+    P4["판정·군집 (노트북)<br/>백분위 점수 · K-means"]
+    P5["검증<br/>basic_pension · emergency_safety · sensitivity"]
+    OPT["배치 최적화<br/>placement.mjs"]
+    P6["AI 브리핑<br/>briefing + Gemini"]
+  end
+  EXP["export_web_data.py<br/>web/public/data/*.json"]
+  subgraph WEB["웹 (React)"]
+    W1["지도 · 지역 상세 · 분포 탭"]
+    W2["배치 시뮬레이터<br/>Web Worker 재계산"]
+    W3["지역 보고서 A4"]
+  end
+  S1 & S3 --> P1
+  S2 --> P1
+  S4 --> P2
+  P1 & P2 --> P3 --> P4 --> EXP
+  P5 --> EXP
+  OPT --> P6 --> EXP
+  OPT --> EXP
+  EXP --> WEB
+  WEB --> GP["GitHub Pages 배포"]
+  GA["GitHub Actions<br/>매월 데이터 변경 감지 → 이슈"] -.-> SRC
+```
+
+생성형 AI 는 판정·점수에 쓰지 않고, 아래처럼 검증을 통과한 문장만 싣는다.
+
+```mermaid
+flowchart LR
+  F["지역 지표·배치 효과를<br/>미리 문장으로 만든 '사실'"] --> G["Gemini<br/>핵심·우선 서비스·배치 제안 (JSON)"]
+  G --> C["자동 검사<br/>숫자가 사실에 있나 · 배치 위치를 썼나<br/>잘리지 않았나 · 표기"]
+  C -- 통과 --> J["ai_briefing.json<br/>(229곳 모두 통과)"]
+  C -- 실패 --> R["다시 생성 (최대 3번)"] --> G
+  R -. 끝내 실패 .-> X["싣지 않음"]
+```
 
 **핵심 발견**
 
